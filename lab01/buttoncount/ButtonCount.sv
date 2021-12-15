@@ -38,7 +38,7 @@ module ButtonCount(clk, btnc, btnu, led);
 	// reset signal
 	logic rst;
 	// increment signals (synchronized version of btnu)
-	logic btnu_d, btnu_dd;
+	logic btnu_d, inc;
 
 	// Assign the 'rst' signal to button c
 	assign rst = btnc;
@@ -51,11 +51,11 @@ module ButtonCount(clk, btnc, btnu, led);
 		end
 		else begin
 			btnu_d <= btnu;
-			btnu_dd <= btnu_d;            
+			inc <= btnu_d;            
 		end
 
 	// Instance the OneShot module
-	OneShot os (.clk(clk), .rst(rst), .in(btnu_dd), .os(inc_count));
+	OneShot os (.clk(clk), .rst(rst), .in(inc), .os(inc_count));
 
 	// 16-bit Counter. Increments once each time button is pressed. 
 	//
