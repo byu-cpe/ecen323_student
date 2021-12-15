@@ -1,6 +1,7 @@
 # global class .gitignore file
 
 # Vivado ignores
-vivado.jou
-vivado.log
+vivado*.jou
+vivado*.log
+vivado_pid*.str
 
