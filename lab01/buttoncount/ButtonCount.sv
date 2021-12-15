@@ -47,7 +47,7 @@ module ButtonCount(clk, btnc, btnu, led);
 	always_ff@(posedge clk)
 		if (rst) begin
 			btnu_d <= 0;
-			btnu_dd <= 0;
+			inc <= 0;
 		end
 		else begin
 			btnu_d <= btnu;
