@@ -69,13 +69,13 @@ module OneShot(clk, rst, in, os);
 			ZERO:
                 // Transition to the INC state when the 'inc' signal is high
                 // (otherwise stay in this state due to the default assignment statement)
-				if (inc)
+				if (in)
 					next_state = INC;
             // The INC state occurs when the button is first pressed. The state machine
             // will only be in this state for one clock cycle and move directly to either the 
             // ONE state or the ZERO state.
 			INC:
-                if (inc)
+                if (in)
 				    next_state = ONE;
                 else
                     next_state = ZERO;
@@ -84,7 +84,7 @@ module OneShot(clk, rst, in, os);
 			ONE:
                 // Transition to the ZERO state when the 'inc' signal is low. Otherwise
                 //   stay in this state.
-				if (!inc)
+				if (!in)
 					next_state = ZERO;
 		endcase
 	end
