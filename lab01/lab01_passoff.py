@@ -154,7 +154,7 @@ def error(*msg, returncode=-1):
 
 # Generate script that indicates filenames of included files.
 # Returns a 'pathlib' filename for the generated file.
-def pickle_files():
+def pickle_files(python_include_file,favorite_color):
 	# Create tcl build script
 	print_color(TermColor.BLUE, "Creating include script", python_include_file)
 	lab_files_dump = open(python_include_file, 'w')
@@ -189,9 +189,9 @@ def get_filepath_from_key(file_key):
 
 def download_remote_files(extract_path):
 	# "testbench"     : [ "http://ecen323wiki.groups.et.byu.net/media/lab_06/", "tb_multicycle_control.sv" ],
-	for remote_file_key in wget_files.keys():
-		remote_url = wget_files[remote_file_key][0]
-		remote_filename = wget_files[remote_file_key][1]
+	for remote_file_key in test_files.keys():
+		remote_url = test_files[remote_file_key][0]
+		remote_filename = test_files[remote_file_key][1]
 		wget_url = str(remote_url + remote_filename)
 		wget_file = extract_path / remote_filename
 		# -O <name of target file> URL will overwrite file if it exists. Doesn't matter where you run command
@@ -296,10 +296,10 @@ def simulate_testbench_solution(extract_path, testbench_set):
 	testbench_filenames = []
 	# wget testbench files
 	for key in testbench_set[3]:
-		testbench_filenames.append(wget_files[key][1])
+		testbench_filenames.append(test_files[key][1])
 	# submission files
 	for key in testbench_set[2]:
-		testbench_filenames.append(user_files[key])
+		testbench_filenames.append(test_files[key])
 
 	# Check to see if each file exists
 	for filename in testbench_filenames:
@@ -398,7 +398,7 @@ def build_solution(extract_path, build_tuple):
 		log.write('read_verilog -sv ' + src + '\n')
 	if implement_build:
 		log.write('# Add XDC file\n')
-		for xdc_key in xdl_key_list
+		for xdc_key in xdl_key_list:
 			src = get_filename_from_key(xdc_key)
 			log.write('read_xdc ' + src + '\n')
 	log.write('# Synthesize design\n')
@@ -457,7 +457,7 @@ def modify_bitstream(extract_path,file_set):
 		# Get the name of assembly language file
 		programBitFileName = "newCode.bit"
 		print_color(TermColor.YELLOW, str.format("Attempting to update instruction memory"))
-		asmFile = user_files[assemblyKeyName]
+		asmFile = get_filename_from_key(assemblyKeyName)
 		[text_filename, data_filename] = getHexTextFileNames(asmFile)
 		#vivado -mode batch -source load_mem.tcl -tclargs updateMem <checkpoint filename> <.text memory file> <.data memory file> <new bitstream filename>
 		updateCmd = ["vivado", "-mode", "batch", "-source", "load_mem.tcl", "-tclargs", "updateMem",
@@ -477,7 +477,7 @@ def modify_bitstream(extract_path,file_set):
 		fontBitFileName = "font.bit"
 		print_color(TermColor.YELLOW, str.format("Attempting to update Font"))
 		# Get the name of the font file
-		fontFile = user_files[fontKeyName]
+		fontFile = get_filename_from_key(fontKeyName)
 		step2DCP = "step2.dcp"
 		# vivado -mode batch -source load_mem.tcl -tclargs updateFont project.dcp font_mem_mod.txt font.bit font.dcp        #vivado -mode batch -source load_mem.tcl -tclargs updateMem <checkpoint filename> <.text memory file> <.data memory file> <new bitstream filename>
 		updateCmd = ["vivado", "-mode", "batch", "-source", "load_mem.tcl", "-tclargs", "updateFont",
@@ -494,7 +494,7 @@ def modify_bitstream(extract_path,file_set):
 		backgroundBitFileName = "background.bit"
 		print_color(TermColor.YELLOW, str.format("Attempting to update Character Background"))
 		# Get the name of the font file
-		backgroundFile = user_files[backgroundKeyName]
+		backgroundFile = get_filename_from_key(backgroundKeyName)
 		# vivado -mode batch -source load_mem.tcl -tclargs updateBackground font.dcp background_mem.txt back.bit back.dcp
 		updateCmd = ["vivado", "-mode", "batch", "-source", "load_mem.tcl", "-tclargs", "updateBackground",
 			step2DCP,  backgroundFile, newBitfileName ]
@@ -533,8 +533,8 @@ def run_assembly(extract_path,file_set):
 			return False
 	# Perform simulation (and possible assembly)
 	for f in assembly_simulate_sets:
-		asm_key = get_atomic_filename(f[0])
-		asm_filename = user_files[asm_key]
+		asm_key = f[0]
+		asm_filename = get_filename_from_key(asm_key)
 		print_color(TermColor.BLUE, "Attempting RARS simulation/assembly of", asm_filename)
 		if f[3]:
 			# Execute assembler
@@ -767,8 +767,8 @@ def main():
 					log.write('** Successful Testbench simulation:'+testbench_sim_set[0]+'\n')
 
 		# Build circuit
-		if build_set:
-			for build in build_set:
+		if build_sets:
+			for build in build_sets:
 				if not build_solution(student_extract_lab_dir, build):
 					log.write('** Failed to Synthesize\n')
 				else:
