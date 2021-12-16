@@ -685,6 +685,9 @@ def main():
 	# GitHub URL for the student repository. Required option for now.
 	parser.add_argument("--git_repo", type=str, help="GitHub Remote Repository. If no repository is specified, the current repo will be used.")
 
+	# Force git extraction if directory already exists
+	parser.add_argument("-f", "--force", action="store_true", help="Force clone if target directory already exists")
+
 	# Directory for extracting repository. This directory will be deleted when
 	# the script is done (unless the --noclean option is set).
 	parser.add_argument("--extract_dir", type=str, \
@@ -739,6 +742,15 @@ def main():
 
 	''' Clone Repository. When done, the 'student_repo_dir' variable will be set.
 	'''
+	# See if directory exists
+	if student_extract_repo_dir.exists():
+		if args.force:
+			print( "Target directory",student_extract_repo_dir,"exists. Will be deleted before proceeding")
+			shutil.rmtree(student_extract_repo_dir, ignore_errors=True)
+		else:
+			print_color(TermColor.RED, "Target directory",student_extract_repo_dir,"exists. Use --force option to overwrite")
+			return False
+
 	print("Cloning repository from",student_git_repo,"with tag",LAB_TAG_STRING,"to",student_extract_repo_dir)
 	
 	if not clone_repo(student_git_repo, LAB_TAG_STRING, student_extract_repo_dir):
