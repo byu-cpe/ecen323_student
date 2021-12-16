@@ -809,11 +809,9 @@ def main():
 		print_color(TermColor.GREEN, "Completed - Successful submission")
 
 	# Clean the submission temporary files
-	#if args.clean:
-	#    print_color(TermColor.RED, "Deleting temporary submission test directory",student_extract_lab_dir)
-	#    shutil.rmtree(student_extract_lab_dir, ignore_errors=True)
-	#elif args.test:
-	#    print_color(TermColor.YELLOW, "Temporary directory can safely be deleted",student_extract_lab_dir)
+	if not args.noclean:
+		print_color(TermColor.RED, "Deleting temporary submission test directory",student_extract_repo_dir)
+		shutil.rmtree(student_extract_lab_dir, ignore_errors=True)
 
 
 if __name__ == "__main__":
