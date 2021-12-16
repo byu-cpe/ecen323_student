@@ -58,7 +58,7 @@ submission_files = {
 	"aboutme"           : "aboutme.txt",
 	"updown"            : "UpDownButtonCount.sv",
 	"updown_tcl"        : "UpDownButtonCount_sim.tcl",
-	"updown_xdc"        : "UpDownButtCount.xdc",
+	"updown_xdc"        : "UpDownButtonCount.xdc",
 	"updown_jpg"        : "UpDownButtonCount.jpg",
 }
 
@@ -68,6 +68,9 @@ submission_files = {
 test_files = {
 }
 
+# The union of both file lists
+all_files = submission_files.copy()
+all_files.update(test_files)
 
 #user_files = {}
 #for key in submission_files:
@@ -82,9 +85,8 @@ test_files = {
 # [1]: top-level module name to simulate
 # [2]: List of file keywords that referr to HDL sources to include in simulation
 tcl_sims = [
-	( "updown_tcl", "UpDownButtonCount", [ "UpDownButtonCount" ], ),
+	( "updown_tcl", "UpDownButtonCount", [ "updown" ], ),
 ]
-
 
 # List of Testbench simulations to complete
 # [1] module name
@@ -97,13 +99,13 @@ testbench_sims = [
 # List of bitstreams to build. Each element of the list is a tuple
 #  representing a single bitstream build. The organization of each
 #  tuple is as follos
-# [0] key to top module name
+# [0] top module name
 # [1] list of xdc filekey names
 # [2] list of HDL filekey names
 # [3] Boolean: implement bitstream (False will run synthesis only)
 # [4] Boolean: create dcp file
 build_sets = [
-	("updown",["updown_xdc"], [ "updown",], True, False,),
+	("UpDownButtonCount",["updown_xdc"], [ "updown",], True, False,),
 ]
 
 # List of list of assembly sets
@@ -164,9 +166,9 @@ def get_filename_from_key(file_key):
 	''' Returns the filename associated with a file key that is located either in
 		the submission_files dictionary or the test_files dictionary.
 	'''
-	if submission_files.has_key(file_key):
+	if file_key in submission_files:
 		return submission_files[file_key]
-	elif test_files.has_key(file_key):
+	elif file_key in test_files:
 		return test_files[file_key]
 	# Isn't in either dictionary. Return None
 	return None
@@ -243,7 +245,11 @@ def simulate_tcl_solution(extract_lab_path, tcl_tuple):
 	print_color(TermColor.BLUE, " Analyzing source files")
 	for src_key in tcl_hdl_list:
 		src_filename = get_filename_from_key(src_key)
+		if not src_filename:
+			print_color(TermColor.RED, "No filename for key", src_key)
+			return False
 		xvlog_cmd = ["xvlog", "--nolog", "-sv", src_filename ]
+		print(extract_lab_path)
 		proc = subprocess.run(xvlog_cmd, cwd=extract_lab_path, check=False)
 		if proc.returncode:
 			return False
@@ -255,7 +261,8 @@ def simulate_tcl_solution(extract_lab_path, tcl_tuple):
 	# Elaborate design
 	design_name = tcl_toplevel
 	print_color(TermColor.BLUE, " Elaborating")
-	xelab_cmd = ["xelab", "--debug", "typical", "--nolog", "-L", "unisims_ver", design_name, "work.glbl" ]
+	#xelab_cmd = ["xelab", "--debug", "typical", "--nolog", "-L", "unisims_ver", design_name, "work.glbl" ]
+	xelab_cmd = ["xelab", "--debug", "typical", "--nolog", "-L", "unisims_ver", design_name ]
 	proc = subprocess.run(xelab_cmd, cwd=extract_lab_path, check=False)
 
 	#xelab_cmd = ["xelab", "--debug", "typical", "--nolog", design_name, "work.glbl" ]
@@ -278,8 +285,10 @@ def simulate_tcl_solution(extract_lab_path, tcl_tuple):
 
 	# Simulate
 	print_color(TermColor.BLUE, " Starting Simulation")
-	tmp_design_name = str(design_name + "#work.glbl")
+	#tmp_design_name = str(design_name + "#work.glbl")
+	tmp_design_name = str(design_name)
 	xsim_cmd = ["xsim", "-nolog", tmp_design_name, "-tclbatch", temp_tcl_filename ]
+	#print(xsim_cmd)
 	proc = subprocess.run(xsim_cmd, cwd=extract_lab_path, check=False)
 	if proc.returncode:
 		return False
@@ -674,7 +683,7 @@ def main():
 	parser = argparse.ArgumentParser(description=description)
 
 	# GitHub URL for the student repository. Required option for now.
-	parser.add_argument("--git_url", required=True, type=str, help="GitHub URL for Repository")
+	parser.add_argument("--git_repo", type=str, help="GitHub Remote Repository. If no repository is specified, the current repo will be used.")
 
 	# Directory for extracting repository. This directory will be deleted when
 	# the script is done (unless the --noclean option is set).
@@ -695,41 +704,55 @@ def main():
 
 	''' Set run time variables and argument variables
 	'''
-	# Get the absolute path of the executing script.
-	student_git_url = args.git_url
 	# This is the path of location where the repository was extracted
 	student_extract_repo_dir = SCRIPT_PATH / args.extract_dir
 	# This is the path of lab within the extracted repository where the lab exists
 	# and where the executables wil run
 	student_extract_lab_dir = student_extract_repo_dir / LAB_DIR_NAME
 
-	''' Clone/Find Repository. When done, the 'student_repo_dir' variable will be set.
+	''' Determine remote repository
 	'''
-	print("Cloning repository from"+student_git_url+"to"+student_extract_repo_dir)
+	# Get the absolute path of the executing script.
 	# Generate the clone string
 	#     https://github.com/byu-ecen323-classroom/323-labs-wirthlin
-	patternString = "(http?://)?github.com/byu-ecen323-classroom/(\w+)"
-	match = re.match(patternString,student_git_url)
-	if match:
-		student_repo_name = match.group(2)
-	else:
-		print("Invalid URL:"+student_git_url)
-		return False
+	#patternString = "(http?://)?github.com/byu-ecen323-classroom/(\w+)"
+	#match = re.match(patternString,student_git_url)
+	#if match:
+	#	student_repo_name = match.group(2)
+	#else:
+	#	print("Invalid URL:"+student_git_url)
+	#	return False
 	#git@github.com:byu-ecen323-classroom/323-labs-wirthlin.git
-	studet_git_clone_str = str.format("git@github.com:byu-ecen323-classroom/{}.git",student_repo_name)
+	#studet_git_clone_str = str.format("git@github.com:byu-ecen323-classroom/{}.git",student_repo_name)
+	if args.git_repo:
+		student_git_repo = args.git_repo
+	else:
+		# Determine the current repo
+		#git config --get remote.origin.url
+		cmd = ["git", "config", "--get", "remote.origin.url"]
+		p = subprocess.run(cmd, cwd=SCRIPT_PATH, stdout=subprocess.PIPE,universal_newlines=True)
+		if p.returncode:
+			print_color(TermColor.RED, "git config failed")
+			return False
+		else:
+			student_git_repo = p.stdout.strip()
+
+	''' Clone Repository. When done, the 'student_repo_dir' variable will be set.
+	'''
+	print("Cloning repository from",student_git_repo,"with tag",LAB_TAG_STRING,"to",student_extract_repo_dir)
 	
-	if not clone_repo(studet_git_clone_str, LAB_TAG_STRING, student_extract_repo_dir):
+	if not clone_repo(student_git_repo, LAB_TAG_STRING, student_extract_repo_dir):
 		return False
 
 	''' Check to make sure all the expected files exist (both submission and test) '''
 	print("Checking to make sure required files are in repository")
-	for file in submission_files.append(test_files):
-		filename = submission_files[file]
-		filepath = SCRIPT_PATH / filename
+	for file in all_files:
+		filename = all_files[file]
+		filepath = student_extract_lab_dir / filename
 		if filepath.exists():
-			print("File"+filename+"exists")
+			print("File",filename,"exists")
 		else:
-			print_color(TermColor.YELLOW, str("Warning: File"+filename+"does not exist"))
+			print_color(TermColor.YELLOW, str("Warning: File "+filename+" does not exist"))
 
 
 	if not args.notest:
