@@ -5,11 +5,9 @@ Script for extracting a student submission from a GitHub repository and
 checking the submission.
 
 TODO:
-- Print the commit date that was added as part of the CI
-  .commitdate
+- Checkout the starter code if it doesn't exist (or give a flag to the student code repository) and
+  run the scripts from the known good repository.
 - Does script fail if the tag doesn't exist? Need to test
-- Do a better job of counting errors and not giving "green" good message if there was a problem
-  (Count warnings, etc.)
 '''
 
 
@@ -52,6 +50,10 @@ JAR_FILENAME = "rars1_4.jar"
 JAR_URL = "https://github.com/TheThirdOne/rars/releases/download/v1.4/rars1_4.jar"
 LAB_TAG_STRING = str.format("lab{}_submission",LAB_NUMBER)
 TEST_RESULT_FILENAME = str.format("lab{}_test_result.txt",LAB_NUMBER)
+# The filename of the commit string relative to the current lab
+COMMIT_STRING_FILENAME = ".commitdate"
+# Filename of the project settings tcl script
+NEW_PROJECT_SETTINGS_FILENAME = "../resources/new_project_settings.tcl"
 
 # Path of script that is being run
 SCRIPT_PATH = pathlib.Path(__file__).absolute().parent.resolve()
@@ -441,23 +443,27 @@ def build_solution(extract_path, build_tuple):
 	tmp_tcl = extract_path / tcl_build_script_filename
 
 	log = open(tmp_tcl, 'w')
-	log.write('# Bitfile Generation script\n')
+	log.write('# Bitfile Generation script (non-project mode)\n')
 	log.write('#\n')
-	log.write('# Set the part\n')
-	log.write('link_design -part ' + BASYS3_PART +'\n')
-	log.write('# Add sources\n')
+	#log.write('# Set the part\n')
+	#log.write('link_design -part ' + BASYS3_PART +'\n')
+	log.write('# Change tool settings\n')
+	log.write('source '+ NEW_PROJECT_SETTINGS_FILENAME+'\n')
 
-	# Read files
+	# Read HDL files
+	log.write('# Add sources\n')
 	for src_key in hdl_key_list:
 		src = get_filename_from_key(src_key)
 		log.write('read_verilog -sv ' + src + '\n')
+	# Read xdc files
 	if implement_build:
 		log.write('# Add XDC file\n')
 		for xdc_key in xdl_key_list:
 			src = get_filename_from_key(xdc_key)
 			log.write('read_xdc ' + src + '\n')
 	log.write('# Synthesize design\n')
-	log.write('synth_design -top ' + design_name + ' -flatten_hierarchy full\n')
+	#log.write('synth_design -top ' + design_name + ' -flatten_hierarchy full\n')
+	log.write('synth_design -top ' + design_name + ' -part ' + BASYS3_PART + '\n')
 	if implement_build:    
 		log.write('# Implement Design\n')
 		log.write('place_design\n')
@@ -783,6 +789,9 @@ def main():
 	# This is the path of lab within the extracted repository where the lab exists
 	# and where the executables wil run
 	student_extract_lab_dir = student_extract_repo_dir / LAB_DIR_NAME
+	# Set errors flag
+	has_errors = False
+	has_warnings = False
 
 	''' Determine remote repository
 	'''
@@ -825,7 +834,18 @@ def main():
 	print("Cloning repository from",student_git_repo,"with tag",LAB_TAG_STRING,"to",student_extract_repo_dir)
 	
 	if not clone_repo(student_git_repo, LAB_TAG_STRING, student_extract_repo_dir):
+		print_color(TermColor.RED, "Failed to clone repository")		
 		return False
+
+	# Print the repository submission time
+	COMMIT_STRING_FILEPATH = student_extract_repo_dir / COMMIT_STRING_FILENAME
+	try:
+		fp = open(COMMIT_STRING_FILEPATH, "r")
+		commit_string = fp.read()
+		print("Tag",LAB_TAG_STRING,"commited at",commit_string)
+	except FileNotFoundError:
+		print_color(TermColor.YELLOW, str("Warning: No Commit Time String Found"))
+		has_warnings = True
 
 	''' Check to make sure all the expected files exist (both submission and test) '''
 	print("Checking to make sure required files are in repository")
@@ -836,6 +856,7 @@ def main():
 			print("File",filename,"exists")
 		else:
 			print_color(TermColor.YELLOW, str("Warning: File "+filename+" does not exist"))
+			has_warnings = True
 
 
 	if not args.notest:
@@ -852,6 +873,7 @@ def main():
 				if not run_assembly(student_extract_lab_dir, assembly_simulate_set):
 					print_color(TermColor.RED, "Assembly execution failure:")
 					log.write('** Failed Assembly simulation\n')
+					has_errors = True
 				else:
 					log.write('** Successful Assembly simulation\n')
 
@@ -860,6 +882,7 @@ def main():
 			for tcl_sim_set in tcl_sims:
 				if not simulate_tcl_solution(student_extract_lab_dir, tcl_sim_set):
 					log.write('** Failed TCL simulation\n')
+					has_errors = True
 				else:
 					log.write('** Successful TCL simulation\n')
 
@@ -877,6 +900,7 @@ def main():
 			for build in build_sets:
 				if not build_solution(student_extract_lab_dir, build):
 					log.write('** Failed to Synthesize\n')
+					has_errors = True
 				else:
 					log.write('** Successful synthesis\n')
 
@@ -888,13 +912,17 @@ def main():
 				else:
 					log.write('** Successful Bitstream Modfication\n')
 
-
-		print_color(TermColor.GREEN, "Completed - Successful submission")
+		if has_errors:
+			print_color(TermColor.RED, "Completed - Submission has ERRORS")
+		elif has_warnings:
+			print_color(TermColor.YELLOW, "Completed - Submission has warnings")
+		else:
+			print_color(TermColor.GREEN, "Completed - No Warnings or Errors")
 
 	# Clean the submission temporary files
 	if not args.noclean:
 		print_color(TermColor.YELLOW, "Deleting temporary submission test directory",student_extract_repo_dir)
-		shutil.rmtree(student_extract_lab_dir, ignore_errors=True)
+		shutil.rmtree(student_extract_repo_dir, ignore_errors=True)
 
 
 if __name__ == "__main__":
