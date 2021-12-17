@@ -726,7 +726,7 @@ def main():
 
 	# Do not clean up the temporary directory
 	#parser.add_argument("-c", "--clean", action="store_true", help="Clean the submission directory when complete")
-	parser.add_argument("--noclean", type=bool, help="Do not clean up the extraction directory when done")
+	parser.add_argument("--noclean", action="store_true", help="Do not clean up the extraction directory when done")
 
 	# Do not clean up the temporary directory
 	#parser.add_argument("-c", "--clean", action="store_true", help="Clean the submission directory when complete")
