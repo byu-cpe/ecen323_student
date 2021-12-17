@@ -3,6 +3,11 @@
 '''
 Script for extracting a student submission from a GitHub repository and
 checking the submission.
+
+TODO:
+- Log the output of the tools to a special file (for review and possibly parsing)
+- Do a better job of counting errors and not giving "green" good message if there was a problem
+  (Count warnings, etc.)
 '''
 
 
