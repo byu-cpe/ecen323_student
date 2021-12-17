@@ -233,6 +233,21 @@ def executeProcess(command):
 	#    raise ProcessException(command, exitCode, output)
 	return process
 
+def check_executable_existence(command_list):
+	''' Executes a command and traps OS error. Used to detect if
+	    executable exists. The command_list is a list of commandline
+		arguments used in a subprocess.run. Ideally the options should
+		select something that will just return immediately (like -version)
+		so that nothing consuming much time will occur.
+	'''
+	# See if the executable is even in the path
+	try:
+		proc = subprocess.run(command_list)
+	except OSError:
+		print_color(TermColor.RED, command_list[0], "not found (not in path of shell environment)")
+		return False
+	return True
+
 def simulate_tcl_solution(extract_lab_path, tcl_tuple):
 	''' 
 	Perform a simulation of a module with a Tcl script.
@@ -247,10 +262,7 @@ def simulate_tcl_solution(extract_lab_path, tcl_tuple):
 	print_color(TermColor.BLUE, "Attempting simulation of TCL script:", tcl_filename)
 
 	# See if the executable is even in the path
-	try:
-		proc = subprocess.run(["xvlog", "--version"])
-	except OSError:
-		print_color(TermColor.RED, "xvlog not in shell environment")
+	if not check_executable_existence(["xvlog", "--version"]):
 		return False
 
 	# Analyze all of the files associated with the TCL simulation set
@@ -437,10 +449,7 @@ def build_solution(extract_path, build_tuple):
 	log.close()
 
 	# See if the executable is even in the path
-	try:
-		proc = subprocess.run(["vivado", "--version"])
-	except OSError:
-		print_color(TermColor.RED, "vivado not in shell environment")
+	if not check_executable_existence(["vivado", "-version"]):
 		return False
 
 	# Generate bitfile
