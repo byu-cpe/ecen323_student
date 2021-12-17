@@ -241,6 +241,13 @@ def simulate_tcl_solution(extract_lab_path, tcl_tuple):
 	tcl_filename = get_filename_from_key(tcl_filekey)
 	print_color(TermColor.BLUE, "Attempting simulation of TCL script:", tcl_filename)
 
+	# See if the executable is even in the path
+	try:
+		proc = subprocess.run(["xvlog", "--version"])
+	except OSError:
+		print_color(TermColor.RED, "xvlog not in shell environment")
+		return False
+
 	# Analyze all of the files associated with the TCL simulation set
 	print_color(TermColor.BLUE, " Analyzing source files")
 	for src_key in tcl_hdl_list:
@@ -249,7 +256,6 @@ def simulate_tcl_solution(extract_lab_path, tcl_tuple):
 			print_color(TermColor.RED, "No filename for key", src_key)
 			return False
 		xvlog_cmd = ["xvlog", "--nolog", "-sv", src_filename ]
-		print(extract_lab_path)
 		proc = subprocess.run(xvlog_cmd, cwd=extract_lab_path, check=False)
 		if proc.returncode:
 			return False
@@ -424,6 +430,13 @@ def build_solution(extract_path, build_tuple):
 		log.write(str.format("write_checkpoint {} -force\n",dcp_filename))
 	log.write('# End of build script\n')
 	log.close()
+
+	# See if the executable is even in the path
+	try:
+		proc = subprocess.run(["vivado", "--version"])
+	except OSError:
+		print_color(TermColor.RED, "vivado not in shell environment")
+		return False
 
 	# Generate bitfile
 	build_cmd = ["vivado", "-nolog", "-mode", "batch", "-nojournal", "-source", tcl_build_script_filename]
@@ -822,7 +835,7 @@ def main():
 
 	# Clean the submission temporary files
 	if not args.noclean:
-		print_color(TermColor.RED, "Deleting temporary submission test directory",student_extract_repo_dir)
+		print_color(TermColor.YELLOW, "Deleting temporary submission test directory",student_extract_repo_dir)
 		shutil.rmtree(student_extract_lab_dir, ignore_errors=True)
 
 
