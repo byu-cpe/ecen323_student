@@ -8,7 +8,6 @@ TODO:
 - Print the commit date that was added as part of the CI
   .commitdate
 - Does script fail if the tag doesn't exist? Need to test
-- Log the output of the tools to a special file (for review and possibly parsing)
 - Do a better job of counting errors and not giving "green" good message if there was a problem
   (Count warnings, etc.)
 '''
@@ -313,7 +312,7 @@ def simulate_tcl_solution(extract_lab_path, tcl_tuple):
 	print_color(TermColor.BLUE, " Starting Simulation")
 	#tmp_design_name = str(design_name + "#work.glbl")
 	tmp_design_name = str(design_name)
-	simulation_log_filename = str(tcl_toplevel,"_tcl_simulation.txt")
+	simulation_log_filename = str(tcl_toplevel + "_tcl_simulation.txt")
 	simulation_log_filepath = extract_lab_path / simulation_log_filename
 	with open(simulation_log_filepath, "w") as fp:
 		xsim_cmd = ["xsim", "-nolog", tmp_design_name, "-tclbatch", temp_tcl_filename ]
@@ -477,10 +476,31 @@ def build_solution(extract_path, build_tuple):
 		return False
 
 	# Generate bitfile
-	build_cmd = ["vivado", "-nolog", "-mode", "batch", "-nojournal", "-source", tcl_build_script_filename]
-	proc = subprocess.run(build_cmd, cwd=extract_path, check=False)
-	if proc.returncode:
-		return False
+	#build_cmd = ["vivado", "-nolog", "-mode", "batch", "-nojournal", "-source", tcl_build_script_filename]
+	#proc = subprocess.run(build_cmd, cwd=extract_path, check=False)
+	#if proc.returncode:
+	#	return False
+
+	implementation_log_filename = str(design_name + "_implementation.txt")
+	implementation_log_filepath = extract_path / implementation_log_filename
+	with open(implementation_log_filepath, "w") as fp:
+		build_cmd = ["vivado", "-nolog", "-mode", "batch", "-nojournal", "-source", tcl_build_script_filename]
+		proc = subprocess.Popen(
+			build_cmd,
+			cwd=extract_path,
+			stdout=subprocess.PIPE,
+			stderr=subprocess.STDOUT,
+			universal_newlines=True,
+		)
+		for line in proc.stdout:
+			sys.stdout.write(line)
+			fp.write(line)
+			fp.flush()
+		# Wait until process is done
+		proc.communicate()
+		if proc.returncode:
+			return False
+	return True
 
 	# See if the bitfile exists (make sure it is newer)
 	if implement_build:
