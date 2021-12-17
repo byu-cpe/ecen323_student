@@ -238,7 +238,7 @@ def executeProcess(command):
 
 def check_executable_existence(command_list):
 	''' Executes a command and traps OS error. Used to detect if
-	    executable exists. The command_list is a list of commandline
+		executable exists. The command_list is a list of commandline
 		arguments used in a subprocess.run. Ideally the options should
 		select something that will just return immediately (like -version)
 		so that nothing consuming much time will occur.
@@ -313,12 +313,33 @@ def simulate_tcl_solution(extract_lab_path, tcl_tuple):
 	print_color(TermColor.BLUE, " Starting Simulation")
 	#tmp_design_name = str(design_name + "#work.glbl")
 	tmp_design_name = str(design_name)
-	xsim_cmd = ["xsim", "-nolog", tmp_design_name, "-tclbatch", temp_tcl_filename ]
-	#print(xsim_cmd)
-	proc = subprocess.run(xsim_cmd, cwd=extract_lab_path, check=False)
-	if proc.returncode:
-		return False
+	
+	simulation_log_file = extract_lab_path / str(tcl_toplevel,"_tcl_simulation.txt")
+	with open(simulation_log_file, "w") as fp:
+		xsim_cmd = ["xsim", "-nolog", tmp_design_name, "-tclbatch", temp_tcl_filename ]
+		proc = subprocess.Popen(
+			xsim_cmd,
+			cwd=extract_lab_path,
+			stdout=subprocess.PIPE,
+			stderr=subprocess.STDOUT,
+			universal_newlines=True,
+		)
+		for line in proc.stdout:
+			sys.stdout.write(line)
+			fp.write(line)
+			fp.flush()
+		# Wait until process is done
+		proc.communicate()
+		if proc.returncode:
+			return False
 	return True
+
+	#xsim_cmd = ["xsim", "-nolog", tmp_design_name, "-tclbatch", temp_tcl_filename ]
+	##print(xsim_cmd)
+	#proc = subprocess.run(xsim_cmd, cwd=extract_lab_path, check=False)
+	#if proc.returncode:
+	#	return False
+	#return True
 
 def simulate_testbench_solution(extract_path, testbench_set):
 	simulation_description = testbench_set[0]
@@ -730,7 +751,7 @@ def main():
 
 	# Do not clean up the temporary directory
 	#parser.add_argument("-c", "--clean", action="store_true", help="Clean the submission directory when complete")
-	parser.add_argument("--notest", type=bool, help="Do not run the tests")
+	parser.add_argument("--notest", action="store_true", help="Do not run the tests")
 
 	# Parse the arguments
 	args = parser.parse_args()
