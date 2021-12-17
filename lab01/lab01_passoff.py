@@ -313,9 +313,9 @@ def simulate_tcl_solution(extract_lab_path, tcl_tuple):
 	print_color(TermColor.BLUE, " Starting Simulation")
 	#tmp_design_name = str(design_name + "#work.glbl")
 	tmp_design_name = str(design_name)
-	
-	simulation_log_file = extract_lab_path / str(tcl_toplevel,"_tcl_simulation.txt")
-	with open(simulation_log_file, "w") as fp:
+	simulation_log_filename = str(tcl_toplevel,"_tcl_simulation.txt")
+	simulation_log_filepath = extract_lab_path / simulation_log_filename
+	with open(simulation_log_filepath, "w") as fp:
 		xsim_cmd = ["xsim", "-nolog", tmp_design_name, "-tclbatch", temp_tcl_filename ]
 		proc = subprocess.Popen(
 			xsim_cmd,
