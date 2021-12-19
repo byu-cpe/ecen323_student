@@ -5,6 +5,9 @@ Script for extracting a student submission from a GitHub repository and
 checking the submission.
 
 TODO:
+- Change instructions so that the students add the "--squash" flag on the merge so they don't get so
+  many commits when they merge the starter code
+- Squash the commit history of the starter code before the semester begins
 - Checkout the starter code if it doesn't exist (or give a flag to the student code repository) and
   run the scripts from the known good repository.
 - Does script fail if the tag doesn't exist? Need to test
