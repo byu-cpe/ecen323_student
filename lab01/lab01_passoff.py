@@ -48,9 +48,7 @@ TEST_RESULT_FILENAME = str.format("lab{}_test_result.txt",LAB_NUMBER)
 STARTER_CODE_REPO = "git@github.com:byu-cpe/ecen323_student.git"
 LAB_DIR_NAME = str.format("lab{:02d}",LAB_NUMBER)
 
-BASYS3_PART = "xc7a35tcpg236-1"
-JAR_FILENAME = "rars1_4.jar"
-JAR_URL = "https://github.com/TheThirdOne/rars/releases/download/v1.4/rars1_4.jar"
+#BASYS3_PART = "xc7a35tcpg236-1"
 LAB_TAG_STRING = str.format("lab{}_submission",LAB_NUMBER)
 TEST_RESULT_FILENAME = str.format("lab{}_test_result.txt",LAB_NUMBER)
 # The filename of the commit string relative to the current lab
@@ -61,7 +59,7 @@ NEW_PROJECT_SETTINGS_FILENAME = "../resources/new_project_settings.tcl"
 # Path of script that is being run
 SCRIPT_PATH = pathlib.Path(__file__).absolute().parent.resolve()
 # Path of current directory when script is run
-RUN_PATH = os.environ['PWD']
+#RUN_PATH = os.environ['PWD']
 
 # List of source files used for lab submission. The key is a lab-specific keyword
 # used to represent a specific file for the lab. The value is the path and filename
@@ -176,7 +174,7 @@ def main():
 	# and where the executables wil run
 	student_extract_lab_dir = student_extract_repo_dir / LAB_DIR_NAME
 
-	lab_test = lab_passoff.lab_test()
+	lab_test = lab_passoff.lab_test(LAB_NUMBER)
 
 	''' Determine remote repository
 	'''
@@ -263,7 +261,7 @@ def main():
 
 				test = lab_passoff.build_bitstream()
 				result = test.perform_test(student_extract_lab_dir, design_name, \
-					[NEW_PROJECT_SETTINGS_FILENAME], hdl_filenames, xdl_filenames, BASYS3_PART)
+					[NEW_PROJECT_SETTINGS_FILENAME], hdl_filenames, xdl_filenames)
 				if not result:
 					log.write('** Failed to Synthesize\n')
 				else:

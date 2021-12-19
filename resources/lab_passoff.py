@@ -52,10 +52,12 @@ class TermColor:
 class lab_test:
 	''' Represents a specific test for a lab passoff '''
 
-	def __init__(self):
+	def __init__(self,lab_num):
 		self.errors = 0
 		self.warnings = 0
-
+		self.BASYS3_PART = "xc7a35tcpg236-1"
+		self.lab_num = lab_num
+		
 	def print_color(self,color, *msg):
 		""" Print a message in color """
 		print(color + " ".join(str(item) for item in msg), TermColor.END)
@@ -245,11 +247,9 @@ class lab_passoff_argparse(argparse.ArgumentParser):
 			default=default_extract_dir)
 
 		# Do not clean up the temporary directory
-		#parser.add_argument("-c", "--clean", action="store_true", help="Clean the submission directory when complete")
 		self.add_argument("--noclean", action="store_true", help="Do not clean up the extraction directory when done")
 
 		# Do not clean up the temporary directory
-		#parser.add_argument("-c", "--clean", action="store_true", help="Clean the submission directory when complete")
 		self.add_argument("--notest", action="store_true", help="Do not run the tests")
 
 class tcl_simulation(lab_test):
@@ -320,8 +320,9 @@ class tcl_simulation(lab_test):
 class build_bitstream(lab_test):
 
 	def perform_test(self, extract_path, design_name, pre_source_filenames, hdl_filenames, \
-			xdl_filenames, part, implement_build = True, create_dcp = False ):
+			xdl_filenames, implement_build = True, create_dcp = False ):
 
+		part = self.BASYS3_PART
 		'''
 		Build a bitstream
 			extract_path: str
@@ -341,8 +342,6 @@ class build_bitstream(lab_test):
 		log = open(tmp_tcl, 'w')
 		log.write('# Bitfile Generation script (non-project mode)\n')
 		log.write('#\n')
-		#log.write('# Set the part\n')
-		#log.write('link_design -part ' + BASYS3_PART +'\n')
 		if pre_source_filenames:
 			log.write('# Pre-build source files\n')
 			for pre_source_filename in pre_source_filenames:
