@@ -50,7 +50,8 @@ class lab_test:
 	''' Represents a specific test for a lab passoff '''
 
 	def __init__(self):
-		pass
+		self.errors = 0
+		self.warnings = 0
 
 	def print_color(self,color, *msg):
 		""" Print a message in color """
@@ -63,11 +64,22 @@ class lab_test:
 	def print_error(self,*msg):
 		""" Print an error message and exit program """
 		self.print_color(TermColor.RED, "ERROR:", " ".join(str(item) for item in msg))
+		self.errors += 1
 		#sys.exit(returncode)
 
 	def print_warning(self,*msg):
 		""" Print an error message and exit program """
 		self.print_color(TermColor.YELLOW, "WARNING:", " ".join(str(item) for item in msg))
+		self.warnings += 1
+
+	def print_message_summary(self):
+		if self.errors:
+			self.print_error("Completed - Submission has ",str(self.errors)," errors")
+		elif self.warnings:
+			self.print_warning("Completed - Submission has ",str(self.warnings)," warnings")
+		else:
+			self.print_color(TermColor.GREEN, "Completed - No Warnings or Errors")
+
 
 	def perform_test(self):
 		""" Perform the class specific test. """
@@ -120,9 +132,24 @@ class lab_test:
 			current_repo = p.stdout.strip()
 		return current_repo
 
+
 	# TODO: This function was copied from 'pygrader/pygrader/student_repos.py'
 	#       - Need to import this code rather than copying it in the future.
 	#       - Merge my comments into initial repository (note I changed TermColor)
+
+	# Get the absolute path of the executing script.
+	# Generate the clone string
+	#     https://github.com/byu-ecen323-classroom/323-labs-wirthlin
+	#patternString = "(http?://)?github.com/byu-ecen323-classroom/(\w+)"
+	#match = re.match(patternString,student_git_url)
+	#if match:
+	#	student_repo_name = match.group(2)
+	#else:
+	#	print("Invalid URL:"+student_git_url)
+	#	return False
+	#git@github.com:byu-ecen323-classroom/323-labs-wirthlin.git
+	#studet_git_clone_str = str.format("git@github.com:byu-ecen323-classroom/{}.git",student_repo_name)
+
 	def clone_repo(self, git_path, tag, student_repo_path):
 		'''
 		Clone student repository to local directory
@@ -194,6 +221,33 @@ class lab_test:
 		cmd = ["git", "log", "-1", r"--format=%cd"]
 		proc = subprocess.run(cmd, cwd=str(student_repo_path))
 
+class lab_passoff_argparse(argparse.ArgumentParser):
+
+	def __init__(self,lab_num,default_extract_dir,version="1.0"):
+		# call parent initialization
+		description = str.format('Create and test submission archive for lab {} (v {}).', \
+			lab_num,version)
+		argparse.ArgumentParser.__init__(self,description=description)
+
+		# GitHub URL for the student repository. Required option for now.
+		self.add_argument("--git_repo", type=str, help="GitHub Remote Repository. If no repository is specified, the current repo will be used.")
+
+		# Force git extraction if directory already exists
+		self.add_argument("-f", "--force", action="store_true", help="Force clone if target directory already exists")
+
+		# Directory for extracting repository. This directory will be deleted when
+		# the script is done (unless the --noclean option is set).
+		self.add_argument("--extract_dir", type=str, \
+			help="Temporary directory where repository will be extracted (relative to directory script is run)",
+			default=default_extract_dir)
+
+		# Do not clean up the temporary directory
+		#parser.add_argument("-c", "--clean", action="store_true", help="Clean the submission directory when complete")
+		self.add_argument("--noclean", action="store_true", help="Do not clean up the extraction directory when done")
+
+		# Do not clean up the temporary directory
+		#parser.add_argument("-c", "--clean", action="store_true", help="Clean the submission directory when complete")
+		self.add_argument("--notest", action="store_true", help="Do not run the tests")
 
 class tcl_simulation(lab_test):
 

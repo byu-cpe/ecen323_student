@@ -84,13 +84,6 @@ test_files = {
 all_files = submission_files.copy()
 all_files.update(test_files)
 
-#user_files = {}
-#for key in submission_files:
-#    user_files[key] = submission_files[key]
-#for key in wget_files:
-#    user_files[key] = wget_files[key][1]
-
-
 # List of TCL simulation tuples to complete. The organization of each
 #  tuple is as follows
 # [0]: keyword string in dictionary referrring to tcl file to simulate
@@ -138,26 +131,6 @@ assembly_simulate_sets = [
 bitfile_dcp_mods = [
 ]
 
-
-
-# Color constants for terminal
-#class TermColor:
-#	""" Terminal codes for printing in color """
-#	# pylint: disable=too-few-public-methods
-#	PURPLE = "\033[95m"
-#	BLUE = "\033[94m"
-#	GREEN = "\033[92m"
-#	YELLOW = "\033[93m"
-#	RED = "\033[91m"
-#	END = "\033[0m"
-#	BOLD = "\033[1m"
-#	UNDERLINE = "\033[4m"
-
-# Print message to console with a color
-#def print_color(color, *msg):
-#	""" Print a message in color """
-#	print(color + " ".join(str(item) for item in msg), TermColor.END)
-
 def get_filename_from_key(file_key):
 	''' Returns the filename associated with a file key that is located either in
 		the submission_files dictionary or the test_files dictionary.
@@ -190,29 +163,7 @@ def main():
 	'''
 
 	''' Setup the ArgumentParser '''
-	# Create description string for script and setup ArgumentParser
-	description = str.format('Create and test submission archive for lab {} (v {}).',LAB_NUMBER,SCRIPT_VERSION)
-	parser = argparse.ArgumentParser(description=description)
-
-	# GitHub URL for the student repository. Required option for now.
-	parser.add_argument("--git_repo", type=str, help="GitHub Remote Repository. If no repository is specified, the current repo will be used.")
-
-	# Force git extraction if directory already exists
-	parser.add_argument("-f", "--force", action="store_true", help="Force clone if target directory already exists")
-
-	# Directory for extracting repository. This directory will be deleted when
-	# the script is done (unless the --noclean option is set).
-	parser.add_argument("--extract_dir", type=str, \
-		help="Temporary directory where repository will be extracted (relative to directory script is run)",
-		default=DEFAULT_EXTRACT_DIR)
-
-	# Do not clean up the temporary directory
-	#parser.add_argument("-c", "--clean", action="store_true", help="Clean the submission directory when complete")
-	parser.add_argument("--noclean", action="store_true", help="Do not clean up the extraction directory when done")
-
-	# Do not clean up the temporary directory
-	#parser.add_argument("-c", "--clean", action="store_true", help="Clean the submission directory when complete")
-	parser.add_argument("--notest", action="store_true", help="Do not run the tests")
+	parser = lab_passoff.lab_passoff_argparse(LAB_NUMBER, DEFAULT_EXTRACT_DIR, SCRIPT_VERSION)
 
 	# Parse the arguments
 	args = parser.parse_args()
@@ -224,44 +175,19 @@ def main():
 	# This is the path of lab within the extracted repository where the lab exists
 	# and where the executables wil run
 	student_extract_lab_dir = student_extract_repo_dir / LAB_DIR_NAME
-	# Set errors flag
-	has_errors = False
-	has_warnings = False
 
-	test = lab_passoff.lab_test()
+	lab_test = lab_passoff.lab_test()
 
 	''' Determine remote repository
 	'''
-	# Get the absolute path of the executing script.
-	# Generate the clone string
-	#     https://github.com/byu-ecen323-classroom/323-labs-wirthlin
-	#patternString = "(http?://)?github.com/byu-ecen323-classroom/(\w+)"
-	#match = re.match(patternString,student_git_url)
-	#if match:
-	#	student_repo_name = match.group(2)
-	#else:
-	#	print("Invalid URL:"+student_git_url)
-	#	return False
-	#git@github.com:byu-ecen323-classroom/323-labs-wirthlin.git
-	#studet_git_clone_str = str.format("git@github.com:byu-ecen323-classroom/{}.git",student_repo_name)
 	if args.git_repo:
 		student_git_repo = args.git_repo
 	else:
 		# Determine the current repo
-		student_git_repo = test.determine_current_repo(SCRIPT_PATH)
+		student_git_repo = lab_test.determine_current_repo(SCRIPT_PATH)
 		if not student_git_repo:
-			test.print_error("git config failed")
+			lab_test.print_error("git config failed")
 			return False
-
-		#git config --get remote.origin.url
-		#cmd = ["git", "config", "--get", "remote.origin.url"]
-		#p = subprocess.run(cmd, cwd=SCRIPT_PATH, stdout=subprocess.PIPE,universal_newlines=True)
-		#if p.returncode:
-		#	test.print_error("git config failed")
-		#	#print_color(TermColor.RED, "git config failed")
-		#	return False
-		#else:
-		#	student_git_repo = p.stdout.strip()
 
 	''' Clone Repository. When done, the 'student_repo_dir' variable will be set.
 	'''
@@ -271,20 +197,14 @@ def main():
 			print( "Target directory",student_extract_repo_dir,"exists. Will be deleted before proceeding")
 			shutil.rmtree(student_extract_repo_dir, ignore_errors=True)
 		else:
-			test.print_error("Target directory",student_extract_repo_dir,"exists. Use --force option to overwrite")
-			#print_color(TermColor.RED, "Target directory",student_extract_repo_dir,"exists. Use --force option to overwrite")
+			lab_test.print_error("Target directory",student_extract_repo_dir,"exists. Use --force option to overwrite")
 			return False
 
 	print("Cloning repository from",student_git_repo,"with tag",LAB_TAG_STRING,"to",student_extract_repo_dir)
 	
-	if not test.clone_repo(student_git_repo, LAB_TAG_STRING, student_extract_repo_dir):
-		test.print_error("Failed to clone repository")
-		#print_color(TermColor.RED, "Failed to clone repository")		
+	if not lab_test.clone_repo(student_git_repo, LAB_TAG_STRING, student_extract_repo_dir):
+		lab_test.print_error("Failed to clone repository")
 		return False
-
-	#if not clone_repo(student_git_repo, LAB_TAG_STRING, student_extract_repo_dir):
-	#	print_color(TermColor.RED, "Failed to clone repository")		
-	#	return False
 
 	# Print the repository submission time
 	COMMIT_STRING_FILEPATH = student_extract_repo_dir / COMMIT_STRING_FILENAME
@@ -293,9 +213,7 @@ def main():
 		commit_string = fp.read()
 		print("Tag",LAB_TAG_STRING,"commited at",commit_string)
 	except FileNotFoundError:
-		test.print_warning("Warning: No Commit Time String Found")
-		#print_color(TermColor.YELLOW, str("Warning: No Commit Time String Found"))
-		has_warnings = True
+		lab_test.print_warning("Warning: No Commit Time String Found")
 
 	''' Check to make sure all the expected files exist (both submission and test) '''
 	print("Checking to make sure required files are in repository")
@@ -305,9 +223,7 @@ def main():
 		if filepath.exists():
 			print("File",filename,"exists")
 		else:
-			test.print_warning(str("Warning: File "+filename+" does not exist"))
-			#print_color(TermColor.YELLOW, str("Warning: File "+filename+" does not exist"))
-			has_warnings = True
+			lab_test.print_warning(str("Warning: File "+filename+" does not exist"))
 
 
 	if not args.notest:
@@ -328,7 +244,6 @@ def main():
 				result = test.perform_test(student_extract_lab_dir, tcl_filename, tcl_toplevel, tcl_hdl_list)
 				if not result:
 					log.write('** Failed TCL simulation\n')
-					has_errors = True
 				else:
 					log.write('** Successful TCL simulation\n')
 
@@ -351,32 +266,16 @@ def main():
 					[NEW_PROJECT_SETTINGS_FILENAME], hdl_filenames, xdl_filenames, BASYS3_PART)
 				if not result:
 					log.write('** Failed to Synthesize\n')
-					has_errors = True
 				else:
 					log.write('** Successful synthesis\n')
-				"""
-				if not build_solution(student_extract_lab_dir, build_tuple):
-					log.write('** Failed to Synthesize\n')
-					has_errors = True
-				else:
-					log.write('** Successful synthesis\n')
-				"""
 
-		if has_errors:
-			#print_color(TermColor.RED, "Completed - Submission has ERRORS")
-			test.print_error("Completed - Submission has ERRORS")
-		elif has_warnings:
-			#print_color(TermColor.YELLOW, "Completed - Submission has warnings")
-			test.print_warning("Completed - Submission has warnings")
-		else:
-			test.print_color(TermColor.GREEN, "Completed - No Warnings or Errors")
+		# Print summarizing messages
+		lab_test.print_message_summary()
 
 	# Clean the submission temporary files
 	if not args.noclean:
-		test.print_warning( "Deleting temporary submission test directory",student_extract_repo_dir)
-		#print_color(TermColor.YELLOW, "Deleting temporary submission test directory",student_extract_repo_dir)
+		lab_test.print_warning( "Deleting temporary submission test directory",student_extract_repo_dir)
 		shutil.rmtree(student_extract_repo_dir, ignore_errors=True)
-
 
 if __name__ == "__main__":
 	main()
