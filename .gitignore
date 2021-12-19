@@ -6,3 +6,6 @@ vivado*.log
 vivado_pid*.str
 xvlog.log
 xvlog.pb
+
+# pycache
+./resources/__pycache__
