@@ -326,7 +326,9 @@ class lab_test:
 				self.print_warning(str("Warning: File "+filename+" does not exist"))
 	
 	def create_log_file(self):
-		log = open(self.student_extract_lab_dir / self.TEST_RESULT_FILENAME, 'w')
+		log_file_path = self.student_extract_lab_dir / self.TEST_RESULT_FILENAME
+		print("Createing log file",log_file_path)
+		log = open(log_file_path, 'w')
 		return log
 
 	def print_log_file(self,str):
@@ -388,9 +390,9 @@ class tcl_simulation():
 		#print(hdl_filenames)
 		result = self.perform_test(lab_test.student_extract_lab_dir, tcl_filename, tcl_sim_top_module, hdl_filenames)
 		if result:
-			self.lab_test.print_log_file("** Successful TCL simulation")
+			self.lab_test.print_log_file("** Successful TCL simulation **\n")
 		else:
-			self.lab_test.print_log_file("** Failed TCL simulation")
+			self.lab_test.print_log_file("** Failed TCL simulation **\n")
 
 	def perform_test(self,extract_lab_path, tcl_filename, tcl_toplevel, tcl_hdl_filename_list):
 		''' 
@@ -470,9 +472,9 @@ class build_bitstream():
 		result = self.perform_test(lab_test.student_extract_lab_dir, design_name, [self.lab_test.NEW_PROJECT_SETTINGS_FILENAME], hdl_filenames, xdl_filenames, \
 			implement_build, create_dcp)
 		if result:
-			self.lab_test.print_log_file("** Successful Synthesis")
+			self.lab_test.print_log_file("** Successful Synthesis **\n")
 		else:
-			self.lab_test.print_log_file("** Failed Synthesis")
+			self.lab_test.print_log_file("** Failed Synthesis **\n")
 
 	def perform_test(self, extract_path, design_name, pre_script_filenames, hdl_filenames, xdl_filenames, \
 		implement_build = True, create_dcp = False ):
