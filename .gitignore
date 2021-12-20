@@ -8,4 +8,4 @@ xvlog.log
 xvlog.pb
 
 # pycache
-resources/__pycache__/*
+**/__pycache__/*
