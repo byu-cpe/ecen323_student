@@ -30,7 +30,7 @@ import pickle
 # for time delay
 import time
 
-# Add global resources directory to Python system path
+# Add lab passoff files
 sys.path.append('../resources')
 import lab_passoff
 
@@ -91,13 +91,6 @@ tcl_sims = [
 	( "updown_tcl", "UpDownButtonCount", [ "updown" ], ),
 ]
 
-# List of Testbench simulations to complete
-# [1] module name
-# [0] Description of simulation
-# [2] list of files to include (key names)
-# [3] xelab options
-testbench_sims = [
-]
 
 # List of bitstreams to build. Each element of the list is a tuple
 #  representing a single bitstream build. The organization of each
@@ -109,24 +102,6 @@ testbench_sims = [
 # [4] Boolean: create dcp file
 build_sets = [
 	("UpDownButtonCount",["updown_xdc"], [ "updown",], True, False,),
-]
-
-# List of list of assembly sets
-# [0] key name for assembly file in submission files
-# [1] list of options to give to RARS for the simulation
-# [2] Boolean: generate .txt instruction and .data files
-# [3] Boolean: Run simulator
-assembly_simulate_sets = [
-]
-
-
-# DCP Modification sets
-# [0] Name of new bitfile
-# [1] original dcp filename
-# [2] keyname for assembly file ("" for none)
-# [3] font file keyname ("" for none)
-# [4] background file keyname ("" for none)
-bitfile_dcp_mods = [
 ]
 
 def get_filename_from_key(file_key):
