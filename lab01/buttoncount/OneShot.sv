@@ -85,7 +85,7 @@ module OneShot(clk, rst, in, os);
 				// Transition to the ZERO state when the 'inc' signal is low. Otherwise
 				//   stay in this state.
 				if (!in)
-					next_state = ZERO;
+					next_state = ZERO;			         
 		endcase
 	end
 

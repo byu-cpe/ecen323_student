@@ -13,7 +13,6 @@ TODO:
 - Does script fail if the tag doesn't exist? Need to test
 '''
 
-
 # Manages file paths
 import pathlib
 # Command line argunent parser
@@ -52,12 +51,30 @@ class TermColor:
 class lab_test:
 	''' Represents a specific test for a lab passoff '''
 
-	def __init__(self,lab_num):
+	def __init__(self,args,script_path,lab_num):
+		# Set variables base on arguments
+		self.args = args
+		self.lab_num = lab_num
+		self.script_path = script_path
+		# Constants
+		self.BASYS3_PART = "xc7a35tcpg236-1"
+		self.STARTER_CODE_REPO = "git@github.com:byu-cpe/ecen323_student.git"
+		self.LAB_DIR_NAME = str.format("lab{:02d}",self.lab_num)
+		self.DEFAULT_EXTRACT_DIR = "passoff_temp_dir"
+		self.TEST_RESULT_FILENAME = str.format("lab{}_test_result.txt",self.lab_num)
+		self.LAB_TAG_STRING = str.format("lab{}_submission",self.lab_num)
+		self.TEST_RESULT_FILENAME = str.format("lab{}_test_result.txt",self.lab_num)
+		self.NEW_PROJECT_SETTINGS_FILENAME = "../resources/new_project_settings.tcl"
+		# The filename of the commit string relative to the current lab
+		self.COMMIT_STRING_FILENAME = ".commitdate"		# Initialize variables
 		self.errors = 0
 		self.warnings = 0
-		self.BASYS3_PART = "xc7a35tcpg236-1"
-		self.lab_num = lab_num
-		
+		# This is the path of location where the repository was extracted
+		self.student_extract_repo_dir = self.script_path / self.args.extract_dir
+		# This is the path of lab within the extracted repository where the lab exists
+		# and where the executables wil run
+		self.student_extract_lab_dir = self.student_extract_repo_dir / self.LAB_DIR_NAME
+
 	def print_color(self,color, *msg):
 		""" Print a message in color """
 		print(color + " ".join(str(item) for item in msg), TermColor.END)
@@ -70,7 +87,6 @@ class lab_test:
 		""" Print an error message and exit program """
 		self.print_color(TermColor.RED, "ERROR:", " ".join(str(item) for item in msg))
 		self.errors += 1
-		#sys.exit(returncode)
 
 	def print_warning(self,*msg):
 		""" Print an error message and exit program """
@@ -137,7 +153,52 @@ class lab_test:
 			current_repo = p.stdout.strip()
 		return current_repo
 
+	def print_tag_commit_date(self):
+		'''
+		Reads the ".commit" file to find commit date. Prints date
+		'''
+		# determin path of commit string
+		COMMIT_STRING_FILEPATH = self.student_extract_repo_dir / self.COMMIT_STRING_FILENAME
+		try:
+			fp = open(COMMIT_STRING_FILEPATH, "r")
+			commit_string = fp.read()
+			print(str.format("Tag '{}' committed on {}",self.LAB_TAG_STRING,commit_string))
+		except FileNotFoundError:
+			self.print_warning("Warning: No Commit Time String Found",COMMIT_STRING_FILEPATH)
 
+	def prepare_remote_repo(self):
+
+		''' Determine remote repository
+		'''
+		if self.args.git_repo:
+			student_git_repo = self.args.git_repo
+		else:
+			# Determine the current repo
+			student_git_repo = self.determine_current_repo(self.script_path)
+			if not student_git_repo:
+				self.print_error("git config failed")
+				return False
+
+		''' Clone Repository. When done, the 'student_repo_dir' variable will be set.
+		'''
+		# See if directory exists
+		if self.student_extract_repo_dir.exists():
+			if self.args.force:
+				print( "Target directory",self.student_extract_repo_dir,"exists. Will be deleted before proceeding")
+				shutil.rmtree(self.student_extract_repo_dir, ignore_errors=True)
+			else:
+				self.print_error("Target directory",self.student_extract_repo_dir,"exists. Use --force option to overwrite")
+				return False
+
+		if not self.clone_repo(student_git_repo, self.student_extract_repo_dir,self.LAB_TAG_STRING):
+			self.print_error("Failed to clone repository")
+			return False
+
+		# Print the repository submission time
+		self.print_tag_commit_date()
+		# Create log file
+		self.log = self.create_log_file()
+		
 	# TODO: This function was copied from 'pygrader/pygrader/student_repos.py'
 	#       - Need to import this code rather than copying it in the future.
 	#       - Merge my comments into initial repository (note I changed TermColor)
@@ -155,7 +216,7 @@ class lab_test:
 	#git@github.com:byu-ecen323-classroom/323-labs-wirthlin.git
 	#studet_git_clone_str = str.format("git@github.com:byu-ecen323-classroom/{}.git",student_repo_name)
 
-	def clone_repo(self, git_path, tag, student_repo_path):
+	def clone_repo(self, git_path, student_repo_path, lab_tag):
 		'''
 		Clone student repository to local directory
 		
@@ -184,8 +245,8 @@ class lab_test:
 				return False
 
 			# Checkout tag
-			if tag not in ("master", "main"):
-				tag = "tags/" + tag
+			if self.LAB_TAG_STRING not in ("master", "main"):
+				tag = "tags/" + lab_tag
 			cmd = ["git", "checkout", tag, "-f"]
 			p = subprocess.run(cmd, cwd=student_repo_path)
 			if p.returncode:
@@ -193,12 +254,12 @@ class lab_test:
 				return False
 			return True
 
-		self.print_info("Cloning repo, tag =", tag)
+		self.print_info("Cloning repo, tag =", lab_tag)
 		cmd = [
 			"git",
 			"clone",
 			"--branch",
-			tag,
+			self.LAB_TAG_STRING,
 			git_path,
 			str(student_repo_path.absolute()),
 		]
@@ -219,19 +280,81 @@ class lab_test:
 		cmd = ["git", "log", "-1", r"--format=%cd"]
 		proc = subprocess.run(cmd, cwd=str(student_repo_path))
 
-	# TODO: This function was copied from 'pygrader/pygrader/student_repos.py'
-	#       Need to import this code rather than copying it in the future.
-	def print_date(self, student_repo_path):
-		print("Last commit: ")
-		cmd = ["git", "log", "-1", r"--format=%cd"]
-		proc = subprocess.run(cmd, cwd=str(student_repo_path))
+	def set_lab_fileset(self, submission_dict, testfiles_dict):
+		''' Set the files needed to test the lab '''
+		self.submission_dict = submission_dict
+		self.testfiles_dict = testfiles_dict
+
+	def get_filename_from_key(self,file_key):
+		''' Returns the filename associated with a file key that is located either in
+			the submission_files dictionary or the test_files dictionary.
+		'''
+		if file_key in self.submission_dict:
+			return self.submission_dict[file_key]
+		elif file_key in self.testfiles_dict:
+			return self.testfiles_dict[file_key]
+		# Isn't in either dictionary. Return None
+		return None
+
+	def get_filenames_from_keylist(self,file_key_list):
+		''' Returns the filename associated with a file key that is located either in
+			the submission_files dictionary or the test_files dictionary.
+		'''
+		filenames = []
+		for file_key in file_key_list:
+			filename = self.get_filename_from_key(file_key)
+			if filename:
+				filenames.append(filename)
+			else:
+				print("Warning: no key ",file_key)
+				print(self.submission_dict)
+				print(self.testfiles_dict)
+		return filenames
+
+	def check_lab_fileset(self):
+		''' Check to make sure all the expected files exist (both submission and test) '''
+		print("Checking for submission files in repository")
+		all_files = self.submission_dict.copy()
+		all_files.update(self.testfiles_dict)
+		for file_key in all_files.keys():
+			filename = all_files[file_key]
+			filepath = self.student_extract_lab_dir / filename
+			if filepath.exists():
+				print(" File",filename,"exists")
+			else:
+				self.print_warning(str("Warning: File "+filename+" does not exist"))
+	
+	def create_log_file(self):
+		log = open(self.student_extract_lab_dir / self.TEST_RESULT_FILENAME, 'w')
+		return log
+
+	def print_log_file(self,str):
+		if self.log:
+			self.log.write(str)
+		print(str)
+
+	def clean_up_test(self):
+		if self.log:
+			self.log.close()
+		if not self.args.noclean:
+			self.print_info( "Deleting temporary submission test directory",self.student_extract_repo_dir)
+			shutil.rmtree(self.student_extract_repo_dir, ignore_errors=True)
 
 class lab_passoff_argparse(argparse.ArgumentParser):
+	'''
+	Extends ArgumentParse to have predetermined options for lab passoffs.
+	'''
 
-	def __init__(self,lab_num,default_extract_dir,version="1.0"):
+	def __init__(self,lab_num,version="1.0"):
+		# Initialize variables
+		self.lab_num = lab_num
+
+		# Constants
+		self.DEFAULT_EXTRACT_DIR = "passoff_temp_dir"
+
 		# call parent initialization
 		description = str.format('Create and test submission archive for lab {} (v {}).', \
-			lab_num,version)
+			self.lab_num,version)
 		argparse.ArgumentParser.__init__(self,description=description)
 
 		# GitHub URL for the student repository. Required option for now.
@@ -244,7 +367,7 @@ class lab_passoff_argparse(argparse.ArgumentParser):
 		# the script is done (unless the --noclean option is set).
 		self.add_argument("--extract_dir", type=str, \
 			help="Temporary directory where repository will be extracted (relative to directory script is run)",
-			default=default_extract_dir)
+			default=self.DEFAULT_EXTRACT_DIR)
 
 		# Do not clean up the temporary directory
 		self.add_argument("--noclean", action="store_true", help="Do not clean up the extraction directory when done")
@@ -252,7 +375,21 @@ class lab_passoff_argparse(argparse.ArgumentParser):
 		# Do not clean up the temporary directory
 		self.add_argument("--notest", action="store_true", help="Do not run the tests")
 
-class tcl_simulation(lab_test):
+
+class tcl_simulation():
+
+	def __init__(self,lab_test,tcl_sim_tuple):
+		(tcl_key, tcl_sim_top_module, hdl_keylist) = tcl_sim_tuple
+		#print(tcl_sim_tuple)
+		self.lab_test = lab_test
+		tcl_filename = lab_test.get_filename_from_key(tcl_key)
+		hdl_filenames = lab_test.get_filenames_from_keylist(hdl_keylist)
+		#print(hdl_filenames)
+		result = self.perform_test(lab_test.student_extract_lab_dir, tcl_filename, tcl_sim_top_module, hdl_filenames)
+		if result:
+			self.lab_test.print_log_file("** Successful TCL simulation")
+		else:
+			self.lab_test.print_log_file("** Failed TCL simulation")
 
 	def perform_test(self,extract_lab_path, tcl_filename, tcl_toplevel, tcl_hdl_filename_list):
 		''' 
@@ -261,19 +398,20 @@ class tcl_simulation(lab_test):
 			tcl_list: the list of items associated with a tcl simulation
 		'''
 		
-		self.print_info(TermColor.BLUE, "Attempting simulation of TCL script:", tcl_filename)
+		self.lab_test.print_info(TermColor.BLUE, "Attempting simulation of TCL script:", tcl_filename)
 
 		# See if the executable is even in the path
-		if not self.check_executable_existence(["xvlog", "--version"]):
+		if not self.lab_test.check_executable_existence(["xvlog", "--version"]):
 			return False
 
 		# Analyze all of the files associated with the TCL simulation set
-		self.print_info(TermColor.BLUE, " Analyzing source files")
+		self.lab_test.print_info(TermColor.BLUE, " Analyzing source files")
 		for src_filename in tcl_hdl_filename_list:
+			#print("  Analyzing File",src_filename)
 			xvlog_cmd = ["xvlog", "--nolog", "-sv", src_filename ]
 			proc = subprocess.run(xvlog_cmd, cwd=extract_lab_path, check=False)
 			if proc.returncode:
-				self.print_error("Failed analyze of file ",src_filename)
+				self.lab_test.print_error("Failed analyze of file ",src_filename)
 				return False
 
 		# xvlog -sv alu.sv regfile.sv riscv_alu_constants.sv riscv_datapath_constants.sv riscv_io_multicycle.v riscv_multicycle.sv riscv_simple_datapath.sv glbl.v
@@ -282,7 +420,7 @@ class tcl_simulation(lab_test):
 
 		# Elaborate design
 		design_name = tcl_toplevel
-		self.print_info(TermColor.BLUE, " Elaborating")
+		self.lab_test.print_info(TermColor.BLUE, " Elaborating")
 		#xelab_cmd = ["xelab", "--debug", "typical", "--nolog", "-L", "unisims_ver", design_name, "work.glbl" ]
 		xelab_cmd = ["xelab", "--debug", "typical", "--nolog", "-L", "unisims_ver", design_name ]
 		proc = subprocess.run(xelab_cmd, cwd=extract_lab_path, check=False)
@@ -291,7 +429,7 @@ class tcl_simulation(lab_test):
 		#xelab_cmd = ["xelab", "--debug", "typical", "--nolog", "-L xil_defaultlib", "-L unisims_ver", "-L unimacro_ver", design_name, "work.glbl" ]
 		#xelab  -wto f006d1b2ec3040b5bab73404505d9a2c --debug typical --relax --mt 2 -L xil_defaultlib -L unisims_ver -L unimacro_ver -L secureip --snapshot riscv_io_system_behav xil_defaultlib.riscv_io_system xil_defaultlib.glbl -log elaborate.log    proc = subprocess.run(xelab_cmd, cwd=extract_path, check=False)
 		if proc.returncode:
-			self.print_error("Error in elaboration")
+			self.lab_test.print_error("Error in elaboration")
 			return False
 
 		# Modify TCL simulation script (add 'quit' command to end)
@@ -306,23 +444,39 @@ class tcl_simulation(lab_test):
 		log.close()
 
 		# Simulate
-		self.print_info(TermColor.BLUE, " Starting Simulation")
+		self.lab_test.print_info(TermColor.BLUE, " Starting Simulation")
 		#tmp_design_name = str(design_name + "#work.glbl")
 		tmp_design_name = str(design_name)
 		simulation_log_filename = str(tcl_toplevel + "_tcl_simulation.txt")
 		simulation_log_filepath = extract_lab_path / simulation_log_filename
 		xsim_cmd = ["xsim", "-nolog", tmp_design_name, "-tclbatch", temp_tcl_filename ]
-		if not self.subprocess_file_print(simulation_log_filepath, xsim_cmd, extract_lab_path ):
-			self.print_error("Failed simulation")
+		if not self.lab_test.subprocess_file_print(simulation_log_filepath, xsim_cmd, extract_lab_path ):
+			self.lab_test.print_error("Failed simulation")
 			return False
 		return True
 
-class build_bitstream(lab_test):
+class build_bitstream():
 
-	def perform_test(self, extract_path, design_name, pre_source_filenames, hdl_filenames, \
-			xdl_filenames, implement_build = True, create_dcp = False ):
+	def __init__(self,lab_test, build_tuple):
+		self.lab_test = lab_test
+		(design_name, xdl_key_list, hdl_key_list, implement_build, create_dcp) = build_tuple
+		#print(build_tuple)
 
-		part = self.BASYS3_PART
+		hdl_filenames = lab_test.get_filenames_from_keylist(hdl_key_list)
+		xdl_filenames = lab_test.get_filenames_from_keylist(xdl_key_list)
+		#print(hdl_filenames)
+
+		result = self.perform_test(lab_test.student_extract_lab_dir, design_name, [self.lab_test.NEW_PROJECT_SETTINGS_FILENAME], hdl_filenames, xdl_filenames, \
+			implement_build, create_dcp)
+		if result:
+			self.lab_test.print_log_file("** Successful Synthesis")
+		else:
+			self.lab_test.print_log_file("** Failed Synthesis")
+
+	def perform_test(self, extract_path, design_name, pre_script_filenames, hdl_filenames, xdl_filenames, \
+		implement_build = True, create_dcp = False ):
+
+		part = self.lab_test.BASYS3_PART
 		'''
 		Build a bitstream
 			extract_path: str
@@ -333,7 +487,7 @@ class build_bitstream(lab_test):
 		bitfile_filename = str(design_name + ".bit")
 		dcp_filename = str(design_name + ".dcp")
 
-		self.print_info("Attempting to build bitfile",bitfile_filename)
+		self.lab_test.print_info("Attempting to build bitfile",bitfile_filename)
 
 		# Create tcl build script (the build will involve executing this script)
 		tcl_build_script_filename = str(design_name + "_buildscript.tcl")
@@ -342,10 +496,12 @@ class build_bitstream(lab_test):
 		log = open(tmp_tcl, 'w')
 		log.write('# Bitfile Generation script (non-project mode)\n')
 		log.write('#\n')
-		if pre_source_filenames:
+		if pre_script_filenames:
 			log.write('# Pre-build source files\n')
-			for pre_source_filename in pre_source_filenames:
+			for pre_source_filename in pre_script_filenames:
 				log.write('source '+ pre_source_filename+'\n')
+		else:
+			log.write('# No Pre-build script files\n')
 
 		# Read HDL files
 		log.write('# Add sources\n')
@@ -374,7 +530,7 @@ class build_bitstream(lab_test):
 		log.close()
 
 		# See if the executable is even in the path
-		if not self.check_executable_existence(["vivado", "-version"]):
+		if not self.lab_test.check_executable_existence(["vivado", "-version"]):
 			return False
 
 		implementation_log_filename = str(design_name + "_implementation.txt")
