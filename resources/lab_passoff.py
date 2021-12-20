@@ -325,8 +325,8 @@ class lab_test:
 				self.print_warning(str("Warning: File "+filename+" does not exist"))
 	
 	def create_log_file(self):
-		log = open(self.student_extract_lab_dir / self.TEST_RESULT_FILENAME, 'w')
-		return log
+		self.log = open(self.student_extract_lab_dir / self.TEST_RESULT_FILENAME, 'w')
+		return self.log
 
 	def print_log_file(self,str):
 		if self.log:
