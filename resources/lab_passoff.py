@@ -69,6 +69,7 @@ class lab_test:
 		self.COMMIT_STRING_FILENAME = ".commitdate"		# Initialize variables
 		self.errors = 0
 		self.warnings = 0
+		self.log = None
 		# This is the path of location where the repository was extracted
 		self.student_extract_repo_dir = self.script_path / self.args.extract_dir
 		# This is the path of lab within the extracted repository where the lab exists
@@ -325,8 +326,8 @@ class lab_test:
 				self.print_warning(str("Warning: File "+filename+" does not exist"))
 	
 	def create_log_file(self):
-		self.log = open(self.student_extract_lab_dir / self.TEST_RESULT_FILENAME, 'w')
-		return self.log
+		log = open(self.student_extract_lab_dir / self.TEST_RESULT_FILENAME, 'w')
+		return log
 
 	def print_log_file(self,str):
 		if self.log:
