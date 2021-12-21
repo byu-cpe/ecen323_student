@@ -102,11 +102,6 @@ class lab_test:
 		else:
 			self.print_color(TermColor.GREEN, "Completed - No Warnings or Errors")
 
-
-	def perform_test(self):
-		""" Perform the class specific test. """
-		return True
-	
 	def subprocess_file_print(self,process_output_filepath, proc_cmd, proc_cwd):
 		""" Complete a sub-process and print to a file and stdout """
 		with open(process_output_filepath, "w") as fp:
@@ -352,7 +347,18 @@ class lab_test:
 			self.log.write(str)
 		print(str)
 
+	def execute_test_module(self, test_module):
+		''' Executes the 'perform_test' function of the tester_module and logs its result in the log file '''
+		module_name = test_module.module_name()
+		result = test_module.perform_test(self)
+		if result:
+			self.print_log_file(str.format("Success:{}\n",module_name))
+		else:
+			self.print_log_file(str.format("Failed:{}\n",module_name))
+		return result
+
 	def clean_up_test(self):
+		''' Should be called at the end of a test. It closes the log file and deletes the temporary directory. '''
 		if self.log:
 			self.log.close()
 		if not self.args.noclean:
@@ -395,13 +401,28 @@ class lab_passoff_argparse(argparse.ArgumentParser):
 		self.add_argument("--notest", action="store_true", help="Do not run the tests")
 
 
-class tcl_simulation():
+class tester_module():
+	""" Super class for all test modules """
+
+	def module_name(self):
+		''' returns a string indicating the name of the module. Used for logging. '''
+		return "BASE MODULE"
+
+	def perform_test(self, lab_test):
+		lab_test.print_print_warning("This should be overridden")
+		return False
+
+class tcl_simulation(tester_module):
 	''' An object that represents a tcl_simulation test.
 	'''
 	def __init__(self,tcl_filename_key, tcl_sim_top_module, hdl_sim_keylist):
 		self.tcl_filename_key = tcl_filename_key
 		self.tcl_sim_top_module = tcl_sim_top_module
 		self.hdl_sim_keylist = hdl_sim_keylist
+
+	def module_name(self):
+		''' returns a string indicating the name of the module. Used for logging. '''
+		return str.format("TCL Simulation ({})",self.tcl_filename_key)
 
 	"""
 	def __init__(self,lab_test,tcl_sim_tuple):
@@ -553,7 +574,7 @@ class tcl_simulation():
 		"""
 
 
-class build_bitstream():
+class build_bitstream(tester_module):
 	''' An object that represents a tcl_simulation test.
 	'''
 
@@ -563,6 +584,10 @@ class build_bitstream():
 		self.hdl_key_list = hdl_key_list
 		self.implement_build = implement_build
 		self.create_dcp = create_dcp
+
+	def module_name(self):
+		''' returns a string indicating the name of the module. Used for logging. '''
+		return str.format("Synthesis/Bitstream Gen ({})",self.design_name)
 
 	def perform_test(self, lab_test):
 

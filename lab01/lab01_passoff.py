@@ -37,10 +37,10 @@ test_files = {
 }
 
 # TCL simulation
-tcl_sim = lab_passoff.tcl_simulation( "updown_tcl", "UpDownButtonCount", [ "updown" ])
+tcl_sim = lab_passoff.tcl_simulation( "updown_tcl", "UpDownButtonCount", [ "updown", "oneshot" ])
 
 # Bitstream build
-bit_build = lab_passoff.build_bitstream("UpDownButtonCount",["updown_xdc"], [ "updown",], True, False)
+bit_build = lab_passoff.build_bitstream("UpDownButtonCount",["updown_xdc"], [ "updown", "oneshot" ], True, False)
 
 def main():
 	''' Main executable for script
@@ -66,12 +66,10 @@ def main():
 	if not args.notest:
 
 		# TCL simulation
-		result = tcl_sim.perform_test(lab_test)
-		# TODO: Need to print result to log
+		lab_test.execute_test_module(tcl_sim)
 
 		# Build circuit
-		result = bit_build.perform_test(lab_test)
-		# TODO: Need to print result to log
+		lab_test.execute_test_module(bit_build)
 
 	# Print summarizing messages
 	lab_test.print_message_summary()
