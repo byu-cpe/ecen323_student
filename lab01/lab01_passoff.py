@@ -36,26 +36,11 @@ test_files = {
 	"oneshot"			: "./buttoncount/OneShot.sv"
 }
 
-# List of TCL simulation tuples to complete. The organization of each
-#  tuple is as follows
-# [0]: keyword string in dictionary referrring to tcl file to simulate
-# [1]: top-level module name to simulate
-# [2]: List of file keywords that referr to HDL sources to include in simulation
-tcl_sims = [
-	( "updown_tcl", "UpDownButtonCount", [ "updown" ], ),
-]
+# TCL simulation
+tcl_sim = lab_passoff.tcl_simulation( "updown_tcl", "UpDownButtonCount", [ "updown" ])
 
-# List of bitstreams to build. Each element of the list is a tuple
-#  representing a single bitstream build. The organization of each
-#  tuple is as follos
-# [0] top module name
-# [1] list of xdc filekey names
-# [2] list of HDL filekey names
-# [3] Boolean: implement bitstream (False will run synthesis only)
-# [4] Boolean: create dcp file
-build_sets = [
-	("UpDownButtonCount",["updown_xdc"], [ "updown",], True, False,),
-]
+# Bitstream build
+bit_build = lab_passoff.build_bitstream("UpDownButtonCount",["updown_xdc"], [ "updown",], True, False)
 
 def main():
 	''' Main executable for script
@@ -80,12 +65,13 @@ def main():
 
 	if not args.notest:
 
-		for tcl_sim in tcl_sims:
-			result = lab_passoff.tcl_simulation(lab_test,tcl_sim)
+		# TCL simulation
+		result = tcl_sim.perform_test(lab_test)
+		# TODO: Need to print result to log
 
 		# Build circuit
-		for build_tuple in build_sets:
-			result = lab_passoff.build_bitstream(lab_test,build_tuple)
+		result = bit_build.perform_test(lab_test)
+		# TODO: Need to print result to log
 
 	# Print summarizing messages
 	lab_test.print_message_summary()
