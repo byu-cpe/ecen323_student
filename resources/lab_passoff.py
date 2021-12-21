@@ -96,9 +96,9 @@ class lab_test:
 
 	def print_message_summary(self):
 		if self.errors:
-			self.print_error("Completed - Submission has ",str(self.errors)," errors")
+			self.print_error("Completed - Submission has",str(self.errors),"error(s)")
 		elif self.warnings:
-			self.print_warning("Completed - Submission has ",str(self.warnings)," warnings")
+			self.print_warning("Completed - Submission has",str(self.warnings),"warning(s)")
 		else:
 			self.print_color(TermColor.GREEN, "Completed - No Warnings or Errors")
 
@@ -142,7 +142,9 @@ class lab_test:
 			return False
 		return True
 
-	def determine_current_repo(self,cwd):
+	def get_repo_origin_url(self,cwd):
+		''' Deteremines the 'remote.origin.url' of the
+			repository located at the 'cwd' path '''
 		#git config --get remote.origin.url
 		cmd = ["git", "config", "--get", "remote.origin.url"]
 		p = subprocess.run(cmd, cwd=cwd, stdout=subprocess.PIPE,universal_newlines=True)
@@ -175,7 +177,7 @@ class lab_test:
 			student_git_repo = self.args.git_repo
 		else:
 			# Determine the current repo
-			student_git_repo = self.determine_current_repo(self.script_path)
+			student_git_repo = self.get_repo_origin_url(self.script_path)
 			if not student_git_repo:
 				self.print_error("git config failed")
 				return False
@@ -191,15 +193,29 @@ class lab_test:
 				self.print_error("Target directory",self.student_extract_repo_dir,"exists. Use --force option to overwrite")
 				return False
 
+		# Perform the actual clone of the repo
 		if not self.clone_repo(student_git_repo, self.student_extract_repo_dir,self.LAB_TAG_STRING):
 			self.print_error("Failed to clone repository")
 			return False
+
+		# check to make sure the extracted repo is a valid 323 repo
+		actual_origin_url = self.get_repo_origin_url(self.student_extract_repo_dir)
+		# git@github.com:byu-ecen323-classroom/323-labs-wirthlin.git
+		URL_MATCH_STRING = "git@github.com:byu-ecen323-classroom/323-labs-(\w+).git"
+		match = re.match(URL_MATCH_STRING,actual_origin_url)
+		if not match:
+			self.print_error("Cloned repository is not part of the byu-ecen323-classroom")
+			return False
+		else:
+			print("Valid byu-ecen323-classroom repository")
 
 		# Print the repository submission time
 		self.print_tag_commit_date()
 		# Create log file
 		self.log = self.create_log_file()
-		
+		return True
+
+
 	# TODO: This function was copied from 'pygrader/pygrader/student_repos.py'
 	#       - Need to import this code rather than copying it in the future.
 	#       - Merge my comments into initial repository (note I changed TermColor)
@@ -360,7 +376,7 @@ class lab_passoff_argparse(argparse.ArgumentParser):
 			self.lab_num,version)
 		argparse.ArgumentParser.__init__(self,description=description)
 
-		# GitHub URL for the student repository. Required option for now.
+		# GitHub URL for the student repository.
 		self.add_argument("--git_repo", type=str, help="GitHub Remote Repository. If no repository is specified, the current repo will be used.")
 
 		# Force git extraction if directory already exists

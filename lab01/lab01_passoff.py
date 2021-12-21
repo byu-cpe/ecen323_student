@@ -67,11 +67,12 @@ def main():
 	# Parse the arguments
 	args = parser.parse_args()
 
-	''' Create lab tester object '''
+	# Create lab tester object
 	lab_test = lab_passoff.lab_test(args, SCRIPT_PATH, LAB_NUMBER)
 
-	# Prepare copy repository
-	lab_test.prepare_remote_repo()
+	# Prepare copy repository. Exit if there is an error creating repository
+	if not lab_test.prepare_remote_repo():
+		return False
 
 	# Set lab files
 	lab_test.set_lab_fileset(submission_files,test_files)
