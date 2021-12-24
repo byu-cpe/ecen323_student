@@ -38,6 +38,7 @@ module tb_calc();
         end
     endtask
 
+	// Perform a simulation operation (random values)
     task sim_op(input [2:0] func);
 		tb_func = func;
         tb_sw = $urandom_range(0,65535);
@@ -54,6 +55,8 @@ module tb_calc();
     localparam BUTTONOP_OR  = 3'b011;
     localparam BUTTONOP_XOR = 3'b100;
     localparam BUTTONOP_LT  = 3'b101;
+    localparam BUTTONOP_SLL = 3'b110;
+    localparam BUTTONOP_SRA = 3'b111;
 
 	initial begin
 	    int i,j;
@@ -89,6 +92,8 @@ module tb_calc();
             sim_op(BUTTONOP_OR);
             sim_op(BUTTONOP_XOR);
             sim_op(BUTTONOP_LT);
+            sim_op(BUTTONOP_SLL);
+            sim_op(BUTTONOP_SRA);
         end
         
         sim_clocks(100);
@@ -152,17 +157,29 @@ module ALUTester(clk, rst, func, ex, sw, result);
 		end
 	end
 
+    localparam BUTTONOP_ADD = 3'b000;
+    localparam BUTTONOP_SUB = 3'b001;
+    localparam BUTTONOP_AND = 3'b010;
+    localparam BUTTONOP_OR  = 3'b011;
+    localparam BUTTONOP_XOR = 3'b100;
+    localparam BUTTONOP_LT  = 3'b101;
+    localparam BUTTONOP_SLL = 3'b110;
+    localparam BUTTONOP_SRA = 3'b111;
+
+
 	// accumulator
 	always@(posedge clk)
 		if (rst) accumulator <= 0;
 		else if (ex)
             case (func)
-                3'b000: accumulator <= accumulator + sw;
-                3'b001: accumulator <= accumulator - sw;
-                3'b010: accumulator <= accumulator & sw;
-                3'b011: accumulator <= accumulator | sw;
-                3'b100: accumulator <= accumulator ^ sw;
-                3'b101: accumulator <= ($signed(accumulator) < $signed(sw)) ? 32'b1 : 32'b0;
+                BUTTONOP_ADD: accumulator <= accumulator + sw;
+                BUTTONOP_SUB: accumulator <= accumulator - sw;
+                BUTTONOP_AND: accumulator <= accumulator & sw;
+                BUTTONOP_OR: accumulator <= accumulator | sw;
+                BUTTONOP_XOR: accumulator <= accumulator ^ sw;
+                BUTTONOP_LT: accumulator <= ($signed(accumulator) < $signed(sw)) ? 32'b1 : 32'b0;
+                BUTTONOP_SLL: accumulator <= accumulator << sw[4:0];
+                BUTTONOP_SRA: accumulator <= $unsigned($signed(accumulator) >>> sw[4:0]);
                 default: accumulator <= accumulator + sw;
             endcase
 
