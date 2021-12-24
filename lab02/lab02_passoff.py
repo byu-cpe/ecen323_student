@@ -36,7 +36,8 @@ submission_files = {
 # The value is the name of the file (relative to the lab directory)
 test_files = {
 	"oneshot"			: "../lab01/buttoncount/OneShot.sv",
-	"alu_tb"			: "alu_tb.sv"
+	"tb_alu"			: "tb_alu.sv",
+	"tb_calc"			: "tb_calc.sv",
 }
 
 # TCL simulations
@@ -47,7 +48,8 @@ tcl_sims =  [
 
 # Testbench simulations
 testbench_sims =  [
-	tester_module.testbench_simulation( "ALU Testbench", "alu_tb", [ "alu", "alu_consts" ], []),
+	tester_module.testbench_simulation( "ALU Testbench", "tb_alu", [ "tb_alu", "alu", "alu_consts" ], []),
+	tester_module.testbench_simulation( "Calc Testbench", "tb_calc", [ "tb_calc", "calc", "alu", "alu_consts", "oneshot" ], []),
 	]
 
 # Bitstream build

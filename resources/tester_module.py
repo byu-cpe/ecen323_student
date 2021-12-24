@@ -180,11 +180,10 @@ class testbench_simulation(tester_module):
 
 		# Simulate
 		lab_test.print_info(TermColor.BLUE, " Starting Simulation")
-		simulation_log_filename = str(self.tcl_sim_top_module + "_tcl_simulation.txt")
+		simulation_log_filename = str(self.testbench_top + "_simulation.txt")
 		simulation_log_filepath = extract_lab_path / simulation_log_filename
 		xsim_cmd = ["xsim", "-nolog", design_name, "-runall" ]
-		proc = lab_test.subprocess_file_print(simulation_log_filepath, xsim_cmd, extract_lab_path )
-		if proc.returncode :
+		if not lab_test.subprocess_file_print(simulation_log_filepath, xsim_cmd, extract_lab_path ):
 			lab_test.print_error("Failed simulation")
 			return False
 		return True
