@@ -7,6 +7,7 @@ import sys
 # Add lab passoff files
 sys.path.append('../resources')
 import lab_passoff
+import tester_module
 
 ###########################################################################
 # Global constants
@@ -37,10 +38,10 @@ test_files = {
 }
 
 # TCL simulation
-tcl_sim = lab_passoff.tcl_simulation( "updown_tcl", "UpDownButtonCount", [ "updown", "oneshot" ])
+tcl_sim = tester_module.tcl_simulation( "updown_tcl", "UpDownButtonCount", [ "updown", "oneshot" ])
 
 # Bitstream build
-bit_build = lab_passoff.build_bitstream("UpDownButtonCount",["updown_xdc"], [ "updown", "oneshot" ], True, False)
+bit_build = tester_module.build_bitstream("UpDownButtonCount",["updown_xdc"], [ "updown", "oneshot" ], True, False)
 
 def main():
 	''' Main executable for script

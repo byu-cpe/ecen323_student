@@ -10,7 +10,6 @@ TODO:
 - Squash the commit history of the starter code before the semester begins
 - Checkout the starter code if it doesn't exist (or give a flag to the student code repository) and
   run the scripts from the known good repository.
-- Does script fail if the tag doesn't exist? Need to test
 '''
 
 # Manages file paths
@@ -56,6 +55,8 @@ class lab_test:
 		self.args = args
 		self.lab_num = lab_num
 		self.script_path = script_path
+		# Flag indicating it is ok to perform a test. Set to False when catastrophic failure occurs
+		self.proceed_with_tests = True
 		# Constants
 		self.BASYS3_PART = "xc7a35tcpg236-1"
 		self.STARTER_CODE_REPO = "git@github.com:byu-cpe/ecen323_student.git"
@@ -134,6 +135,7 @@ class lab_test:
 			proc = subprocess.run(command_list)
 		except OSError:
 			self.print_error(command_list[0], "not found (not in path of shell environment)")
+			self.proceed_with_tests = False
 			return False
 		return True
 
@@ -175,6 +177,7 @@ class lab_test:
 			student_git_repo = self.get_repo_origin_url(self.script_path)
 			if not student_git_repo:
 				self.print_error("git config failed")
+				self.proceed_with_tests = False
 				return False
 
 		''' Clone Repository. When done, the 'student_repo_dir' variable will be set.
@@ -186,11 +189,13 @@ class lab_test:
 				shutil.rmtree(self.student_extract_repo_dir, ignore_errors=True)
 			else:
 				self.print_error("Target directory",self.student_extract_repo_dir,"exists. Use --force option to overwrite")
+				self.proceed_with_tests = False
 				return False
 
 		# Perform the actual clone of the repo
 		if not self.clone_repo(student_git_repo, self.student_extract_repo_dir,self.LAB_TAG_STRING):
 			self.print_error("Failed to clone repository")
+			self.proceed_with_tests = False
 			return False
 
 		# check to make sure the extracted repo is a valid 323 repo
@@ -200,6 +205,7 @@ class lab_test:
 		match = re.match(URL_MATCH_STRING,actual_origin_url)
 		if not match:
 			self.print_error("Cloned repository is not part of the byu-ecen323-classroom")
+			self.proceed_with_tests = False
 			return False
 		else:
 			print("Valid byu-ecen323-classroom repository")
@@ -324,17 +330,22 @@ class lab_test:
 		return filenames
 
 	def check_lab_fileset(self):
-		''' Check to make sure all the expected files exist (both submission and test) '''
+		''' Check to make sure all the expected files exist (both submission and test).
+			Returns True if all of the files exist, False otherwise. '''
 		print("Checking for submission files in repository")
 		all_files = self.submission_dict.copy()
 		all_files.update(self.testfiles_dict)
+		error = False
 		for file_key in all_files.keys():
 			filename = all_files[file_key]
 			filepath = self.student_extract_lab_dir / filename
 			if filepath.exists():
 				print(" File",filename,"exists")
 			else:
-				self.print_warning(str("Warning: File "+filename+" does not exist"))
+				self.print_error(str("File "+filename+" does not exist"))
+				error = True
+				self.proceed_with_tests = False
+		return not error
 	
 	def create_log_file(self):
 		log_file_path = self.student_extract_lab_dir / self.TEST_RESULT_FILENAME
@@ -349,6 +360,12 @@ class lab_test:
 
 	def execute_test_module(self, test_module):
 		''' Executes the 'perform_test' function of the tester_module and logs its result in the log file '''
+
+		# Check to see if the test should proceed
+		if not self.proceed_with_tests:
+			print("Skipping test",test_module.module_name(),"due to previous errors")
+			return False
+
 		module_name = test_module.module_name()
 		result = test_module.perform_test(self)
 		if result:
@@ -399,369 +416,4 @@ class lab_passoff_argparse(argparse.ArgumentParser):
 
 		# Do not clean up the temporary directory
 		self.add_argument("--notest", action="store_true", help="Do not run the tests")
-
-
-class tester_module():
-	""" Super class for all test modules """
-
-	def module_name(self):
-		''' returns a string indicating the name of the module. Used for logging. '''
-		return "BASE MODULE"
-
-	def perform_test(self, lab_test):
-		lab_test.print_print_warning("This should be overridden")
-		return False
-
-class tcl_simulation(tester_module):
-	''' An object that represents a tcl_simulation test.
-	'''
-	def __init__(self,tcl_filename_key, tcl_sim_top_module, hdl_sim_keylist):
-		self.tcl_filename_key = tcl_filename_key
-		self.tcl_sim_top_module = tcl_sim_top_module
-		self.hdl_sim_keylist = hdl_sim_keylist
-
-	def module_name(self):
-		''' returns a string indicating the name of the module. Used for logging. '''
-		return str.format("TCL Simulation ({})",self.tcl_filename_key)
-
-	"""
-	def __init__(self,lab_test,tcl_sim_tuple):
-		(tcl_key, tcl_sim_top_module, hdl_keylist) = tcl_sim_tuple
-		#print(tcl_sim_tuple)
-		self.lab_test = lab_test
-		tcl_filename = lab_test.get_filename_from_key(tcl_key)
-		hdl_filenames = lab_test.get_filenames_from_keylist(hdl_keylist)
-		#print(hdl_filenames)
-		result = self.perform_test(lab_test.student_extract_lab_dir, tcl_filename, tcl_sim_top_module, hdl_filenames)
-		if result:
-			self.lab_test.print_log_file("** Successful TCL simulation **\n")
-		else:
-			self.lab_test.print_log_file("** Failed TCL simulation **\n")
-	"""
-		
-	def perform_test(self, lab_test):
-		''' 
-		Perform a simulation of a module with a Tcl script.
-			sim_path: the path where the simulation should take place
-			tcl_list: the list of items associated with a tcl simulation
-		'''
-		
-		tcl_filename = lab_test.get_filename_from_key(self.tcl_filename_key)
-		tcl_hdl_filename_list = lab_test.get_filenames_from_keylist(self.hdl_sim_keylist)
-		extract_lab_path = lab_test.student_extract_lab_dir
-
-		lab_test.print_info(TermColor.BLUE, "Attempting simulation of TCL script:", tcl_filename)
-
-		# See if the executable is even in the path
-		if not lab_test.check_executable_existence(["xvlog", "--version"]):
-			return False
-
-		# Analyze all of the files associated with the TCL simulation set
-		lab_test.print_info(TermColor.BLUE, " Analyzing source files")
-		for src_filename in tcl_hdl_filename_list:
-			#print("  Analyzing File",src_filename)
-			xvlog_cmd = ["xvlog", "--nolog", "-sv", src_filename ]
-			proc = subprocess.run(xvlog_cmd, cwd=extract_lab_path, check=False)
-			if proc.returncode:
-				self.lab_test.print_error("Failed analyze of file ",src_filename)
-				return False
-
-		# xvlog -sv alu.sv regfile.sv riscv_alu_constants.sv riscv_datapath_constants.sv riscv_io_multicycle.v riscv_multicycle.sv riscv_simple_datapath.sv glbl.v
-		# xelab -L unisims_ver riscv_io_system work.glbl
-		#return False
-
-		# Elaborate design
-		design_name = self.tcl_sim_top_module
-		lab_test.print_info(TermColor.BLUE, " Elaborating")
-		#xelab_cmd = ["xelab", "--debug", "typical", "--nolog", "-L", "unisims_ver", design_name, "work.glbl" ]
-		xelab_cmd = ["xelab", "--debug", "typical", "--nolog", "-L", "unisims_ver", design_name ]
-		proc = subprocess.run(xelab_cmd, cwd=extract_lab_path, check=False)
-
-		#xelab_cmd = ["xelab", "--debug", "typical", "--nolog", design_name, "work.glbl" ]
-		#xelab_cmd = ["xelab", "--debug", "typical", "--nolog", "-L xil_defaultlib", "-L unisims_ver", "-L unimacro_ver", design_name, "work.glbl" ]
-		#xelab  -wto f006d1b2ec3040b5bab73404505d9a2c --debug typical --relax --mt 2 -L xil_defaultlib -L unisims_ver -L unimacro_ver -L secureip --snapshot riscv_io_system_behav xil_defaultlib.riscv_io_system xil_defaultlib.glbl -log elaborate.log    proc = subprocess.run(xelab_cmd, cwd=extract_path, check=False)
-		if proc.returncode:
-			lab_test.print_error("Error in elaboration")
-			return False
-
-		# Modify TCL simulation script (add 'quit' command to end)
-		temp_tcl_filename = str(design_name + "_tempsim.tcl")
-		src_tcl = extract_lab_path / tcl_filename
-		tmp_tcl = extract_lab_path / temp_tcl_filename
-		shutil.copyfile(src_tcl, tmp_tcl)
-
-		log = open(tmp_tcl, 'a')
-		log.write('\n# Add Exit quit command\n')
-		log.write('quit\n')
-		log.close()
-
-		# Simulate
-		lab_test.print_info(TermColor.BLUE, " Starting Simulation")
-		#tmp_design_name = str(design_name + "#work.glbl")
-		tmp_design_name = str(design_name)
-		simulation_log_filename = str(self.tcl_sim_top_module + "_tcl_simulation.txt")
-		simulation_log_filepath = extract_lab_path / simulation_log_filename
-		xsim_cmd = ["xsim", "-nolog", tmp_design_name, "-tclbatch", temp_tcl_filename ]
-		if not lab_test.subprocess_file_print(simulation_log_filepath, xsim_cmd, extract_lab_path ):
-			lab_test.print_error("Failed simulation")
-			return False
-		return True
-
-	"""
-	def perform_test(self,extract_lab_path, tcl_filename, tcl_toplevel, tcl_hdl_filename_list):
-		''' 
-		Perform a simulation of a module with a Tcl script.
-			sim_path: the path where the simulation should take place
-			tcl_list: the list of items associated with a tcl simulation
-		'''
-		
-		self.lab_test.print_info(TermColor.BLUE, "Attempting simulation of TCL script:", tcl_filename)
-
-		# See if the executable is even in the path
-		if not self.lab_test.check_executable_existence(["xvlog", "--version"]):
-			return False
-
-		# Analyze all of the files associated with the TCL simulation set
-		self.lab_test.print_info(TermColor.BLUE, " Analyzing source files")
-		for src_filename in tcl_hdl_filename_list:
-			#print("  Analyzing File",src_filename)
-			xvlog_cmd = ["xvlog", "--nolog", "-sv", src_filename ]
-			proc = subprocess.run(xvlog_cmd, cwd=extract_lab_path, check=False)
-			if proc.returncode:
-				self.lab_test.print_error("Failed analyze of file ",src_filename)
-				return False
-
-		# xvlog -sv alu.sv regfile.sv riscv_alu_constants.sv riscv_datapath_constants.sv riscv_io_multicycle.v riscv_multicycle.sv riscv_simple_datapath.sv glbl.v
-		# xelab -L unisims_ver riscv_io_system work.glbl
-		#return False
-
-		# Elaborate design
-		design_name = tcl_toplevel
-		self.lab_test.print_info(TermColor.BLUE, " Elaborating")
-		#xelab_cmd = ["xelab", "--debug", "typical", "--nolog", "-L", "unisims_ver", design_name, "work.glbl" ]
-		xelab_cmd = ["xelab", "--debug", "typical", "--nolog", "-L", "unisims_ver", design_name ]
-		proc = subprocess.run(xelab_cmd, cwd=extract_lab_path, check=False)
-
-		#xelab_cmd = ["xelab", "--debug", "typical", "--nolog", design_name, "work.glbl" ]
-		#xelab_cmd = ["xelab", "--debug", "typical", "--nolog", "-L xil_defaultlib", "-L unisims_ver", "-L unimacro_ver", design_name, "work.glbl" ]
-		#xelab  -wto f006d1b2ec3040b5bab73404505d9a2c --debug typical --relax --mt 2 -L xil_defaultlib -L unisims_ver -L unimacro_ver -L secureip --snapshot riscv_io_system_behav xil_defaultlib.riscv_io_system xil_defaultlib.glbl -log elaborate.log    proc = subprocess.run(xelab_cmd, cwd=extract_path, check=False)
-		if proc.returncode:
-			self.lab_test.print_error("Error in elaboration")
-			return False
-
-		# Modify TCL simulation script (add 'quit' command to end)
-		temp_tcl_filename = str(design_name + "_tempsim.tcl")
-		src_tcl = extract_lab_path / tcl_filename
-		tmp_tcl = extract_lab_path / temp_tcl_filename
-		shutil.copyfile(src_tcl, tmp_tcl)
-
-		log = open(tmp_tcl, 'a')
-		log.write('\n# Add Exit quit command\n')
-		log.write('quit\n')
-		log.close()
-
-		# Simulate
-		self.lab_test.print_info(TermColor.BLUE, " Starting Simulation")
-		#tmp_design_name = str(design_name + "#work.glbl")
-		tmp_design_name = str(design_name)
-		simulation_log_filename = str(tcl_toplevel + "_tcl_simulation.txt")
-		simulation_log_filepath = extract_lab_path / simulation_log_filename
-		xsim_cmd = ["xsim", "-nolog", tmp_design_name, "-tclbatch", temp_tcl_filename ]
-		if not self.lab_test.subprocess_file_print(simulation_log_filepath, xsim_cmd, extract_lab_path ):
-			self.lab_test.print_error("Failed simulation")
-			return False
-		return True
-		"""
-
-
-class build_bitstream(tester_module):
-	''' An object that represents a tcl_simulation test.
-	'''
-
-	def __init__(self,design_name, xdl_key_list, hdl_key_list, implement_build = True, create_dcp = False):
-		self.design_name = design_name
-		self.xdl_key_list = xdl_key_list
-		self.hdl_key_list = hdl_key_list
-		self.implement_build = implement_build
-		self.create_dcp = create_dcp
-
-	def module_name(self):
-		''' returns a string indicating the name of the module. Used for logging. '''
-		return str.format("Synthesis/Bitstream Gen ({})",self.design_name)
-
-	def perform_test(self, lab_test):
-
-		part = lab_test.BASYS3_PART
-		bitfile_filename = str(self.design_name + ".bit")
-		dcp_filename = str(self.design_name + ".dcp")
-		extract_path = lab_test.student_extract_lab_dir
-		hdl_filenames = lab_test.get_filenames_from_keylist(self.hdl_key_list)
-		xdl_filenames = lab_test.get_filenames_from_keylist(self.xdl_key_list)
-		pre_script_filenames = [lab_test.NEW_PROJECT_SETTINGS_FILENAME]
-
-		lab_test.print_info("Attempting to build bitfile",bitfile_filename)
-
-		# Create tcl build script (the build will involve executing this script)
-		tcl_build_script_filename = str(self.design_name + "_buildscript.tcl")
-		tmp_tcl = extract_path / tcl_build_script_filename
-
-		log = open(tmp_tcl, 'w')
-		log.write('# Bitfile Generation script (non-project mode)\n')
-		log.write('#\n')
-		if pre_script_filenames:
-			log.write('# Pre-build source files\n')
-			for pre_source_filename in pre_script_filenames:
-				log.write('source '+ pre_source_filename+'\n')
-		else:
-			log.write('# No Pre-build script files\n')
-
-		# Read HDL files
-		log.write('# Add sources\n')
-		for hdl_filename in hdl_filenames:
-			#src = get_filename_from_key(src_key)
-			log.write('read_verilog -sv ' + hdl_filename + '\n')
-		# Read xdc files
-		if self.implement_build:
-			log.write('# Add XDC file\n')
-			for xdc_filename in xdl_filenames:
-				log.write('read_xdc ' + xdc_filename + '\n')
-		log.write('# Synthesize design\n')
-		#log.write('synth_design -top ' + design_name + ' -flatten_hierarchy full\n')
-		log.write('synth_design -top ' + self.design_name + ' -part ' + part + '\n')
-		if self.implement_build:    
-			log.write('# Implement Design\n')
-			log.write('place_design\n')
-			log.write('route_design\n')
-			checkpoint_filename = str(self.design_name + ".dcp")
-			log.write('write_checkpoint ' + checkpoint_filename + ' -force\n')
-			log.write('write_bitstream -force ' + bitfile_filename +'\n')
-		if self.create_dcp:
-			log.write('# Create DCP\n')
-			log.write(str.format("write_checkpoint {} -force\n",dcp_filename))
-		log.write('# End of build script\n')
-		log.close()
-
-		# See if the executable is even in the path
-		if not lab_test.check_executable_existence(["vivado", "-version"]):
-			return False
-
-		implementation_log_filename = str(self.design_name + "_implementation.txt")
-		implementation_log_filepath = extract_path / implementation_log_filename
-		with open(implementation_log_filepath, "w") as fp:
-			build_cmd = ["vivado", "-nolog", "-mode", "batch", "-nojournal", "-source", tcl_build_script_filename]
-			proc = subprocess.Popen(
-				build_cmd,
-				cwd=extract_path,
-				stdout=subprocess.PIPE,
-				stderr=subprocess.STDOUT,
-				universal_newlines=True,
-			)
-			for line in proc.stdout:
-				sys.stdout.write(line)
-				fp.write(line)
-				fp.flush()
-			# Wait until process is done
-			proc.communicate()
-			if proc.returncode:
-				return False
-		return True
-
-	"""
-	def __init__(self,lab_test, build_tuple):
-		self.lab_test = lab_test
-		(design_name, xdl_key_list, hdl_key_list, implement_build, create_dcp) = build_tuple
-		#print(build_tuple)
-
-		hdl_filenames = lab_test.get_filenames_from_keylist(hdl_key_list)
-		xdl_filenames = lab_test.get_filenames_from_keylist(xdl_key_list)
-		#print(hdl_filenames)
-
-		result = self.perform_test(lab_test.student_extract_lab_dir, design_name, [self.lab_test.NEW_PROJECT_SETTINGS_FILENAME], hdl_filenames, xdl_filenames, \
-			implement_build, create_dcp)
-		if result:
-			self.lab_test.print_log_file("** Successful Synthesis **\n")
-		else:
-			self.lab_test.print_log_file("** Failed Synthesis **\n")
-
-	def perform_test(self, extract_path, design_name, pre_script_filenames, hdl_filenames, xdl_filenames, \
-		implement_build = True, create_dcp = False ):
-
-		part = self.lab_test.BASYS3_PART
-		'''
-		Build a bitstream
-			extract_path: str
-				The path where build files have been extracted
-			build: list
-				The "build" tuple
-		'''
-		bitfile_filename = str(design_name + ".bit")
-		dcp_filename = str(design_name + ".dcp")
-
-		self.lab_test.print_info("Attempting to build bitfile",bitfile_filename)
-
-		# Create tcl build script (the build will involve executing this script)
-		tcl_build_script_filename = str(design_name + "_buildscript.tcl")
-		tmp_tcl = extract_path / tcl_build_script_filename
-
-		log = open(tmp_tcl, 'w')
-		log.write('# Bitfile Generation script (non-project mode)\n')
-		log.write('#\n')
-		if pre_script_filenames:
-			log.write('# Pre-build source files\n')
-			for pre_source_filename in pre_script_filenames:
-				log.write('source '+ pre_source_filename+'\n')
-		else:
-			log.write('# No Pre-build script files\n')
-
-		# Read HDL files
-		log.write('# Add sources\n')
-		for hdl_filename in hdl_filenames:
-			#src = get_filename_from_key(src_key)
-			log.write('read_verilog -sv ' + hdl_filename + '\n')
-		# Read xdc files
-		if implement_build:
-			log.write('# Add XDC file\n')
-			for xdc_filename in xdl_filenames:
-				log.write('read_xdc ' + xdc_filename + '\n')
-		log.write('# Synthesize design\n')
-		#log.write('synth_design -top ' + design_name + ' -flatten_hierarchy full\n')
-		log.write('synth_design -top ' + design_name + ' -part ' + part + '\n')
-		if implement_build:    
-			log.write('# Implement Design\n')
-			log.write('place_design\n')
-			log.write('route_design\n')
-			checkpoint_filename = str(design_name + ".dcp")
-			log.write('write_checkpoint ' + checkpoint_filename + ' -force\n')
-			log.write('write_bitstream -force ' + bitfile_filename +'\n')
-		if create_dcp:
-			log.write('# Create DCP\n')
-			log.write(str.format("write_checkpoint {} -force\n",dcp_filename))
-		log.write('# End of build script\n')
-		log.close()
-
-		# See if the executable is even in the path
-		if not self.lab_test.check_executable_existence(["vivado", "-version"]):
-			return False
-
-		implementation_log_filename = str(design_name + "_implementation.txt")
-		implementation_log_filepath = extract_path / implementation_log_filename
-		with open(implementation_log_filepath, "w") as fp:
-			build_cmd = ["vivado", "-nolog", "-mode", "batch", "-nojournal", "-source", tcl_build_script_filename]
-			proc = subprocess.Popen(
-				build_cmd,
-				cwd=extract_path,
-				stdout=subprocess.PIPE,
-				stderr=subprocess.STDOUT,
-				universal_newlines=True,
-			)
-			for line in proc.stdout:
-				sys.stdout.write(line)
-				fp.write(line)
-				fp.flush()
-			# Wait until process is done
-			proc.communicate()
-			if proc.returncode:
-				return False
-		return True
-	"""
 
