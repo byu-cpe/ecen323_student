@@ -5,7 +5,6 @@ Script for extracting a student submission from a GitHub repository and
 checking the submission.
 
 TODO:
-- Provide an option that allows students to perform a 'local' passoff that just uses the files in the local repository rather than checking out their repository. This is helpful if the students want to debug their files before going through the entire process of pushing and tagging.
 - Change instructions so that the students add the "--squash" flag on the merge so they don't get so
   many commits when they merge the starter code
 - Squash the commit history of the starter code before the semester begins
@@ -216,7 +215,7 @@ class lab_test:
 			self.print_tag_commit_date()
 
 		# At this point we have a valid repot
-		
+
 		# check to make sure the extracted repo is a valid 323 repo
 		actual_origin_url = self.get_repo_origin_url(self.student_extract_repo_dir)
 		# git@github.com:byu-ecen323-classroom/323-labs-wirthlin.git
@@ -440,5 +439,6 @@ class lab_passoff_argparse(argparse.ArgumentParser):
 		self.add_argument("--notest", action="store_true", help="Do not run the tests")
 
 		# Local option
+		#  allows students to perform a 'local' passoff that just uses the files in the local repository rather than checking out their repository. This is helpful if the students want to debug their files before going through the entire process of pushing and tagging.
 		self.add_argument("--local", action="store_true", help="Perform passoff script on local repository rather than cloning the remote repository")
 
