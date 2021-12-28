@@ -5,6 +5,7 @@ Script for extracting a student submission from a GitHub repository and
 checking the submission.
 
 TODO:
+- Provide an option that allows students to perform a 'local' passoff that just uses the files in the local repository rather than checking out their repository. This is helpful if the students want to debug their files before going through the entire process of pushing and tagging.
 - Change instructions so that the students add the "--squash" flag on the merge so they don't get so
   many commits when they merge the starter code
 - Squash the commit history of the starter code before the semester begins
@@ -57,6 +58,8 @@ class lab_test:
 		self.script_path = script_path
 		# Flag indicating it is ok to perform a test. Set to False when catastrophic failure occurs
 		self.proceed_with_tests = True
+		# Local mode of executing script
+		self.local = False
 		# Constants
 		self.BASYS3_PART = "xc7a35tcpg236-1"
 		self.STARTER_CODE_REPO = "git@github.com:byu-cpe/ecen323_student.git"
@@ -167,37 +170,53 @@ class lab_test:
 			self.print_warning("Warning: No Commit Time String Found",COMMIT_STRING_FILEPATH)
 
 	def prepare_remote_repo(self):
+		''' Prepares the repository for the pass-off. When this function has completed,
+		the repository has been copied (if necessary), verified, and the  student_extract_repo_dir 
+		class variable has been set to the appropriate location.  '''
 
 		''' Determine remote repository
 		'''
-		if self.args.git_repo:
-			student_git_repo = self.args.git_repo
+		if self.args.local:
+			# The pass off script is to be run on the local files - no cloning
+			self.local = True
+			self.student_extract_repo_dir = self.script_path
+			self.print_warning("Performing Local Passoff check - will not check remote repository")
 		else:
-			# Determine the current repo
-			student_git_repo = self.get_repo_origin_url(self.script_path)
-			if not student_git_repo:
-				self.print_error("git config failed")
-				self.proceed_with_tests = False
-				return False
-
-		''' Clone Repository. When done, the 'student_repo_dir' variable will be set.
-		'''
-		# See if directory exists
-		if self.student_extract_repo_dir.exists():
-			if self.args.force:
-				print( "Target directory",self.student_extract_repo_dir,"exists. Will be deleted before proceeding")
-				shutil.rmtree(self.student_extract_repo_dir, ignore_errors=True)
+			# A remote passoff
+			if self.args.git_repo:
+				# If the repository is given on the command line, save the variable
+				student_git_repo = self.args.git_repo
 			else:
-				self.print_error("Target directory",self.student_extract_repo_dir,"exists. Use --force option to overwrite")
+				# If the repostiory is NOT given on the command line, determine the current repo
+				student_git_repo = self.get_repo_origin_url(self.script_path)
+				if not student_git_repo:
+					self.print_error("git config failed")
+					self.proceed_with_tests = False
+					return False
+
+			''' Clone Repository. When done, the 'student_repo_dir' variable will be set.
+			'''
+			# See if directory exists
+			if self.student_extract_repo_dir.exists():
+				if self.args.force:
+					print( "Target directory",self.student_extract_repo_dir,"exists. Will be deleted before proceeding")
+					shutil.rmtree(self.student_extract_repo_dir, ignore_errors=True)
+				else:
+					self.print_error("Target directory",self.student_extract_repo_dir,"exists. Use --force option to overwrite")
+					self.proceed_with_tests = False
+					return False
+
+			# Perform the actual clone of the repo
+			if not self.clone_repo(student_git_repo, self.student_extract_repo_dir,self.LAB_TAG_STRING):
+				self.print_error("Failed to clone repository")
 				self.proceed_with_tests = False
 				return False
 
-		# Perform the actual clone of the repo
-		if not self.clone_repo(student_git_repo, self.student_extract_repo_dir,self.LAB_TAG_STRING):
-			self.print_error("Failed to clone repository")
-			self.proceed_with_tests = False
-			return False
+			# Print the repository submission time
+			self.print_tag_commit_date()
 
+		# At this point we have a valid repot
+		
 		# check to make sure the extracted repo is a valid 323 repo
 		actual_origin_url = self.get_repo_origin_url(self.student_extract_repo_dir)
 		# git@github.com:byu-ecen323-classroom/323-labs-wirthlin.git
@@ -210,8 +229,6 @@ class lab_test:
 		else:
 			print("Valid byu-ecen323-classroom repository")
 
-		# Print the repository submission time
-		self.print_tag_commit_date()
 		# Create log file
 		self.log = self.create_log_file()
 		return True
@@ -379,9 +396,13 @@ class lab_test:
 		''' Should be called at the end of a test. It closes the log file and deletes the temporary directory. '''
 		if self.log:
 			self.log.close()
-		if not self.args.noclean:
-			self.print_info( "Deleting temporary submission test directory",self.student_extract_repo_dir)
-			shutil.rmtree(self.student_extract_repo_dir, ignore_errors=True)
+		if self.args.clean:
+			if not self.local:
+				# Don't clean up 'local' passoffs
+				self.print_info( "Deleting temporary submission test directory",self.student_extract_repo_dir)
+				shutil.rmtree(self.student_extract_repo_dir, ignore_errors=True)
+			else:
+				self.print_warning("Local Passoff: will not delete local directory")
 
 class lab_passoff_argparse(argparse.ArgumentParser):
 	'''
@@ -412,9 +433,12 @@ class lab_passoff_argparse(argparse.ArgumentParser):
 			help="Temporary directory where repository will be extracted (relative to directory script is run)",
 			default=self.DEFAULT_EXTRACT_DIR)
 
-		# Do not clean up the temporary directory
-		self.add_argument("--noclean", action="store_true", help="Do not clean up the extraction directory when done")
+		# Clean up the temporary directory
+		self.add_argument("--clean", action="store_true", help="Clean up the extraction directory when done")
 
 		# Do not clean up the temporary directory
 		self.add_argument("--notest", action="store_true", help="Do not run the tests")
+
+		# Local option
+		self.add_argument("--local", action="store_true", help="Perform passoff script on local repository rather than cloning the remote repository")
 
