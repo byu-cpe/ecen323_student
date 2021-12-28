@@ -73,17 +73,23 @@ module tb_calc();
 
 		// Issue a reset and clock a few cycles
 		tb_rst = 1;
-		sim_clocks(2);
+		sim_clocks(10);
 		tb_rst = 0;
 		// set deaults
 	    tb_func = 0;		
         tb_op = 0;
 		sim_clocks(3);
-		// Issue global reset
+
+        // Test random function 10 times
+        for(j=0; j < 10; j=j+1) begin
+            sim_op($urandom_range(0,7));
+        end
+
+        // Issue reset to test reset functionality
 		tb_rst = 1;
-		sim_clocks(1);
+		sim_clocks(10);
 		tb_rst = 0;
-		
+
         // Test all of the functions a number of times
         for(j=0; j < $urandom_range(10,20); j=j+1) begin
             sim_op(BUTTONOP_ADD);
