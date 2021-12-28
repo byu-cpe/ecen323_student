@@ -24,7 +24,7 @@ module tb_alu();
 
 	localparam[3:0] UNDEFINED_OP1 = 4'b0100;
 	localparam[3:0] UNDEFINED_OP2 = 4'b0101;
-	localparam[3:0] UNDEFINED_OP3 = 4'b0110;
+	localparam[3:0] UNDEFINED_OP3 = 4'b0011;
 	localparam[3:0] UNDEFINED_OP4 = 4'b1011;
 	localparam[3:0] UNDEFINED_OP5 = 4'b1100;
 	localparam[3:0] UNDEFINED_OP6 = 4'b1110;
@@ -32,7 +32,7 @@ module tb_alu();
 	localparam[3:0] ALUOP_AND = 4'b0000;
 	localparam[3:0] ALUOP_OR = 4'b0001;
 	localparam[3:0] ALUOP_ADD = 4'b0010;
-	localparam[3:0] ALUOP_SUB = 4'b0011;
+	localparam[3:0] ALUOP_SUB = 4'b0110;
 	localparam[3:0] ALUOP_LT = 4'b0111;
 	localparam[3:0] ALUOP_SRL = 4'b1000;
 	localparam[3:0] ALUOP_SLL = 4'b1001;
