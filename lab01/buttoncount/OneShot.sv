@@ -51,9 +51,9 @@ module OneShot(clk, rst, in, os);
 	// the flip flops for the state register.
 	always_ff@(posedge clk)
 		if (rst)
-			state = ZERO;
+			state <= ZERO;
 		else
-			state = next_state;
+			state <= next_state;
 
 	// Next state logic for state machine
 	//  This is a *combinational* circuit - no flip-flops or state are synthesized
