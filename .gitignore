@@ -6,6 +6,12 @@ vivado*.log
 vivado_pid*.str
 xvlog.log
 xvlog.pb
+webtalk*.jou
+webtalk*.log
+xsim*.jou
+.Xil/*
+xsim.dir/*
+xelab.pb
 
 # pycache
 **/__pycache__/*
