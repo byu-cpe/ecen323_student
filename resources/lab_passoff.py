@@ -179,7 +179,9 @@ class lab_test:
 			# The pass off script is to be run on the local files - no cloning
 			self.local = True
 			self.student_extract_repo_dir = self.script_path
+			self.student_extract_lab_dir = self.script_path
 			self.print_warning("Performing Local Passoff check - will not check remote repository")
+			print("Running local passoff at",self.student_extract_repo_dir)
 		else:
 			# A remote passoff
 			if self.args.git_repo:
@@ -230,6 +232,10 @@ class lab_test:
 
 		# Create log file
 		self.log = self.create_log_file()
+		if not self.log:
+			return False
+
+		# All is well
 		return True
 
 
@@ -364,9 +370,15 @@ class lab_test:
 		return not error
 	
 	def create_log_file(self):
+		''' Creates a log file to record test summaries'''
 		log_file_path = self.student_extract_lab_dir / self.TEST_RESULT_FILENAME
-		print("Createing log file",log_file_path)
-		log = open(log_file_path, 'w')
+		try:
+			log = open(log_file_path, 'w')
+			print("Creating log file",log_file_path)
+		except IOError:
+			self.print_error("Cannot create file",log_file_path)
+			self.proceed_with_tests = False
+			return None
 		return log
 
 	def print_log_file(self,str):
