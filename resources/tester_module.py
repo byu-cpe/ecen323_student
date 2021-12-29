@@ -43,6 +43,7 @@ class tester_module():
 		return "BASE MODULE"
 
 	def perform_test(self, lab_test):
+		''' This is the function that should be overridden by a test module. '''
 		lab_test.print_print_warning("This should be overridden")
 		return False
 

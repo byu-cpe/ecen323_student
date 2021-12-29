@@ -5,6 +5,7 @@ Script for extracting a student submission from a GitHub repository and
 checking the submission.
 
 TODO:
+- Need to figure out a way to run the 'local' mode without generating all the garbage (i.e., run executables in a sub directory but point to files in a upper directory)
 - Change instructions so that the students add the "--squash" flag on the merge so they don't get so
   many commits when they merge the starter code
 - Squash the commit history of the starter code before the semester begins
@@ -73,10 +74,10 @@ class lab_test:
 		self.errors = 0
 		self.warnings = 0
 		self.log = None
-		# This is the path of location where the repository was extracted
+		# This is the path of location where the repository is extracted (or exists for local)
 		self.student_extract_repo_dir = self.script_path / self.args.extract_dir
 		# This is the path of lab within the extracted repository where the lab exists
-		# and where the executables wil run
+		# and where the executables will run
 		self.student_extract_lab_dir = self.student_extract_repo_dir / self.LAB_DIR_NAME
 
 	def print_color(self,color, *msg):
