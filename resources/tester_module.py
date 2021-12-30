@@ -73,7 +73,7 @@ class simulation_module(tester_module):
 			xvlog_cmd = ["xvlog", "--nolog", "-sv", src_filename ]
 			proc = subprocess.run(xvlog_cmd, cwd=lab_test.execution_path, check=False)
 			if proc.returncode:
-				self.lab_test.print_error("Failed analyze of file ",src_filename)
+				lab_test.print_error("Failed analyze of file ",src_filename)
 				return False
 		return True
 
@@ -135,8 +135,10 @@ class tcl_simulation(simulation_module):
 			tcl_list: the list of items associated with a tcl simulation
 		'''
 		
-		self.analyze_hdl_files(lab_test)
-		self.elaborate(lab_test)
+		if not self.analyze_hdl_files(lab_test):
+			return False
+		if not self.elaborate(lab_test):
+			return False
 
 		lab_path = lab_test.submission_lab_path
 		design_name = self.sim_top_module
@@ -182,8 +184,10 @@ class testbench_simulation(simulation_module):
 		hdl_filename_list = lab_test.get_filenames_from_keylist(self.hdl_sim_keylist)
 		extract_lab_path = lab_test.submission_lab_path
 
-		self.analyze_hdl_files(lab_test)
-		self.elaborate(lab_test)
+		if not self.analyze_hdl_files(lab_test):
+			return False
+		if not self.elaborate(lab_test):
+			return False
 
 		return self.simulate(lab_test)
 
@@ -280,5 +284,6 @@ class build_bitstream(tester_module):
 			# Wait until process is done
 			proc.communicate()
 			if proc.returncode:
+				#print("Error with implement")
 				return False
 		return True

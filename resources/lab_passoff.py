@@ -481,6 +481,7 @@ class lab_test:
 			self.print_log_file(str.format("Success:{}\n",module_name))
 		else:
 			self.print_log_file(str.format("Failed:{}\n",module_name))
+			self.print_error(str.format("Error executing:{}",module_name))
 			self.proceed_with_tests = False
 		return result
 
