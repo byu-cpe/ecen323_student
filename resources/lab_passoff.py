@@ -462,10 +462,11 @@ class lab_test:
 			return None
 		return log
 
-	def print_log_file(self,str):
+	def print_log_file(self,str,print_to_stdout=False):
 		if self.log:
 			self.log.write(str)
-		print(str)
+		if print_to_stdout:
+			print(str)
 
 	def execute_test_module(self, test_module):
 		''' Executes the 'perform_test' function of the tester_module and logs its result in the log file '''
@@ -479,6 +480,7 @@ class lab_test:
 		result = test_module.perform_test(self)
 		if result:
 			self.print_log_file(str.format("Success:{}\n",module_name))
+			self.print_color(TermColor.GREEN, str.format("Success:{}\n",module_name))
 		else:
 			self.print_log_file(str.format("Failed:{}\n",module_name))
 			self.print_error(str.format("Error executing:{}",module_name))
