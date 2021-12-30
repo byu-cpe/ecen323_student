@@ -47,13 +47,82 @@ class tester_module():
 		lab_test.print_print_warning("This should be overridden")
 		return False
 
-class tcl_simulation(tester_module):
-	''' An object that represents a tcl_simulation test.
+class simulation_module(tester_module):
+	''' A tester module that performs simulations with Vivado tools
+	'''
+
+	def __init__(self, sim_top_module_name, hdl_sim_keylist):
+		''' Initialize the top module name and the keylist for simulation HDL files '''
+		self.sim_top_module = sim_top_module_name
+		self.hdl_sim_keylist = hdl_sim_keylist
+
+	def analyze_hdl_files(self, lab_test):
+		''' Perform HDL analysis on a set of files '''
+		
+		# Resolve the filenames
+		hdl_filename_list = lab_test.get_filenames_from_keylist(self.hdl_sim_keylist)
+
+		# See if the executable is even in the path
+		if not lab_test.check_executable_existence(["xvlog", "--version"]):
+			return False
+
+		# Analyze all of the files associated with the TCL simulation set
+		lab_test.print_info(TermColor.BLUE, " Analyzing source files")
+		for src_filename in hdl_filename_list:
+			#print("  Analyzing File",src_filename)
+			xvlog_cmd = ["xvlog", "--nolog", "-sv", src_filename ]
+			proc = subprocess.run(xvlog_cmd, cwd=lab_test.execution_path, check=False)
+			if proc.returncode:
+				self.lab_test.print_error("Failed analyze of file ",src_filename)
+				return False
+		return True
+
+	def elaborate(self, lab_test):
+		# Elaborate design
+		design_name = self.sim_top_module
+		lab_test.print_info(TermColor.BLUE, " Elaborating")
+		#xelab_cmd = ["xelab", "--debug", "typical", "--nolog", "-L", "unisims_ver", design_name, "work.glbl" ]
+		xelab_cmd = ["xelab", "--debug", "typical", "--nolog", "-L", "unisims_ver", design_name ]
+		proc = subprocess.run(xelab_cmd, cwd=lab_test.execution_path, check=False)
+
+		#xelab_cmd = ["xelab", "--debug", "typical", "--nolog", design_name, "work.glbl" ]
+		#xelab_cmd = ["xelab", "--debug", "typical", "--nolog", "-L xil_defaultlib", "-L unisims_ver", "-L unimacro_ver", design_name, "work.glbl" ]
+		#xelab  -wto f006d1b2ec3040b5bab73404505d9a2c --debug typical --relax --mt 2 -L xil_defaultlib -L unisims_ver -L unimacro_ver -L secureip --snapshot riscv_io_system_behav xil_defaultlib.riscv_io_system xil_defaultlib.glbl -log elaborate.log    proc = subprocess.run(xelab_cmd, cwd=extract_path, check=False)
+		if proc.returncode:
+			lab_test.print_error("Error in elaboration")
+			return False
+		return True
+
+	def simulate(self,lab_test,tcl_script_filename=None):
+		# Simulate
+		extract_lab_path = lab_test.submission_lab_path
+		lab_test.print_info(TermColor.BLUE, " Starting Simulation")
+		simulation_log_filename = str(self.sim_top_module + "_simulation.txt")
+		simulation_log_filepath = extract_lab_path / simulation_log_filename
+		# default simulation commands
+		xsim_cmd = ["xsim", "-nolog", self.sim_top_module,]
+		if tcl_script_filename:
+			# TCL script
+			xsim_cmd.append("-tclbatch")
+			xsim_cmd.append(tcl_script_filename)
+			pass
+		else:
+			# No TCL script
+			xsim_cmd.append("-runall")
+			pass
+
+		if not lab_test.subprocess_file_print(simulation_log_filepath, xsim_cmd, lab_test.execution_path ):
+			lab_test.print_error("Failed simulation")
+			return False
+		return True
+
+class tcl_simulation(simulation_module):
+	''' An object that represents a tcl_simulation test. Extends simulation_module
 	'''
 	def __init__(self,tcl_filename_key, tcl_sim_top_module, hdl_sim_keylist):
+		super().__init__(tcl_sim_top_module,hdl_sim_keylist)
+
 		self.tcl_filename_key = tcl_filename_key
-		self.tcl_sim_top_module = tcl_sim_top_module
-		self.hdl_sim_keylist = hdl_sim_keylist
 
 	def module_name(self):
 		''' returns a string indicating the name of the module. Used for logging. '''
@@ -66,48 +135,18 @@ class tcl_simulation(tester_module):
 			tcl_list: the list of items associated with a tcl simulation
 		'''
 		
+		self.analyze_hdl_files(lab_test)
+		self.elaborate(lab_test)
+
+		lab_path = lab_test.submission_lab_path
+		design_name = self.sim_top_module
 		tcl_filename = lab_test.get_filename_from_key(self.tcl_filename_key)
-		tcl_hdl_filename_list = lab_test.get_filenames_from_keylist(self.hdl_sim_keylist)
-		extract_lab_path = lab_test.student_extract_lab_dir
-
-		lab_test.print_info(TermColor.BLUE, "Attempting simulation of TCL script:", tcl_filename)
-
-		# See if the executable is even in the path
-		if not lab_test.check_executable_existence(["xvlog", "--version"]):
-			return False
-
-		# Analyze all of the files associated with the TCL simulation set
-		lab_test.print_info(TermColor.BLUE, " Analyzing source files")
-		for src_filename in tcl_hdl_filename_list:
-			#print("  Analyzing File",src_filename)
-			xvlog_cmd = ["xvlog", "--nolog", "-sv", src_filename ]
-			proc = subprocess.run(xvlog_cmd, cwd=extract_lab_path, check=False)
-			if proc.returncode:
-				self.lab_test.print_error("Failed analyze of file ",src_filename)
-				return False
-
-		# xvlog -sv alu.sv regfile.sv riscv_alu_constants.sv riscv_datapath_constants.sv riscv_io_multicycle.v riscv_multicycle.sv riscv_simple_datapath.sv glbl.v
-		# xelab -L unisims_ver riscv_io_system work.glbl
-		#return False
-
-		# Elaborate design
-		design_name = self.tcl_sim_top_module
-		lab_test.print_info(TermColor.BLUE, " Elaborating")
-		#xelab_cmd = ["xelab", "--debug", "typical", "--nolog", "-L", "unisims_ver", design_name, "work.glbl" ]
-		xelab_cmd = ["xelab", "--debug", "typical", "--nolog", "-L", "unisims_ver", design_name ]
-		proc = subprocess.run(xelab_cmd, cwd=extract_lab_path, check=False)
-
-		#xelab_cmd = ["xelab", "--debug", "typical", "--nolog", design_name, "work.glbl" ]
-		#xelab_cmd = ["xelab", "--debug", "typical", "--nolog", "-L xil_defaultlib", "-L unisims_ver", "-L unimacro_ver", design_name, "work.glbl" ]
-		#xelab  -wto f006d1b2ec3040b5bab73404505d9a2c --debug typical --relax --mt 2 -L xil_defaultlib -L unisims_ver -L unimacro_ver -L secureip --snapshot riscv_io_system_behav xil_defaultlib.riscv_io_system xil_defaultlib.glbl -log elaborate.log    proc = subprocess.run(xelab_cmd, cwd=extract_path, check=False)
-		if proc.returncode:
-			lab_test.print_error("Error in elaboration")
-			return False
 
 		# Modify TCL simulation script (add 'quit' command to end)
 		temp_tcl_filename = str(design_name + "_tempsim.tcl")
-		src_tcl = extract_lab_path / tcl_filename
-		tmp_tcl = extract_lab_path / temp_tcl_filename
+		src_tcl = lab_test.execution_path / tcl_filename
+		tmp_tcl = lab_test.execution_path / temp_tcl_filename
+		print(lab_test.execution_path,tmp_tcl,src_tcl)
 		shutil.copyfile(src_tcl, tmp_tcl)
 
 		log = open(tmp_tcl, 'a')
@@ -116,30 +155,22 @@ class tcl_simulation(tester_module):
 		log.close()
 
 		# Simulate
-		lab_test.print_info(TermColor.BLUE, " Starting Simulation")
-		#tmp_design_name = str(design_name + "#work.glbl")
-		tmp_design_name = str(design_name)
-		simulation_log_filename = str(self.tcl_sim_top_module + "_tcl_simulation.txt")
-		simulation_log_filepath = extract_lab_path / simulation_log_filename
-		xsim_cmd = ["xsim", "-nolog", tmp_design_name, "-tclbatch", temp_tcl_filename ]
-		if not lab_test.subprocess_file_print(simulation_log_filepath, xsim_cmd, extract_lab_path ):
-			lab_test.print_error("Failed simulation")
-			return False
-		return True
+		return self.simulate(lab_test,temp_tcl_filename)
 
-class testbench_simulation(tester_module):
+
+class testbench_simulation(simulation_module):
 	''' An object that represents a tcl_simulation test.
 	'''
 	def __init__(self,testbench_description, testbench_top, hdl_sim_keylist, xe_options_list):
+		super().__init__(testbench_top,hdl_sim_keylist)
 		self.testbench_description = testbench_description
-		self.testbench_top = testbench_top
-		self.hdl_sim_keylist = hdl_sim_keylist
+		#self.testbench_top = testbench_top
+		#self.hdl_sim_keylist = hdl_sim_keylist
 		self.xe_options_list = xe_options_list
 
 	def module_name(self):
 		''' returns a string indicating the name of the module. Used for logging. '''
-		return str.format("Testbench Simulation \"{}\" ({})",self.testbench_description, self.testbench_top)
-
+		return str.format("Testbench Simulation \"{}\" ({})",self.testbench_description, self.sim_top_module)
 		
 	def perform_test(self, lab_test):
 		''' 
@@ -149,45 +180,12 @@ class testbench_simulation(tester_module):
 		'''
 		
 		hdl_filename_list = lab_test.get_filenames_from_keylist(self.hdl_sim_keylist)
-		extract_lab_path = lab_test.student_extract_lab_dir
+		extract_lab_path = lab_test.submission_lab_path
 
-		# See if the executable is even in the path
-		if not lab_test.check_executable_existence(["xvlog", "--version"]):
-			return False
+		self.analyze_hdl_files(lab_test)
+		self.elaborate(lab_test)
 
-		# Analyze all of the files associated with the TCL simulation set
-		lab_test.print_info(TermColor.BLUE, " Analyzing source files")
-		for src_filename in hdl_filename_list:
-			#print("  Analyzing File",src_filename)
-			xvlog_cmd = ["xvlog", "--nolog", "-sv", src_filename ]
-			proc = subprocess.run(xvlog_cmd, cwd=extract_lab_path, check=False)
-			if proc.returncode:
-				self.lab_test.print_error("Failed analyze of file ",src_filename)
-				return False
-
-		# Elaborate design
-		design_name = self.testbench_top
-		lab_test.print_info(TermColor.BLUE, " Elaborating")
-		#xelab_cmd = ["xelab", "--debug", "typical", "--nolog", "-L", "unisims_ver", design_name, "work.glbl" ]
-		xelab_cmd = ["xelab", "--debug", "typical", "--nolog", "-L", "unisims_ver", design_name ]
-		proc = subprocess.run(xelab_cmd, cwd=extract_lab_path, check=False)
-
-		#xelab_cmd = ["xelab", "--debug", "typical", "--nolog", design_name, "work.glbl" ]
-		#xelab_cmd = ["xelab", "--debug", "typical", "--nolog", "-L xil_defaultlib", "-L unisims_ver", "-L unimacro_ver", design_name, "work.glbl" ]
-		#xelab  -wto f006d1b2ec3040b5bab73404505d9a2c --debug typical --relax --mt 2 -L xil_defaultlib -L unisims_ver -L unimacro_ver -L secureip --snapshot riscv_io_system_behav xil_defaultlib.riscv_io_system xil_defaultlib.glbl -log elaborate.log    proc = subprocess.run(xelab_cmd, cwd=extract_path, check=False)
-		if proc.returncode:
-			lab_test.print_error("Error in elaboration")
-			return False
-
-		# Simulate
-		lab_test.print_info(TermColor.BLUE, " Starting Simulation")
-		simulation_log_filename = str(self.testbench_top + "_simulation.txt")
-		simulation_log_filepath = extract_lab_path / simulation_log_filename
-		xsim_cmd = ["xsim", "-nolog", design_name, "-runall" ]
-		if not lab_test.subprocess_file_print(simulation_log_filepath, xsim_cmd, extract_lab_path ):
-			lab_test.print_error("Failed simulation")
-			return False
-		return True
+		return self.simulate(lab_test)
 
 
 class build_bitstream(tester_module):
@@ -210,16 +208,19 @@ class build_bitstream(tester_module):
 		part = lab_test.BASYS3_PART
 		bitfile_filename = str(self.design_name + ".bit")
 		dcp_filename = str(self.design_name + ".dcp")
-		extract_path = lab_test.student_extract_lab_dir
+		#extract_path = lab_test.submission_lab_path
 		hdl_filenames = lab_test.get_filenames_from_keylist(self.hdl_key_list)
 		xdl_filenames = lab_test.get_filenames_from_keylist(self.xdl_key_list)
-		pre_script_filenames = [lab_test.NEW_PROJECT_SETTINGS_FILENAME]
 
+		# Get name of new settings file (need to make it relative to execution path)
+		rel_path = os.path.relpath(os.path.relpath(lab_test.submission_lab_path,lab_test.execution_path))
+		new_path = os.path.join(rel_path,lab_test.NEW_PROJECT_SETTINGS_FILENAME)
+		pre_script_filenames = [ new_path ]
 		lab_test.print_info("Attempting to build bitfile",bitfile_filename)
 
 		# Create tcl build script (the build will involve executing this script)
 		tcl_build_script_filename = str(self.design_name + "_buildscript.tcl")
-		tmp_tcl = extract_path / tcl_build_script_filename
+		tmp_tcl = lab_test.execution_path / tcl_build_script_filename
 
 		log = open(tmp_tcl, 'w')
 		log.write('# Bitfile Generation script (non-project mode)\n')
@@ -262,12 +263,12 @@ class build_bitstream(tester_module):
 			return False
 
 		implementation_log_filename = str(self.design_name + "_implementation.txt")
-		implementation_log_filepath = extract_path / implementation_log_filename
+		implementation_log_filepath = lab_test.execution_path / implementation_log_filename
 		with open(implementation_log_filepath, "w") as fp:
 			build_cmd = ["vivado", "-nolog", "-mode", "batch", "-nojournal", "-source", tcl_build_script_filename]
 			proc = subprocess.Popen(
 				build_cmd,
-				cwd=extract_path,
+				cwd=lab_test.execution_path,
 				stdout=subprocess.PIPE,
 				stderr=subprocess.STDOUT,
 				universal_newlines=True,

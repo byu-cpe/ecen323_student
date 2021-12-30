@@ -47,19 +47,20 @@ class TermColor:
 	BOLD = "\033[1m"
 	UNDERLINE = "\033[4m"
 
+SCRIPT_VERSION = 1.0
 
 class lab_test:
 	''' Represents a specific test for a lab passoff '''
 
-	def __init__(self,args,script_path,lab_num):
+	def __init__(self,script_path,lab_num):
+		''' Initialize variables in lab_test object'''
 		# Set variables base on arguments
-		self.args = args
 		self.lab_num = lab_num
 		self.script_path = script_path
 		# Flag indicating it is ok to perform a test. Set to False when catastrophic failure occurs
 		self.proceed_with_tests = True
-		# Local mode of executing script
-		self.local = False
+		# Directories to delete
+		self.directories_to_delete = []
 		# Constants
 		self.BASYS3_PART = "xc7a35tcpg236-1"
 		self.STARTER_CODE_REPO = "git@github.com:byu-cpe/ecen323_student.git"
@@ -74,11 +75,36 @@ class lab_test:
 		self.errors = 0
 		self.warnings = 0
 		self.log = None
-		# This is the path of location where the repository is extracted (or exists for local)
-		self.student_extract_repo_dir = self.script_path / self.args.extract_dir
-		# This is the path of lab within the extracted repository where the lab exists
-		# and where the executables will run
-		self.student_extract_lab_dir = self.student_extract_repo_dir / self.LAB_DIR_NAME
+		self.tests_to_perform = []
+		# Create the argument parser
+		self.parser = lab_passoff_argparse(self.lab_num)
+
+	def parse_args(self):
+		''' Parse arguments and set variables based on arguments. The most important
+		parameters that are set are the directory paths. '''
+
+		# Parse the arguments
+		self.args = self.parser.parse_args()
+
+
+	def prepare_test(self, submission_dict, testfiles_dict):
+		''' Prepare the repository and check for all files '''
+		if not self.prepare_remote_repo():
+			return False
+		self.set_lab_fileset(submission_dict, testfiles_dict)
+		return self.check_lab_fileset()
+
+	def add_test_module(self, test_module):
+		self.tests_to_perform.append(test_module)
+
+	def run_tests(self):
+		''' Run all the registered tests '''
+		if not self.args.notest:
+			for test in self.tests_to_perform:
+				self.execute_test_module(test)
+		# Wrap up
+		self.print_message_summary()
+		self.clean_up_test()
 
 	def print_color(self,color, *msg):
 		""" Print a message in color """
@@ -161,7 +187,7 @@ class lab_test:
 		Reads the ".commit" file to find commit date. Prints date
 		'''
 		# determin path of commit string
-		COMMIT_STRING_FILEPATH = self.student_extract_repo_dir / self.COMMIT_STRING_FILENAME
+		COMMIT_STRING_FILEPATH = self.submission_top_path / self.COMMIT_STRING_FILENAME
 		try:
 			fp = open(COMMIT_STRING_FILEPATH, "r")
 			commit_string = fp.read()
@@ -171,20 +197,27 @@ class lab_test:
 
 	def prepare_remote_repo(self):
 		''' Prepares the repository for the pass-off. When this function has completed,
-		the repository has been copied (if necessary), verified, and the  student_extract_repo_dir 
+		the repository has been copied (if necessary), verified, and the  directories 
 		class variable has been set to the appropriate location.  '''
 
-		''' Determine remote repository
-		'''
+		# Determine submission directory for the test
+		# 	submission_top_path:
+		# 		represents the top directory where the repository files exist. This directory
+		#		may or may not be extracted (depending on local setting). The tester will look here
+		#		for all files needed for the submission.
+		#	submission_lab_path:
+		#		represents the directory where the lab-specific files exist. It is one level below
+		#		submission_top_dir
 		if self.args.local:
-			# The pass off script is to be run on the local files - no cloning
-			self.local = True
-			self.student_extract_repo_dir = self.script_path
-			self.student_extract_lab_dir = self.script_path
+			# The pass off script is to be run on the local files in the current directory
+			self.submission_lab_path = self.script_path
+			self.submission_top_path = self.submission_lab_path.parent
 			self.print_warning("Performing Local Passoff check - will not check remote repository")
-			print("Running local passoff at",self.student_extract_repo_dir)
+			print("Running local passoff from files at",self.submission_lab_path)
 		else:
 			# A remote passoff
+			self.submission_top_path = self.script_path / self.args.extract_dir
+			self.submission_lab_path = self.submission_top_path / self.LAB_DIR_NAME
 			if self.args.git_repo:
 				# If the repository is given on the command line, save the variable
 				student_git_repo = self.args.git_repo
@@ -199,17 +232,24 @@ class lab_test:
 			''' Clone Repository. When done, the 'student_repo_dir' variable will be set.
 			'''
 			# See if directory exists
-			if self.student_extract_repo_dir.exists():
-				if self.args.force:
-					print( "Target directory",self.student_extract_repo_dir,"exists. Will be deleted before proceeding")
-					shutil.rmtree(self.student_extract_repo_dir, ignore_errors=True)
-				else:
-					self.print_error("Target directory",self.student_extract_repo_dir,"exists. Use --force option to overwrite")
+			if self.submission_top_path.exists():
+				# See if the submission directory matches the local directory (don't want to overwrite)
+				if self.submission_top_path == self.script_path.parent:
+					self.print_error("Extract directory and root of local repository are the same")
 					self.proceed_with_tests = False
 					return False
+				if self.args.force:
+					print( "Target directory",self.submission_top_path,"exists. Will be deleted before proceeding")
+					shutil.rmtree(self.submission_top_path, ignore_errors=True)
+				else:
+					self.print_error("Target directory",self.submission_top_path,"exists. Use --force option to overwrite")
+					self.proceed_with_tests = False
+					return False
+			# Save directory for deleting (if chosen)
+			self.directories_to_delete.append(self.submission_top_path)
 
 			# Perform the actual clone of the repo
-			if not self.clone_repo(student_git_repo, self.student_extract_repo_dir,self.LAB_TAG_STRING):
+			if not self.clone_repo(student_git_repo, self.submission_top_path,self.LAB_TAG_STRING):
 				self.print_error("Failed to clone repository")
 				self.proceed_with_tests = False
 				return False
@@ -217,10 +257,12 @@ class lab_test:
 			# Print the repository submission time
 			self.print_tag_commit_date()
 
-		# At this point we have a valid repot
+		# At this point we have a valid repo at self.submission_top_path
+		print("Repository Top",self.submission_top_path)
+		print("Repository Lab",self.submission_lab_path)
 
 		# check to make sure the extracted repo is a valid 323 repo
-		actual_origin_url = self.get_repo_origin_url(self.student_extract_repo_dir)
+		actual_origin_url = self.get_repo_origin_url(self.submission_top_path)
 		# git@github.com:byu-ecen323-classroom/323-labs-wirthlin.git
 		URL_MATCH_STRING = "git@github.com:byu-ecen323-classroom/323-labs-(\w+).git"
 		match = re.match(URL_MATCH_STRING,actual_origin_url)
@@ -230,6 +272,25 @@ class lab_test:
 			return False
 		else:
 			print("Valid byu-ecen323-classroom repository")
+
+		# Determine execution directory
+		#   execution_path:
+		#		represents the directory where the execution of the test will occur. 
+		if self.args.run_dir:
+			# relative to script path
+			self.execution_path = self.script_path / self.args.run_dir
+			# See if directory exists
+			if self.execution_path.exists():
+				print("Execution directory",self.execution_path,"exists.")
+			else:
+				# Directory does not exist - create it
+				print("Execution directory",self.execution_path," does not exists. Will be created")
+				os.mkdir(self.execution_path)
+				self.directories_to_delete.append(self.execution_path)
+		else:
+			# Use the lab path as the execution path as a default
+			self.execution_path = self.submission_lab_path
+		print("Execution Path",self.execution_path)
 
 		# Create log file
 		self.log = self.create_log_file()
@@ -326,16 +387,35 @@ class lab_test:
 		self.submission_dict = submission_dict
 		self.testfiles_dict = testfiles_dict
 
-	def get_filename_from_key(self,file_key):
+	def get_filename_from_key(self,file_key,relative_to_execution=True):
 		''' Returns the filename associated with a file key that is located either in
 			the submission_files dictionary or the test_files dictionary.
 		'''
+		filename = None
 		if file_key in self.submission_dict:
-			return self.submission_dict[file_key]
+			filename = self.submission_dict[file_key]
 		elif file_key in self.testfiles_dict:
-			return self.testfiles_dict[file_key]
-		# Isn't in either dictionary. Return None
-		return None
+			filename = self.testfiles_dict[file_key]
+		if not filename:
+			return None
+
+		# Get actual path of file
+		if relative_to_execution:
+			# Find common sequence between lab submission path and execution path
+			#filepath = self.submission_lab_path / filename
+			#print("path",filename,filepath,self.execution_path)
+			# Find the relative path between the execution path and lab root. This
+			# returns the prefix to filenames to access them from the execution directory.
+			rel_path = os.path.relpath(os.path.relpath(self.submission_lab_path,self.execution_path))
+			#print("rel",rel_path)
+			new_path = os.path.join(rel_path,filename)
+			#print("newpath=",new_path)
+			#ex_relative_path = str(rel_path,filename)
+			#filepath = self.submission_lab_path / filename
+			#ex_relative_path = filepath.relative_to(self.execution_path)
+			#print("*",filename,ex_relative_path)
+			return str(new_path)
+		return filename
 
 	def get_filenames_from_keylist(self,file_key_list):
 		''' Returns the filename associated with a file key that is located either in
@@ -361,7 +441,7 @@ class lab_test:
 		error = False
 		for file_key in all_files.keys():
 			filename = all_files[file_key]
-			filepath = self.student_extract_lab_dir / filename
+			filepath = self.submission_lab_path / filename
 			if filepath.exists():
 				print(" File",filename,"exists")
 			else:
@@ -372,7 +452,7 @@ class lab_test:
 	
 	def create_log_file(self):
 		''' Creates a log file to record test summaries'''
-		log_file_path = self.student_extract_lab_dir / self.TEST_RESULT_FILENAME
+		log_file_path = self.execution_path / self.TEST_RESULT_FILENAME
 		try:
 			log = open(log_file_path, 'w')
 			print("Creating log file",log_file_path)
@@ -408,20 +488,22 @@ class lab_test:
 		''' Should be called at the end of a test. It closes the log file and deletes the temporary directory. '''
 		if self.log:
 			self.log.close()
+		# Delete temporary directories
 		if self.args.clean:
-			if not self.local:
-				# Don't clean up 'local' passoffs
-				self.print_info( "Deleting temporary submission test directory",self.student_extract_repo_dir)
-				shutil.rmtree(self.student_extract_repo_dir, ignore_errors=True)
-			else:
-				self.print_warning("Local Passoff: will not delete local directory")
+			for directory in self.directories_to_delete:
+				self.print_info( "Deleting directory",directory)
+				shutil.rmtree(directory, ignore_errors=True)
+		else:
+			print("Not deleting following directories:")
+			for directory in self.directories_to_delete:
+				self.print_info(directory)
 
 class lab_passoff_argparse(argparse.ArgumentParser):
 	'''
 	Extends ArgumentParse to have predetermined options for lab passoffs.
 	'''
 
-	def __init__(self,lab_num,version="1.0"):
+	def __init__(self,lab_num):
 		# Initialize variables
 		self.lab_num = lab_num
 
@@ -430,23 +512,27 @@ class lab_passoff_argparse(argparse.ArgumentParser):
 
 		# call parent initialization
 		description = str.format('Create and test submission archive for lab {} (v {}).', \
-			self.lab_num,version)
+			self.lab_num,SCRIPT_VERSION)
 		argparse.ArgumentParser.__init__(self,description=description)
 
 		# GitHub URL for the student repository.
-		self.add_argument("--git_repo", type=str, help="GitHub Remote Repository. If no repository is specified, the current repo will be used.")
+		self.add_argument("--git_repo", type=str, 
+			help="GitHub Remote Repository. If no repository is specified, the URL of the current repo will be used.")
 
-		# Force git extraction if directory already exists
-		self.add_argument("-f", "--force", action="store_true", help="Force clone if target directory already exists")
+		# Force use of directories if they already exists
+		self.add_argument("-f", "--force", action="store_true", help="Force use of directories if they already exists")
 
-		# Directory for extracting repository. This directory will be deleted when
-		# the script is done (unless the --noclean option is set).
-		self.add_argument("--extract_dir", type=str, \
+		# Extract the prepository at the fiven directory.
+		self.add_argument("--extract_dir", type=str,
 			help="Temporary directory where repository will be extracted (relative to directory script is run)",
 			default=self.DEFAULT_EXTRACT_DIR)
 
+		# Run directory
+		self.add_argument("--run_dir", type=str,
+			help="Temporary directory where all the tests are run (relative to script dir). Default is extract_dir for clones, script directory for local")
+
 		# Clean up the temporary directory
-		self.add_argument("--clean", action="store_true", help="Clean up the extraction directory when done")
+		self.add_argument("--clean", action="store_true", help="Clean up any directories that are created")
 
 		# Do not clean up the temporary directory
 		self.add_argument("--notest", action="store_true", help="Do not run the tests")

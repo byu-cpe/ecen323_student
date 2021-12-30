@@ -15,7 +15,6 @@ import tester_module
 
 # lab-specific constants
 LAB_NUMBER = 1
-SCRIPT_VERSION = 1.0
 # Path of script that is being run
 SCRIPT_PATH = pathlib.Path(__file__).absolute().parent.resolve()
 
@@ -46,37 +45,17 @@ bit_build = tester_module.build_bitstream("UpDownButtonCount",["updown_xdc"], [ 
 def main():
 	''' Main executable for script
 	'''
-
-	''' Setup the ArgumentParser '''
-	parser = lab_passoff.lab_passoff_argparse(LAB_NUMBER,SCRIPT_VERSION)
-
-	# Parse the arguments
-	args = parser.parse_args()
-
 	# Create lab tester object
-	lab_test = lab_passoff.lab_test(args, SCRIPT_PATH, LAB_NUMBER)
-
-	# Prepare copy repository. Exit if there is an error creating repository
-	if not lab_test.prepare_remote_repo():
-		return False
-
-	# Set lab files
-	lab_test.set_lab_fileset(submission_files,test_files)
-	lab_test.check_lab_fileset()
-
-	if not args.notest:
-
-		# TCL simulation
-		lab_test.execute_test_module(tcl_sim)
-
-		# Build circuit
-		lab_test.execute_test_module(bit_build)
-
-	# Print summarizing messages
-	lab_test.print_message_summary()
-
-	lab_test.clean_up_test()
-
+	lab_test = lab_passoff.lab_test(SCRIPT_PATH, LAB_NUMBER)
+	# Parse arguments
+	lab_test.parse_args()
+	# Prepare test
+	lab_test.prepare_test(submission_files,test_files)
+	# Add tests
+	lab_test.add_test_module(tcl_sim)
+	lab_test.add_test_module(bit_build)
+	# Run tests
+	lab_test.run_tests()
 
 if __name__ == "__main__":
 	main()
