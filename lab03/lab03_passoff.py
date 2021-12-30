@@ -42,16 +42,12 @@ test_files = {
 }
 
 # TCL simulations
-tcl_sims =  [
-	tester_module.tcl_simulation( "regfile_tcl", "regfile", [ "regfile",]),
-	tester_module.tcl_simulation( "top_tcl", "regfile_top", [ "constants", "alu", "regfile", "top" ]),
-	]
+regfile_tcl = tester_module.tcl_simulation( "regfile_tcl", "regfile", [ "regfile",])
+top_tcl = tester_module.tcl_simulation( "top_tcl", "regfile_top", [ "constants", "alu", "regfile", "top" ])
 
 # Testbench simulations
-testbench_sims =  [
-	tester_module.testbench_simulation( "Regfile Testbench", "tb_regfile", [ "tb_regfile", "regfile",], []),
-	tester_module.testbench_simulation( "Regfile Top Testbench", "tb_regfile_top", [ "tb_regfile_top", "regfile", "alu", "constants", "oneshot" ], []),
-	]
+regfile_tb = tester_module.testbench_simulation( "Regfile Testbench", "tb_regfile", [ "tb_regfile", "regfile",], [])
+top_tb = tester_module.testbench_simulation( "Regfile Top Testbench", "tb_regfile_top", [ "tb_regfile_top", "regfile", "alu", "constants", "oneshot" ], [])
 
 # Bitstream build
 bit_build = tester_module.build_bitstream("regfile_top",["xdc"], [ "constants", "alu",  "regfile", "top" ], True, False)
@@ -60,39 +56,20 @@ def main():
 	''' Main executable for script
 	'''
 
-	''' Setup the ArgumentParser '''
-	parser = lab_passoff.lab_passoff_argparse(LAB_NUMBER,SCRIPT_VERSION)
-
-	# Parse the arguments
-	args = parser.parse_args()
-
 	# Create lab tester object
-	lab_test = lab_passoff.lab_test(args, SCRIPT_PATH, LAB_NUMBER)
-
-	# Prepare copy repository. Exit if there is an error creating repository
-	if not lab_test.prepare_remote_repo():
-		return False
-
-	# Set lab files
-	lab_test.set_lab_fileset(submission_files,test_files)
-	lab_test.check_lab_fileset()
-
-	if not args.notest:
-
-		# TCL simulation
-		for tcl_sim in tcl_sims:
-			lab_test.execute_test_module(tcl_sim)
-
-		# Testbench simulations
-		for testbench_sim in testbench_sims:
-			lab_test.execute_test_module(testbench_sim)
-
-		# Build circuit
-		lab_test.execute_test_module(bit_build)
-
-	# Print summarizing messages
-	lab_test.print_message_summary()
-	lab_test.clean_up_test()
+	lab_test = lab_passoff.lab_test(SCRIPT_PATH, LAB_NUMBER)
+	# Parse arguments
+	lab_test.parse_args()
+	# Prepare test
+	lab_test.prepare_test(submission_files,test_files)
+	# Add tests
+	lab_test.add_test_module(regfile_tcl)
+	lab_test.add_test_module(top_tcl)
+	lab_test.add_test_module(regfile_tb)
+	lab_test.add_test_module(top_tb)
+	lab_test.add_test_module(bit_build)
+	# Run tests
+	lab_test.run_tests()
 
 
 if __name__ == "__main__":
