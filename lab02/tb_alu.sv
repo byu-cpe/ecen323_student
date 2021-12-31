@@ -106,8 +106,8 @@ module tb_alu();
 		if (errors == 0)
 			$display("  *** No Errors ***");
 		else begin
-			//$error("  *** %d Errors ***",errors);
-			$fatal("  *** %d Errors ***",errors);
+			$error("  *** %0d Errors ***",errors);
+			//$fatal("  *** %d Errors ***",errors);
 		end
         $finish;
         
@@ -122,12 +122,12 @@ module tb_alu();
 		// See if any of the inputs are 'x'. If so, ignore
 		if (inputs_valid()) begin
 			if ((tb_zero == 1'bz) || (tb_zero == 1'bx)) begin
-		        $display("[%0tns] Error: Invalid 'zero' value", $time);
+		        $error("[%0t] Error: Invalid 'zero' value", $time);
 				errors = errors + 1;
 			end
 			else begin
 				if (tb_zero != expected_zero) begin
-		        	$display("[%0tns] Error: Invalid 'zero' value %x but expecting %x", $time, tb_zero, expected_zero);
+		        	$error("[%0t] Error: Invalid 'zero' value %x but expecting %x", $time, tb_zero, expected_zero);
 					errors = errors + 1;
 				end
 			end
@@ -143,7 +143,7 @@ module tb_alu();
 		// See if any of the inputs are 'x'. If so, ignore
 		if (inputs_valid()) begin
 			if (!result_valid())
-		        $display("[%0tns] Error: Invalid result (x's)", $time);
+		        $display("[%0t] Error: Invalid result (x's)", $time);
 			else begin
 				case(tb_alu_op)
 					ALUOP_AND: expected_result = tb_op1 & tb_op2;
@@ -158,7 +158,7 @@ module tb_alu();
 					default: expected_result = tb_op1 + tb_op2;
 				endcase
 				if (tb_result != expected_result) begin
-		        	$display("[%0tns] Error: Invalid 'result' value %x but expecting %x", $time, tb_result, expected_result);
+		        	$display("[%0t] Error: Invalid 'result' value %x but expecting %x", $time, tb_result, expected_result);
 					errors = errors + 1;
 				end
 			end
