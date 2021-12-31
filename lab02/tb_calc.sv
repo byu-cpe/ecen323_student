@@ -44,7 +44,7 @@ module tb_calc();
         tb_sw = $urandom_range(0,65535);
 		sim_clocks($urandom_range(2,7));
         tb_op = 1;
-		sim_clocks($urandom_range(4,30));
+		sim_clocks($urandom_range(6,30));
         tb_op = 0;
 		sim_clocks($urandom_range(4,30));
     endtask
@@ -63,7 +63,7 @@ module tb_calc();
 	     
         //shall print %t with scaled in ns (-9), with 2 precision digits, and would print the " ns" string
 		$timeformat(-9, 0, " ns", 20);
-		$display("*** Start of Caclulator Testbench Simulation ***");
+		$display("*** Start of Calculator Testbench Simulation ***");
 		
 		// Run for some time without valid inputs
 		#50
@@ -138,26 +138,32 @@ module ALUTester(clk, rst, func, ex, sw, result);
 	parameter stop_on_error = 1;
 	
 	int initialized = 0;
+    int op_delay = 0;
 	reg [15:0] accumulator = -1;
-    logic ex_d, execute;
-    logic addop_os, subop_os,andop_os, orop_os = 0;
+    int ex_delay = 0;
 
-	always_ff@(negedge clk) begin
-        ex_d <= ex;
-        execute <= ex & ~ex_d;
+	always_ff@(posedge clk) begin
+        if (rst)
+            initialized <= 1;
+        if (ex)
+            ex_delay <= ex_delay + 1;
+        else
+            ex_delay <= 0;
     end
 
 	// checking state
+    localparam delay_check = 2;
 	always@(negedge clk) begin
-		if (initialized) begin
+		if (initialized && ex_delay == delay_check) begin
 			if (accumulator != result) begin
-				$display("*** Error: Module accunmulator=%0d but should be %0d at time %0t", accumulator, result, $time);
+				$display("*** Error: Module accumulator=%0x but should be %0x at time %0t", result, accumulator, $time);
 				if (stop_on_error)
-					$finish;
+					$fatal;
 			end
 			if (^result[0] === 1'bX) begin
 				$display("**** Error: 'x' Values on LEDs at time %0t", $time);
-				$finish;
+				if (stop_on_error)
+					$fatal;
 			end
 
 		end
@@ -176,7 +182,7 @@ module ALUTester(clk, rst, func, ex, sw, result);
 	// accumulator
 	always@(posedge clk)
 		if (rst) accumulator <= 0;
-		else if (ex)
+		else if (ex_delay == 1)
             case (func)
                 BUTTONOP_ADD: accumulator <= accumulator + sw;
                 BUTTONOP_SUB: accumulator <= accumulator - sw;

@@ -105,8 +105,10 @@ module tb_alu();
 		$display("*** Simulation Complete ***");
 		if (errors == 0)
 			$display("  *** No Errors ***");
-		else
-			$display("  *** %d Errors ***",errors);
+		else begin
+			//$error("  *** %d Errors ***",errors);
+			$fatal("  *** %d Errors ***",errors);
+		end
         $finish;
         
 	end  // end initial

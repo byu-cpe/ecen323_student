@@ -20,14 +20,15 @@ module tb_regfile();
 
 
 	// Instance regfile module
-    regfile my_regfile(.clk(tb_clk), .regAddrA(regAddrA), .regAddrB(regAddrB), .regAddrWrite(regAddrWrite),
-        .regWriteData(regWriteData), .regWrite(tb_write), .regReadDataA(regReadDataA), .regReadDataB(regReadDataB));
+    regfile my_regfile(.clk(tb_clk), .readReg1(regAddrA), .readReg2(regAddrB), .writeReg(regAddrWrite),
+        .writeData(regWriteData), .write(tb_write), .readData1(regReadDataA), .readData2(regReadDataB));
 
 
     regfileBehavioralModel model(.clk(tb_clk), .initialized(tb_init), .regAddrA(regAddrA), .regAddrB(regAddrB), .regAddrWrite(regAddrWrite),
                              .regWriteData(regWriteData), .regWrite(tb_write), .regReadDataA(regReadDataA),
                              .regReadDataB(regReadDataB));
 
+    // Issue a specified number of clock cycles
     task sim_clocks(input int clocks);
 		automatic int i;
 		for(i=0; i < clocks; i=i+1) begin
@@ -36,13 +37,20 @@ module tb_regfile();
         end
     endtask
 
+    // Write a word to the register file
     task write_word(input [4:0] addr, input [31:0] data);
-		automatic int i;
         regAddrWrite=addr;
         regWriteData=data;
         tb_write = 1;
         #5 tb_clk = 1; #5 tb_clk = 0;
         tb_write = 0;
+    endtask
+
+    // Read words from the register file
+    task read_words(input [4:0] addrA, input [4:0] addrB);
+        regAddrA=addrA;
+        regAddrB=addrB; 
+        #5 tb_clk = 1; #5 tb_clk = 0;
     endtask
 
 	initial begin
@@ -69,6 +77,7 @@ module tb_regfile();
         sim_clocks(1);
 
 		$display("*** Testing x0 register at time %0t", $time);
+        // Write non-zero values to register x0
         for(i=0; i < 32; i=i+1) begin
             write_word(0,(i+1)*255);
             sim_clocks(1);
@@ -79,9 +88,7 @@ module tb_regfile();
 		$display("*** Testing write to each register at %0t", $time);
         for(i=1; i < 32; i=i+1) begin
             write_word(i,i);
-            regAddrA=i;
-            regAddrB=i; 
-            sim_clocks(1);
+            read_Words(i,i);
         end
         sim_clocks(5);
 
@@ -97,9 +104,7 @@ module tb_regfile();
         // read contents of memory
 		$display("*** Testing different read addresses at %0t", $time);
         for(i=0; i < 32; i=i+1) begin
-            regAddrA=i;
-            regAddrB=~i; 
-            #5 tb_clk = 1; #5 tb_clk = 0;
+            read_words(i,~i);
         end
 
         // simulate some transactions
@@ -176,6 +181,7 @@ module regfileBehavioralModel(clk, initialized, regAddrA, regAddrB, regAddrWrite
 		end
 	end
 
+    // Register file behavioral model
 	always@(posedge clk) begin
         if (initialized) begin
             l_readA <= tmpfile[regAddrA];
