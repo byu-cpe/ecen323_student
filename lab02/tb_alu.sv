@@ -143,7 +143,7 @@ module tb_alu();
 		// See if any of the inputs are 'x'. If so, ignore
 		if (inputs_valid()) begin
 			if (!result_valid())
-		        $display("[%0t] Error: Invalid result (x's)", $time);
+		        $error("[%0t] Error: Invalid result (x's)", $time);
 			else begin
 				case(tb_alu_op)
 					ALUOP_AND: expected_result = tb_op1 & tb_op2;
@@ -158,7 +158,7 @@ module tb_alu();
 					default: expected_result = tb_op1 + tb_op2;
 				endcase
 				if (tb_result != expected_result) begin
-		        	$display("[%0t] Error: Invalid 'result' value %x but expecting %x", $time, tb_result, expected_result);
+		        	$error("[%0t] Error: Invalid 'result' value %x but expecting %x", $time, tb_result, expected_result);
 					errors = errors + 1;
 				end
 			end

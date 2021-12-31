@@ -133,7 +133,13 @@ class lab_test:
 			self.print_color(TermColor.GREEN, "Completed - No Warnings or Errors")
 
 	def subprocess_file_print(self,process_output_filepath, proc_cmd, proc_cwd):
-		""" Complete a sub-process and print to a file and stdout """
+		""" 
+		Complete a sub-process and print to a file and stdout.
+
+		Returns the sub-process return code.
+
+		TODO:Provide more options on output: 1. to stdout and file, 2. To one or the other, or 3. None
+		"""
 		with open(process_output_filepath, "w") as fp:
 			proc = subprocess.Popen(
 				proc_cmd,
@@ -148,9 +154,9 @@ class lab_test:
 				fp.flush()
 			# Wait until process is done
 			proc.communicate()
-			if proc.returncode:
-				return False
-		return True
+			#print("Proc return code",proc.returncode)
+			return proc.returncode
+		return 0
 
 	def check_executable_existence(self, command_list):
 		# See if the executable is even in the path
