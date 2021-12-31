@@ -103,9 +103,7 @@ module tb_alu();
 		tb_alu_op = ALUOP_ADD;
 
 		$display("*** Simulation Complete ***");
-		if (errors == 0)
-			$display("  *** No Errors ***");
-		else begin
+		if (errors != 0) begin
 			$error("  *** %0d Errors ***",errors);
 			$fatal;
 		end

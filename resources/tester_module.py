@@ -67,11 +67,11 @@ class simulation_module(tester_module):
 		lab_test.print_info(TermColor.BLUE, " Analyzing source files")
 
 		analyze_log_filename = str(log_basename + "_analyze.txt")
-		analyze_log_filepath = lab_test.execution_path / analyze_log_filename
+		self.analyze_log_filepath = lab_test.execution_path / analyze_log_filename
 		for filename in hdl_filename_list:
 			analyze_cmd.append(filename)
 		
-		return_code = lab_test.subprocess_file_print(analyze_log_filepath, analyze_cmd, lab_test.execution_path )
+		return_code = lab_test.subprocess_file_print(self.analyze_log_filepath, analyze_cmd, lab_test.execution_path )
 		if return_code != 0 :
 			lab_test.print_error("Failed simulation")
 			return False
@@ -92,12 +92,12 @@ class simulation_module(tester_module):
 		design_name = self.sim_top_module
 		lab_test.print_info(TermColor.BLUE, " Elaborating")
 		elaborate_log_filename = str(self.sim_top_module + "_elaborate.txt")
-		elaborate_log_filepath = lab_test.execution_path / elaborate_log_filename
+		self.elaborate_log_filepath = lab_test.execution_path / elaborate_log_filename
 
 		#xelab_cmd = ["xelab", "--debug", "typical", "--nolog", "-L", "unisims_ver", design_name, "work.glbl" ]
 		xelab_cmd = ["xelab", "--debug", "typical", "--nolog", "-L", "unisims_ver", design_name ]
 
-		return_code = lab_test.subprocess_file_print(elaborate_log_filepath, xelab_cmd, lab_test.execution_path )
+		return_code = lab_test.subprocess_file_print(self.elaborate_log_filepath, xelab_cmd, lab_test.execution_path )
 
 		if return_code != 0:
 			lab_test.print_error("Failed simulation")
@@ -110,14 +110,14 @@ class simulation_module(tester_module):
 		#extract_lab_path = lab_test.submission_lab_path
 		lab_test.print_info(TermColor.BLUE, " Starting Simulation")
 		simulation_log_filename = str(self.sim_top_module + "_simulation.txt")
-		simulation_log_filepath = lab_test.execution_path / simulation_log_filename
+		self.simulation_log_filepath = lab_test.execution_path / simulation_log_filename
 		# default simulation commands
 		xsim_cmd = ["xsim", "-nolog", self.sim_top_module,]
 		# Add options from function parameters
 		for opt in xsim_opts:
 			xsim_cmd.append(opt)
 
-		return_code = lab_test.subprocess_file_print(simulation_log_filepath, xsim_cmd, lab_test.execution_path )
+		return_code = lab_test.subprocess_file_print(self.simulation_log_filepath, xsim_cmd, lab_test.execution_path )
 		if return_code != 0:
 			lab_test.print_error("Failed simulation")
 			return False
@@ -198,9 +198,25 @@ class testbench_simulation(simulation_module):
 			return False
 		
 		# Simulate
-		tb_sim_opts = [ "-runall", "--onerror", "quit" ]
-		return self.simulate(lab_test, xsim_opts=tb_sim_opts)
+		#tb_sim_opts = [ "-runall", "--onerror", "quit" ]
+		tb_sim_opts = [ "-runall", ]
+		sim_result = self.simulate(lab_test, xsim_opts=tb_sim_opts)
+		if not sim_result:
+			return False
 
+		# Parse the simulation output to see if there are errors
+		return self.check_for_no_errors(lab_test,["Errors", "Error", "ERROR"])
+
+	def check_for_no_errors(self, lab_test, error_strings):
+		with open(self.simulation_log_filepath) as sim_file:
+			for line in sim_file:
+				for error_string in error_strings:
+					if error_string in line:
+						lab_test.print_error("Error in simulation:",line)
+						return False
+		print("No errors in testbench simulation")
+		#tb_sim_opts = [ "-runall", "--onerror", "quit" ]
+		return True
 
 class build_bitstream(tester_module):
 	''' An object that represents a tcl_simulation test.
