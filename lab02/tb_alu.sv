@@ -81,7 +81,7 @@ module tb_alu();
             #10
 			tb_alu_op = i;
 			$display("Testing alu_op ");
-	        $display("[%0tns] Testing alu op 0x%h", $time, tb_alu_op);
+	        $display("[%0t] Testing alu op 0x%h", $time, tb_alu_op);
 			// Perform fewer tests for non-specified op-codes
 			if (i == UNDEFINED_OP1 || i == UNDEFINED_OP2 || i == UNDEFINED_OP3 || i == UNDEFINED_OP4 ||
 				i == UNDEFINED_OP5 || i == UNDEFINED_OP6 || i == UNDEFINED_OP7)
@@ -107,7 +107,7 @@ module tb_alu();
 			$display("  *** No Errors ***");
 		else begin
 			$error("  *** %0d Errors ***",errors);
-			//$fatal("  *** %d Errors ***",errors);
+			$fatal;
 		end
         $finish;
         
@@ -123,11 +123,13 @@ module tb_alu();
 		if (inputs_valid()) begin
 			if ((tb_zero == 1'bz) || (tb_zero == 1'bx)) begin
 		        $error("[%0t] Error: Invalid 'zero' value", $time);
+				$fatal;
 				errors = errors + 1;
 			end
 			else begin
 				if (tb_zero != expected_zero) begin
 		        	$error("[%0t] Error: Invalid 'zero' value %x but expecting %x", $time, tb_zero, expected_zero);
+					$fatal;
 					errors = errors + 1;
 				end
 			end
@@ -142,8 +144,10 @@ module tb_alu();
 		#5
 		// See if any of the inputs are 'x'. If so, ignore
 		if (inputs_valid()) begin
-			if (!result_valid())
+			if (!result_valid()) begin
 		        $error("[%0t] Error: Invalid result (x's)", $time);
+				$fatal;
+			end
 			else begin
 				case(tb_alu_op)
 					ALUOP_AND: expected_result = tb_op1 & tb_op2;
@@ -159,6 +163,7 @@ module tb_alu();
 				endcase
 				if (tb_result != expected_result) begin
 		        	$error("[%0t] Error: Invalid 'result' value %x but expecting %x", $time, tb_result, expected_result);
+					$fatal;
 					errors = errors + 1;
 				end
 			end
