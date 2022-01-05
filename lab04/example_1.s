@@ -1,11 +1,12 @@
 #######################
 # example_1.s
-# n
+# 
 # Date: 1/22/2020
 #
 # Simple Factorial Program
 #
 #######################
+
 .globl main
 .data
 input:  				# The location for the input data
