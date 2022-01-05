@@ -270,7 +270,9 @@ class lab_test:
 		# check to make sure the extracted repo is a valid 323 repo
 		actual_origin_url = self.get_repo_origin_url(self.submission_top_path)
 		# git@github.com:byu-ecen323-classroom/323-labs-wirthlin.git
-		URL_MATCH_STRING = "git@github.com:byu-ecen323-classroom/323-labs-(\w+).git"
+		#URL_MATCH_STRING = "git@github.com:byu-ecen323-classroom/323-labs-(\w+).git"
+		# For some reason, the github URL does not always have the ".git" at the end when running in the digital lab
+		URL_MATCH_STRING = "git@github.com:byu-ecen323-classroom/323-labs-(\w+)"
 		match = re.match(URL_MATCH_STRING,actual_origin_url)
 		if not match:
 			self.print_error("Cloned repository is not part of the byu-ecen323-classroom:",actual_origin_url)

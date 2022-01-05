@@ -15,3 +15,8 @@ xelab.pb
 
 # pycache
 **/__pycache__/*
+
+# Passoff test directory
+**/passoff_temp_dir/*
+
+# Add you own repository specific ignores below this line
