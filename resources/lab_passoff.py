@@ -273,7 +273,7 @@ class lab_test:
 		URL_MATCH_STRING = "git@github.com:byu-ecen323-classroom/323-labs-(\w+).git"
 		match = re.match(URL_MATCH_STRING,actual_origin_url)
 		if not match:
-			self.print_error("Cloned repository is not part of the byu-ecen323-classroom")
+			self.print_error("Cloned repository is not part of the byu-ecen323-classroom:",actual_origin_url)
 			self.proceed_with_tests = False
 			return False
 		else:
