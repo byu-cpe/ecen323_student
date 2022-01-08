@@ -218,7 +218,7 @@ class lab_test:
 			# The pass off script is to be run on the local files in the current directory
 			self.submission_lab_path = self.script_path
 			self.submission_top_path = self.submission_lab_path.parent
-			self.print_warning("Performing Local Passoff check - will not check remote repository")
+			print("Performing Local Passoff check - will not check remote repository")
 			print("Running local passoff from files at",self.submission_lab_path)
 		else:
 			# A remote passoff
