@@ -88,7 +88,7 @@ module tb_regfile();
 		$display("*** Testing write to each register at %0t", $time);
         for(i=1; i < 32; i=i+1) begin
             write_word(i,i);
-            read_Words(i,i);
+            read_words(i,i);
         end
         sim_clocks(5);
 

@@ -38,15 +38,21 @@ module tb_calc();
         end
     endtask
 
+    localparam SW_CLOCKS = 6;
+    localparam OP_CLOCKS = 6;
+    localparam POST_CLOCKS = 12;
+
 	// Perform a simulation operation (random values)
     task sim_op(input [2:0] func);
 		tb_func = func;
+        // Set a random value to the switches
         tb_sw = $urandom_range(0,65535);
-		sim_clocks($urandom_range(2,7));
+		sim_clocks(SW_CLOCKS);
         tb_op = 1;
-		sim_clocks($urandom_range(6,30));
+		sim_clocks(OP_CLOCKS);
         tb_op = 0;
-		sim_clocks($urandom_range(4,30));
+        // Random number of clock cycles after deasserting op
+		sim_clocks(POST_CLOCKS);
     endtask
 
     localparam BUTTONOP_ADD = 3'b000;
@@ -142,17 +148,26 @@ module ALUTester(clk, rst, func, ex, sw, result);
 	reg [15:0] accumulator = -1;
     int ex_delay = 0;
 
+    // Parameter to specify the number of clock cycles after the operation signal is
+    // asserted to check for proper behavior (to account for synchronizers and one shots)
+    localparam delay_check = 6;
+
 	always_ff@(posedge clk) begin
+        // initialized will only be set once the first reset has occured
+        // (no model checking is done until the reset has occured)
         if (rst)
             initialized <= 1;
-        if (ex)
+        // The ex_delay signal counts the number of cycles since ex has been high.
+        // It is used to indicate when to check the output after the ex signal is asserted.
+        if (ex_delay == 0 && ex)
+            ex_delay <= 1;
+        else if (ex_delay != 0 && ex_delay < delay_check)
             ex_delay <= ex_delay + 1;
         else
             ex_delay <= 0;
     end
 
 	// checking state
-    localparam delay_check = 2;
 	always@(negedge clk) begin
 		if (initialized && ex_delay == delay_check) begin
 			if (accumulator != result) begin
