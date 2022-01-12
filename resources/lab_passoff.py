@@ -272,7 +272,10 @@ class lab_test:
 		# git@github.com:byu-ecen323-classroom/323-labs-wirthlin.git
 		#URL_MATCH_STRING = "git@github.com:byu-ecen323-classroom/323-labs-(\w+).git"
 		# For some reason, the github URL does not always have the ".git" at the end when running in the digital lab
-		URL_MATCH_STRING = "git@github.com:byu-ecen323-classroom/323-labs-(\w+)"
+		#URL_MATCH_STRING = "git@github.com:byu-ecen323-classroom/323-labs-(\w+)"
+		# Students using HTTPs fail on the match string above.. The less restrictive one
+		# below works for https and the script proceeds.
+		URL_MATCH_STRING = "(.*)byu-ecen323-classroom/323-labs-(\w+)"
 		match = re.match(URL_MATCH_STRING,actual_origin_url)
 		if not match:
 			self.print_error("Cloned repository is not part of the byu-ecen323-classroom:",actual_origin_url)
