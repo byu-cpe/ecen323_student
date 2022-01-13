@@ -32,35 +32,56 @@ module tb_regfile_top();
         end
     endtask
 
+    localparam POST_SW_CLOCKS = 4;
+    localparam BUTTON_HIGH_CLOCKS = 3;
+    localparam POST_BUTTON_CLOCKS = 4;
+
+    localparam[3:0] ALUOP_AND = 4'b0000;
+    localparam[3:0] ALUOP_XOR = 4'b1101;
+    localparam[3:0] ALUOP_LT = 4'b0111;
+    localparam[3:0] ALUOP_ADD = 4'b0010;
+    localparam[3:0] ALUOP_SUB = 4'b0110;
+    localparam[3:0] ALUOP_OR = 4'b0001;
+    localparam[3:0] ALUOP_SRL = 4'b1000;
+    localparam[3:0] ALUOP_SLL = 4'b1001;
+    localparam[3:0] ALUOP_SRA = 4'b1010;
+
+    // Load the address register
     task load_addr_reg(input [4:0] rd, input [4:0] rs1, input [4:0] rs2);
         tb_sw = (rd << 10) | (rs2 << 5) | rs1;
-        sim_clocks(2);
+        sim_clocks(POST_SW_CLOCKS);
         // Press btnl
         tb_btnl = 1;
-        sim_clocks(3);
+        sim_clocks(BUTTON_HIGH_CLOCKS);
+        // release btnl
         tb_btnl = 0;
+        sim_clocks(POST_BUTTON_CLOCKS);
     endtask
 
+    // Execute an operation (2 phases: load address register and issue operation)
     task execute_op(input [4:0] rd, input [4:0] rs1, input [4:0] rs2, input [3:0] op);
         load_addr_reg(rd,rs1,rs2);
         sim_clocks(10);
         // Load operation (lower 4 bits of k)
         tb_sw = op;
+        sim_clocks(POST_SW_CLOCKS);
         tb_btnc = 1;
-        sim_clocks(4);
+        sim_clocks(BUTTON_HIGH_CLOCKS);
         tb_btnc = 0;
-        sim_clocks(10);
+        sim_clocks(POST_BUTTON_CLOCKS);
     endtask
 
+    // Load a register with a value
     task load_reg(input [4:0] rd, input [14:0] value);
         load_addr_reg(rd,rd,0);
         sim_clocks(10);
         // Load value into register
         tb_sw = 16'h8000 | value;
+        sim_clocks(POST_SW_CLOCKS);
         tb_btnc = 1;
-        sim_clocks(4);
+        sim_clocks(BUTTON_HIGH_CLOCKS);
         tb_btnc = 0;
-        sim_clocks(10);
+        sim_clocks(POST_BUTTON_CLOCKS);
     endtask
 
 	initial begin
@@ -92,44 +113,60 @@ module tb_regfile_top();
 		for(i=0; i < 32; i=i+1) begin
             load_reg(i, (i | (i << 8)));
 		end
+
         // Put a -1 in register 1
         load_reg(1, -1);
 
         sim_clocks(30);
         // Invert some registers using XOR
 		for(i=2; i < 6; i=i+1) begin
-            execute_op(i,1,i,4'b1101); // XOR
+            execute_op(i,1,i,ALUOP_XOR); // XOR
         end
-        // Perform some less than
+        // Perform some less than (both ways)
 		for(i=0; i < 4; i=i+1) begin
-            execute_op(31,i,i+1,4'b0111);
-            execute_op(31,i+1,i,4'b0111);
+            execute_op(31,i,i+1,ALUOP_LT);
+            execute_op(31,i+1,i,ALUOP_LT);
         end
         // Perform some AND
 		for(i=4; i < 8; i=i+1) begin
-            execute_op(i,i,i+1,4'b0000);
+            execute_op(i,i,i+1,ALUOP_AND);
         end
         // Perform some ADD
 		for(i=8; i < 12; i=i+1) begin
-            execute_op(i,i,i+1,4'b0010);
+            execute_op(i,i,i+1,ALUOP_ADD);
         end
         // Perform some SUB
 		for(i=12; i < 16; i=i+1) begin
-            // TODO: need to update this constant with the correct sub constant
-            execute_op(i,i,i+1,4'b0110);
+            execute_op(i,i,i+1,ALUOP_SUB);
         end
         // Perform some OR
 		for(i=16; i < 20; i=i+1) begin
-            execute_op(i,i,i+1,4'b0001);
+            execute_op(i,i,i+1,ALUOP_OR);
         end
+        // Perform some SRL
+		for(i=20; i < 23; i=i+1) begin
+            execute_op(i,i,i+1,ALUOP_SRL);
+        end
+        // Perform some SLL
+		for(i=23; i < 26; i=i+1) begin
+            execute_op(i,i,i+1,ALUOP_SLL);
+        end
+        // Perform some SRA
+		for(i=26; i < 29; i=i+1) begin
+            execute_op(i,i,i+1,ALUOP_SRA);
+        end
+
         // read both halfs of every register
 		$display("*** Reading both halfs of every register ***");
 		for(i=0; i < 32; i=i+1) begin
+            // Read lower half of register
+            tb_btnd = 0;
             load_addr_reg(i,i,i);
-            sim_clocks(4);
+            sim_clocks(BUTTON_HIGH_CLOCKS+POST_BUTTON_CLOCKS);
             #1
+            // Read upper half of register
             tb_btnd = 1;
-            sim_clocks(4);
+            sim_clocks(BUTTON_HIGH_CLOCKS+POST_BUTTON_CLOCKS);
             #1
             tb_btnd = 0;
         end
@@ -163,9 +200,30 @@ module datapathBehavioralModel(clk, sw, btnc, btnd, btnl, btnu, led);
     logic [3:0] op;
     logic [15:0] l_result;
 
+    // Signal to check the state
+    int check_led_cnt = 0;
+    logic check_led;
+    localparam BUTTON_DELAY_CHECK = 3;
+	always@(negedge clk) begin
+        check_led <= 0;
+		if (initialized) begin
+            if (check_led_cnt == 0 && (btnd || btnc) )
+                check_led_cnt <= 1;
+            else if (check_led_cnt != 0) begin
+                if (check_led_cnt == BUTTON_DELAY_CHECK) begin
+                    check_led_cnt <= 0;
+                    check_led <= 1;                
+                end
+                else
+                    check_led_cnt <= check_led_cnt + 1;
+            end
+
+        end
+    end
+
 	// checking state
 	always@(negedge clk) begin
-		if (initialized) begin
+		if (initialized && check_led) begin
 			if (^led[0] === 1'bX) begin
 				$display("**** Error: 'x' Values on LEDs at time %0t", $time);
 				$finish;
@@ -175,11 +233,13 @@ module datapathBehavioralModel(clk, sw, btnc, btnd, btnl, btnu, led);
 				if (stop_on_error)
 					$finish;
 			end
+            //else
+			//	$display("OK at %0t", $time);
 		end
 	end
 
 
-	// Initialize state
+	// Initialize state of temp regfile
 	integer i;
 	initial begin
         for (i=0;i<32;i=i+1)
@@ -221,12 +281,15 @@ module datapathBehavioralModel(clk, sw, btnc, btnd, btnl, btnu, led);
                 else begin
                     $write("%0t: ALU OP (%0b): R[%0d]=R[%0d](0x%h) ", $time, op, rd, rs1, l_readA);
                     case(op)
-                        0: $write("AND");
-                        1: $write("OR");
-                        2: $write("Add");
-                        6: $write("Sub");
-                        7: $write("<");
-                        13: $write("XOR");
+                        ALUOP_AND: $write("AND");
+                        ALUOP_OR: $write("OR");
+                        ALUOP_ADD: $write("Add");
+                        ALUOP_SUB: $write("Sub");
+                        ALUOP_LT: $write("<");
+                        ALUOP_XOR: $write("XOR");
+                        ALUOP_SRL: $write(">>");
+                        ALUOP_SLL: $write("<<");
+                        ALUOP_SRA: $write(">>>");
                         default: $write("Add");
                     endcase
                     $display( " R[%0d](0x%h) = 0x%h ", rs2, l_readB, alu);
@@ -242,17 +305,20 @@ module datapathBehavioralModel(clk, sw, btnc, btnd, btnl, btnu, led);
         end
     end
 
+    // Simple ALU model
     assign se_sw = {{17{sw[14]}}, sw[14:0]};
     assign op = sw[3:0];
-    assign alu =    (op == 4'b0000) ? l_readA & l_readB :
-                    (op == 4'b0001) ? l_readA | l_readB :
-                    (op == 4'b0010) ? l_readA + l_readB :
-                    (op == 4'b0011) ? l_readA - l_readB :
-                    (op == 4'b0111) ?  (($signed(l_readA) < $signed(l_readB)) ? 32'b1 : 32'b0) :
-                    (op[3:0] == 4'b1101) ? l_readA ^ l_readB :
+    assign alu =    (op == ALUOP_AND) ? l_readA & l_readB :
+                    (op == ALUOP_OR) ? l_readA | l_readB :
+                    (op == ALUOP_ADD) ? l_readA + l_readB :
+                    (op == ALUOP_SUB) ? l_readA - l_readB :
+                    (op == ALUOP_LT) ?  (($signed(l_readA) < $signed(l_readB)) ? 32'b1 : 32'b0) :
+                    (op == ALUOP_XOR) ? l_readA ^ l_readB :
+                    (op == ALUOP_SRL) ?  l_readA >> l_readB[4:0] :
+                    (op == ALUOP_SLL) ?  l_readA << l_readB[4:0] :
+                    (op == ALUOP_SRA) ?  $unsigned($signed(l_readA) >>> l_readB[4:0]) :
                     l_readA + l_readB;
     assign l_result = btnd ? l_readA[31:16] : l_readA[15:0];
-
 
 
 endmodule
