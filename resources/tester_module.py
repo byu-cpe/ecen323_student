@@ -167,6 +167,57 @@ class tcl_simulation(simulation_module):
 		tcl_sim_opts = [ "-tclbatch", temp_tcl_filename ]
 		return self.simulate(lab_test,xsim_opts = tcl_sim_opts)
 
+class tcl_simulation2(simulation_module):
+	''' A modified version of the TCL simulation that sources the student file from
+	a script rather than running the script directly. Will exit whether or not the
+	student script finishes.
+	'''
+	def __init__(self,tcl_filename_key, tcl_sim_top_module, hdl_sim_keylist):
+		super().__init__(tcl_sim_top_module,hdl_sim_keylist)
+
+		self.tcl_filename_key = tcl_filename_key
+
+	def module_name(self):
+		''' returns a string indicating the name of the module. Used for logging. '''
+		return str.format("TCL Simulation ({})",self.tcl_filename_key)
+
+	def perform_test(self, lab_test):
+		''' 
+		Perform a simulation of a module with a Tcl script.
+			sim_path: the path where the simulation should take place
+			tcl_list: the list of items associated with a tcl simulation
+		'''
+		
+		if not self.analyze_sv_files(lab_test,self.sim_top_module):
+			return False
+		if not self.elaborate(lab_test):
+			return False
+
+		lab_path = lab_test.submission_lab_path
+		design_name = self.sim_top_module
+		tcl_filename = lab_test.get_filename_from_key(self.tcl_filename_key)
+
+		# Create a temporary tcl script that calls the student script
+		temp_tcl_filename = str(design_name + "_tempsim2.tcl")
+		src_tcl = lab_test.execution_path / tcl_filename
+		tmp_tcl = lab_test.execution_path / temp_tcl_filename
+		log = open(tmp_tcl, 'a')
+		log.write('# Temporary script that sources TCL file\n')
+		log.write(str.format('if {{ [ catch {{ source {} }} ] }} {{\n',tcl_filename))
+		log.write("    puts \"Error with TCL Script\"\n")
+		log.write("    # Exit script with an error\n")
+		log.write("    exit 1\n")
+		log.write("}\n")
+		log.write('# Quit the simulator no matter what happens in the TCL script\n')
+		log.write('quit\n')
+		log.close()
+
+		print(lab_test.execution_path,tmp_tcl,src_tcl)
+
+		# Simulate
+		tcl_sim_opts = [ "-tclbatch", temp_tcl_filename ]
+		return self.simulate(lab_test,xsim_opts = tcl_sim_opts)
+
 
 class testbench_simulation(simulation_module):
 	''' An object that represents a tcl_simulation test.
