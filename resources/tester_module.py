@@ -355,72 +355,65 @@ class build_bitstream(tester_module):
 		return True
 
 
-class rars_assembly(tester_module):
-	''' An object that represents RARs assembly and simulation
+class rars_raw(tester_module):
+	''' A tester module that uses RARS
 	'''
 
-	def __init__(self, asm_filekey, rars_options, run_simulator = False, generate_text_data=False):
+	def __init__(self, asm_filekey, rars_options):
 		self.rars_options = rars_options
-		self.run_simulator = run_simulator
-		self.generate_text_data = generate_text_data
 		self.asm_filekey = asm_filekey
+		self.RARS_FILENAME = "../resources/rars1_4.jar"
 
 	def module_name(self):
 		''' returns a string indicating the name of the module. Used for logging. '''
-		return str.format("Assembly Simulation ({})",self.asm_filekey)
+		return str.format("RARS with file ({})",self.asm_filekey)
 
 	def perform_test(self, lab_test):
 		asm_filename = lab_test.get_filename_from_key(self.asm_filekey)
 
-		print( "Attempting RARS simulation/assembly of", asm_filename)
+		print( "RARS execution of", asm_filename,"with options",self.rars_options)
+
+		rars_cmd = ["java", "-jar", self.RARS_FILENAME, ]
+		rars_cmd.extend(self.rars_options)
+		rars_cmd.append(asm_filename)
+		proc = subprocess.run(rars_cmd, check=False)
+		if proc.returncode:
+			lab_test.print_warning("Failed to simulate assembler files")
+			return False
 		return True
-		"""
-		if f[3]:
-			# Execute assembler
-			rars_cmd = ["java", "-jar", jar_filename, "ic", "se1", "ae2", "nc"]
-			# Add simulation specific parameters
-			for param in f[1]:
-				rars_cmd.append(param)
-			# Add the file to simulation
-			rars_cmd.append(asm_filename)
-			print(rars_cmd)
-			# Run command
-			proc = subprocess.run(rars_cmd, cwd=extract_path, check=False)
-			if proc.returncode:
-				print_color(TermColor.RED, "Failed to simulate assembler files")
-				return False
-		# Assemble the files if needed
-		if f[2]:
-			# Determine base name of assembly file
-			[text_filename, data_filename] = getHexTextFileNames(asm_filename)
-			#fileParts = asm_filename.split('.')  # Split string by '.'
-			#basename = fileParts[0]
-			# Create text file
-			rars_text_cmd = ["java", "-jar", jar_filename, ]
-			for param in f[1]:
-				rars_text_cmd.append(param)
-			rars_text_cmd.extend(["a", "dump", ".text", "HexText"])
-			#text_filename = str(basename + "_inst.txt")
-			rars_text_cmd.append(text_filename)
-			rars_text_cmd.append(asm_filename)
-			print("TEXT",rars_text_cmd)
-			proc = subprocess.run(rars_text_cmd, cwd=extract_path, check=False)
-			if proc.returncode:
-				print_color(TermColor.RED, "Failed to generate text assembly file")
-				return False
-			# Create data file
-			rars_data_cmd = ["java", "-jar", jar_filename, ]
-			#rars_data_cmd = ["java", "-jar", jar_filename, "a", "dump", ".data", "HexText"]
-			for param in f[1]:
-				rars_data_cmd.append(param)
-			rars_data_cmd.extend([ "a", "dump", ".data", "HexText"])
-			#data_filename = str(basename + "_data.txt")
-			rars_data_cmd.append(data_filename)
-			rars_data_cmd.append(asm_filename)
-			print("DATA",rars_data_cmd)
-			proc = subprocess.run(rars_data_cmd, cwd=extract_path, check=False)
-			if proc.returncode:
-				print_color(TermColor.RED, "Failed to generate data assembly file")
-				return False
+
+
+class rars_sim_print(rars_raw):
+	''' A tester module that uses RARS
+	'''
+
+	def __init__(self, asm_filekey):
+		self.asm_filekey = asm_filekey
+		self.RARS_FILENAME = "../resources/rars1_4.jar"
+
+	def module_name(self):
+		''' returns a string indicating the name of the module. Used for logging. '''
+		return str.format("RARS with file ({})",self.asm_filekey)
+
+	def perform_test(self, lab_test):
+		asm_filename = lab_test.get_filename_from_key(self.asm_filekey)
+		hex_file = str.format("{}.txt",self.asm_filekey)
+		self.rars_options = ["sp","ic","100000","dump",".text","HexText",hex_file,]
+		result = super().perform_test(lab_test)
+		if not result:
+			return False
+		# Now print the output of each compiled file
+		print("Memory contents")
+		f = open(hex_file,'r')
+		file_contents = f.read()
+		print(file_contents)
+		f.close()
 		return True
-		"""
+		# Assembles but does not save anything
+		# java -jar ../resources/rars1_4.jar a fib_recursive.s
+		# Assemble and execute up to 100000
+		# java -jar ../resources/rars1_4.jar 100000 fib_recursive.s
+		# java -jar rars.jar a dump .text HexText hexcode.txt fibonacci.asm
+		# java -jar ../resources/rars1_4.jar h
+
+		
