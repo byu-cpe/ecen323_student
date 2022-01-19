@@ -50,7 +50,7 @@ regfile_tb = tester_module.testbench_simulation( "Regfile Testbench", "tb_regfil
 top_tb = tester_module.testbench_simulation( "Regfile Top Testbench", "tb_regfile_top", [ "tb_regfile_top", "regfile", "alu", "constants", "oneshot" ], [])
 
 # Bitstream build
-bit_build = tester_module.build_bitstream("regfile_top",["xdc"], [ "constants", "alu",  "regfile", "top" ], True, False)
+bit_build = tester_module.build_bitstream("regfile_top",["xdc"], [ "constants", "alu", "oneshot", "regfile", "top" ], True, False)
 
 def main():
 	''' Main executable for script
