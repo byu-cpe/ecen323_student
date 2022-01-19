@@ -40,8 +40,6 @@ test_files = {
 # Bitstream build
 
 # Assembly language Programs
-#iterative_asm = tester_module.rars_raw("iterative",["sp","ic","100000","dump",".text","HexText","iterative.txt",])
-#recursive_asm = tester_module.rars_raw("recursive",["sp","ic","100000","dump",".text","HexText","recursive.txt",])
 iterative_asm = tester_module.rars_sim_print("iterative")
 recursive_asm = tester_module.rars_sim_print("recursive")
 
