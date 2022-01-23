@@ -216,7 +216,8 @@ class lab_test:
 		#		submission_top_dir
 		if self.args.local:
 			# The pass off script is to be run on the local files in the current directory
-			self.submission_lab_path = self.script_path
+			#self.submission_lab_path = self.script_path
+			self.submission_lab_path = pathlib.Path.cwd()
 			self.submission_top_path = self.submission_lab_path.parent
 			print("Performing Local Passoff check - will not check remote repository")
 			print("Running local passoff from files at",self.submission_lab_path)
@@ -289,7 +290,10 @@ class lab_test:
 		#		represents the directory where the execution of the test will occur. 
 		if self.args.run_dir:
 			# relative to script path
-			self.execution_path = self.script_path / self.args.run_dir
+			#self.execution_path = self.script_path / self.args.run_dir
+			# relative to CWD
+			self.execution_path = pathlib.Path.cwd() / self.args.run_dir
+
 			# See if directory exists
 			if self.execution_path.exists():
 				print("Execution directory",self.execution_path,"exists.")
