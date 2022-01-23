@@ -4,8 +4,10 @@
 import pathlib
 import sys
 
-# Add lab passoff files
-sys.path.append('../resources')
+# Add to the system path the "resources" directory relative to the script that was run
+resources_path = pathlib.Path(__file__).resolve().parent.parent  / 'resources'
+sys.path.append( str(resources_path) )
+#sys.path.append(str(pathlib.Path(__file__).parent / "src"))
 import lab_passoff
 import tester_module
 
