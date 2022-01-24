@@ -38,7 +38,7 @@ exit:
 	ecall					# Make system call		
 
 	la a0,result_str     	# Put result_str address in a0
-	li a7,print_str			# System call code for print_str code 4
+	li a7,PRINT_STR			# System call code for print_str code 4
 	ecall					# Make system call
  
 	lw a0,output			# Load output value into a0
