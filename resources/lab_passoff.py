@@ -460,7 +460,7 @@ class lab_test:
 			if filepath.exists():
 				print(" File",filename,"exists")
 			else:
-				self.print_error("File",filename,"does not exist",filepath.as_posix())
+				self.print_error("File",filename,"does not exist",filepath)
 				error = True
 				self.proceed_with_tests = False
 		return not error

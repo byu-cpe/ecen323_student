@@ -50,10 +50,11 @@ class simulation_module(tester_module):
 	TODO: Add support for analyzing VHDL and verilog
 	'''
 
-	def __init__(self, sim_top_module_name, hdl_sim_keylist):
+	def __init__(self, sim_top_module_name, hdl_sim_keylist, include_dirs=[] ):
 		''' Initialize the top module name and the keylist for simulation HDL files '''
 		self.sim_top_module = sim_top_module_name
 		self.hdl_sim_keylist = hdl_sim_keylist
+		self.include_dirs = include_dirs
 
 	def analyze_hdl_files(self, lab_test, hdl_filename_list, log_basename, analyze_cmd):
 		''' Perform HDL analysis on a set of files. This is a generic function and should
@@ -70,7 +71,15 @@ class simulation_module(tester_module):
 		self.analyze_log_filepath = lab_test.execution_path / analyze_log_filename
 		for filename in hdl_filename_list:
 			analyze_cmd.append(filename)
-		
+
+		# Add Include DIRS
+		if len(self.include_dirs) > 0:
+			for include_dir in self.include_dirs:
+				analyze_cmd.append("-i")
+				analyze_cmd.append(include_dir)
+
+		#print(analyze_cmd)
+		#print(lab_test.execution_path)
 		return_code = lab_test.subprocess_file_print(self.analyze_log_filepath, analyze_cmd, lab_test.execution_path )
 		if return_code != 0 :
 			lab_test.print_error("Failed simulation")
@@ -222,8 +231,8 @@ class tcl_simulation2(simulation_module):
 class testbench_simulation(simulation_module):
 	''' An object that represents a tcl_simulation test.
 	'''
-	def __init__(self,testbench_description, testbench_top, hdl_sim_keylist, xe_options_list):
-		super().__init__(testbench_top,hdl_sim_keylist)
+	def __init__(self, testbench_description, testbench_top, hdl_sim_keylist, xe_options_list, include_dirs=[] ):
+		super().__init__(testbench_top,hdl_sim_keylist,include_dirs)
 		self.testbench_description = testbench_description
 		#self.testbench_top = testbench_top
 		#self.hdl_sim_keylist = hdl_sim_keylist
@@ -273,12 +282,13 @@ class build_bitstream(tester_module):
 	''' An object that represents a bitstream implementation test.
 	'''
 
-	def __init__(self,design_name, xdl_key_list, hdl_key_list, implement_build = True, create_dcp = False):
+	def __init__(self,design_name, xdl_key_list, hdl_key_list, implement_build = True, create_dcp = False,  include_dirs = []):
 		self.design_name = design_name
 		self.xdl_key_list = xdl_key_list
 		self.hdl_key_list = hdl_key_list
 		self.implement_build = implement_build
 		self.create_dcp = create_dcp
+		self.include_dirs = include_dirs
 
 	def module_name(self):
 		''' returns a string indicating the name of the module. Used for logging. '''
@@ -325,7 +335,17 @@ class build_bitstream(tester_module):
 				log.write('read_xdc ' + xdc_filename + '\n')
 		log.write('# Synthesize design\n')
 		#log.write('synth_design -top ' + design_name + ' -flatten_hierarchy full\n')
-		log.write('synth_design -top ' + self.design_name + ' -part ' + part + '\n')
+		#log.write('synth_design -top ' + self.design_name + ' -part ' + part + '\n')
+		synth_command = 'synth_design -top ' + self.design_name + ' -part ' + part
+		if len(self.include_dirs) > 0:
+			# -include_dirs {C:/data/include1 C:/data/include2}
+			synth_command += ' -include {'
+			for include_dir in self.include_dirs:
+				synth_command += include_dir + " "
+			synth_command += '}'
+		synth_command += '\n'
+		log.write(synth_command)
+
 		if self.implement_build:    
 			log.write('# Implement Design\n')
 			log.write('place_design\n')
