@@ -34,6 +34,19 @@ module tb_simple_datapath();
 	logic int_Zero, tb_branch;
 	integer i;
 
+	localparam RTYPE_ALU_OPCODE = 7'b0110011;
+	localparam IMMEDIATE_ALU_OPCODE = 7'b0010011;
+	localparam STORE_OPCODE = 7'b0100011;
+
+	localparam ADD_OP = 4'b0010;
+	localparam SUB_OP = 4'b0110;
+	localparam AND_OP = 4'b0000;
+	localparam OR_OP = 4'b0001;
+	localparam XOR_OP = 4'b1011;
+	localparam SLT_OP = 4'b0111;
+
+	localparam INITIAL_PC = 32'h00400000;
+
     task sim_clocks(input int clocks);
 		automatic int i;
 		for(i=0; i < clocks; i=i+1) begin
@@ -178,7 +191,7 @@ module tb_simple_datapath();
 		input [3:0] ALUCtrl;
 		begin
 			logic [31:0] instruction;
-			instruction = {func7, rs2, rs1, func3, rd, 7'b0110011};
+			instruction = {func7, rs2, rs1, func3, rd, RTYPE_ALU_OPCODE};
 			execute_instruction(.instruction(instruction), .ALUSrc(0), .ALUCtrl(ALUCtrl), .MemWrite(0),.MemRead(0),
 				.branch(0),.RegWrite(1), .MemtoReg(0));
 		end
@@ -191,7 +204,7 @@ module tb_simple_datapath();
 		input [3:0] ALUCtrl;
 		begin
 			logic [31:0] instruction;
-			instruction = {immediate, rs1, func3, rd, 7'b0010011};
+			instruction = {immediate, rs1, func3, rd, IMMEDIATE_ALU_OPCODE};
 			execute_instruction(.instruction(instruction), .ALUSrc(1), .ALUCtrl(ALUCtrl), .MemWrite(0),.MemRead(0),
 				.branch(0),.RegWrite(1),.MemtoReg(0));
 		end
@@ -200,72 +213,72 @@ module tb_simple_datapath();
 	task execute_add_instruction;
 		input [4:0] rd, rs1, rs2;
 		$display("[%0t] add x%0d,x%0d,x%0d", $time, rd, rs1, rs2);
-		execute_rtype_alu_instruction(.rd(rd),.rs1(rs1),.rs2(rs2),.func3(0),.func7(0),.ALUCtrl(4'b0010));
+		execute_rtype_alu_instruction(.rd(rd),.rs1(rs1),.rs2(rs2),.func3(0),.func7(0),.ALUCtrl(ADD_OP));
 	endtask
 
 	task execute_sub_instruction;
 		input [4:0] rd, rs1, rs2;
 		$display("[%0t] sub x%0d,x%0d,x%0d", $time, rd, rs1, rs2);
-		execute_rtype_alu_instruction(.rd(rd),.rs1(rs1),.rs2(rs2),.func3(3'b000),.func7(7'b0100000),.ALUCtrl(4'b0011));
+		execute_rtype_alu_instruction(.rd(rd),.rs1(rs1),.rs2(rs2),.func3(3'b000),.func7(7'b0100000),.ALUCtrl(SUB_OP));
 	endtask
 
 	task execute_and_instruction;
 		input [4:0] rd, rs1, rs2;
 		$display("[%0t] and x%0d,x%0d,x%0d", $time, rd, rs1, rs2);
-		execute_rtype_alu_instruction(.rd(rd),.rs1(rs1),.rs2(rs2),.func3(3'b111),.func7(7'b0000000),.ALUCtrl(4'b0000));
+		execute_rtype_alu_instruction(.rd(rd),.rs1(rs1),.rs2(rs2),.func3(3'b111),.func7(7'b0000000),.ALUCtrl(AND_OP));
 	endtask
 
 	task execute_or_instruction;
 		input [4:0] rd, rs1, rs2;
 		$display("[%0t] or x%0d,x%0d,x%0d", $time, rd, rs1, rs2);
-		execute_rtype_alu_instruction(.rd(rd),.rs1(rs1),.rs2(rs2),.func3(3'b110),.func7(7'b0000000),.ALUCtrl(4'b0001));
+		execute_rtype_alu_instruction(.rd(rd),.rs1(rs1),.rs2(rs2),.func3(3'b110),.func7(7'b0000000),.ALUCtrl(OR_OP));
 	endtask
 
 	task execute_xor_instruction;
 		input [4:0] rd, rs1, rs2;
 		$display("[%0t] xor x%0d,x%0d,x%0d", $time, rd, rs1, rs2);
-		execute_rtype_alu_instruction(.rd(rd),.rs1(rs1),.rs2(rs2),.func3(3'b100),.func7(7'b0000000),.ALUCtrl(4'b1011));
+		execute_rtype_alu_instruction(.rd(rd),.rs1(rs1),.rs2(rs2),.func3(3'b100),.func7(7'b0000000),.ALUCtrl(XOR_OP));
 	endtask
 
 	task execute_slt_instruction;
 		input [4:0] rd, rs1, rs2;
 		$display("[%0t] slt x%0d,x%0d,x%0d", $time, rd, rs1, rs2);
-		execute_rtype_alu_instruction(.rd(rd),.rs1(rs1),.rs2(rs2),.func3(3'b010),.func7(7'b0000000),.ALUCtrl(4'b0111));
+		execute_rtype_alu_instruction(.rd(rd),.rs1(rs1),.rs2(rs2),.func3(3'b010),.func7(7'b0000000),.ALUCtrl(SLT_OP));
 	endtask
 
 	task execute_addi_instruction;
 		input [4:0] rd, rs1;
 		input [11:0] immediate;
 		$display("[%0t] addi x%0d,x%0d,%0d", $time, rd, rs1, $signed({ {20{immediate[11]}}, immediate}) );
-		execute_immediate_alu_instruction(.rd(rd),.rs1(rs1),.immediate(immediate),.func3(0),.ALUCtrl(4'b0010));
+		execute_immediate_alu_instruction(.rd(rd),.rs1(rs1),.immediate(immediate),.func3(0),.ALUCtrl(ADD_OP));
 	endtask
 
 	task execute_xori_instruction;
 		input [4:0] rd, rs1;
 		input [11:0] immediate;
 		$display("[%0t] xori x%0d,x%0d,%0d", $time, rd, rs1, $signed({ {20{immediate[11]}}, immediate}) );
-		execute_immediate_alu_instruction(.rd(rd),.rs1(rs1),.immediate(immediate),.func3(3'b100),.ALUCtrl(4'b1101));
+		execute_immediate_alu_instruction(.rd(rd),.rs1(rs1),.immediate(immediate),.func3(3'b100),.ALUCtrl(XOR_OP));
 	endtask
 
 	task execute_ori_instruction;
 		input [4:0] rd, rs1;
 		input [11:0] immediate;
 		$display("[%0t] ori x%0d,x%0d,%0d", $time, rd, rs1, $signed({ {20{immediate[11]}}, immediate}) );
-		execute_immediate_alu_instruction(.rd(rd),.rs1(rs1),.immediate(immediate),.func3(3'b110),.ALUCtrl(4'b0001));
+		execute_immediate_alu_instruction(.rd(rd),.rs1(rs1),.immediate(immediate),.func3(3'b110),.ALUCtrl(OR_OP));
 	endtask
 
 	task execute_andi_instruction;
 		input [4:0] rd, rs1;
 		input [11:0] immediate;
 		$display("[%0t] andi x%0d,x%0d,%0d", $time, rd, rs1, $signed({ {20{immediate[11]}}, immediate}) );
-		execute_immediate_alu_instruction(.rd(rd),.rs1(rs1),.immediate(immediate),.func3(3'b111),.ALUCtrl(4'b0000));
+		execute_immediate_alu_instruction(.rd(rd),.rs1(rs1),.immediate(immediate),.func3(3'b111),.ALUCtrl(ADD_OP));
 	endtask
 
 	task execute_slti_instruction;
 		input [4:0] rd, rs1;
 		input [11:0] immediate;
 		$display("[%0t] slti x%0d,x%0d,%0d", $time, rd, rs1, $signed({ {20{immediate[11]}}, immediate}) );
-		execute_immediate_alu_instruction(.rd(rd),.rs1(rs1),.immediate(immediate),.func3(3'b010),.ALUCtrl(4'b0111));
+		execute_immediate_alu_instruction(.rd(rd),.rs1(rs1),.immediate(immediate),.func3(3'b010),.ALUCtrl(SLT_OP));
 	endtask
 
 	task execute_lw_instruction;
@@ -275,7 +288,7 @@ module tb_simple_datapath();
 		logic [31:0] instruction;
 		instruction = {immediate, rs1, 3'b011, rd, 7'b0000011};
 		$display("[%0t] lw x%0d,%0d(x%0d)", $time, rd,  $signed({ {20{immediate[11]}}, immediate}), rs1 );
-		execute_instruction(.instruction(instruction), .ALUSrc(1), .ALUCtrl(4'b0010), // add
+		execute_instruction(.instruction(instruction), .ALUSrc(1), .ALUCtrl(ADD_OP), // add
 			 .MemWrite(0),.MemRead(1),.branch(0),.RegWrite(1),.MemtoReg(1));
 	endtask
 
@@ -286,7 +299,7 @@ module tb_simple_datapath();
 		instruction = {immediate[11:5], rs2, rs1, 3'b011, immediate[4:0], 7'b0100011};
 		$display("[%0t] sw x%0d,%0d(x%0d)", $time, rs2,  $signed({ {20{immediate[11]}}, immediate}), 
 			rs1 );
-		execute_instruction(.instruction(instruction), .ALUSrc(1), .ALUCtrl(4'b0010), // add
+		execute_instruction(.instruction(instruction), .ALUSrc(1), .ALUCtrl(ADD_OP), // add
 			 .MemWrite(1),.MemRead(0),.branch(0),.RegWrite(0),.MemtoReg(0));
 	endtask
 
@@ -298,7 +311,7 @@ module tb_simple_datapath();
 		assign imm = {immediate, 1'b0};
 		instruction = {imm[12],imm[10:5], rs2, rs1, 3'b000, imm[4:1],  imm[11], 7'b1100011};
 		$display("[%0t] beq x%0d,x%0d,%0d", $time, rs1, rs2,  $signed({ {19{imm[12]}}, imm}));
-		execute_instruction(.instruction(instruction), .ALUSrc(0), .ALUCtrl(4'b0011), // sub
+		execute_instruction(.instruction(instruction), .ALUSrc(0), .ALUCtrl(SUB_OP), // sub
 			 .MemWrite(0),.MemRead(0),.branch(1),.RegWrite(0),.MemtoReg(0));
 	endtask
 
@@ -348,7 +361,6 @@ module tb_simple_datapath();
 			tb_dReadData <= 32'hxxxxxxxx;
 	end
 
-	localparam INITIAL_PC = 32'h00400000;
 	always_ff@(posedge clk) begin
 		if (tb_rst)
 			int_PC <= INITIAL_PC;
@@ -360,12 +372,12 @@ module tb_simple_datapath();
 				int_PC <= int_PC + 4;
 	end
 
-    assign alu =    (tb_ALUCtrl == 4'b0000) ? l_readA & b_operand :
-                    (tb_ALUCtrl == 4'b0001) ? l_readA | b_operand :
-                    (tb_ALUCtrl == 4'b0010) ? l_readA + b_operand :
-                    (tb_ALUCtrl == 4'b0011) ? l_readA - b_operand :
-                    (tb_ALUCtrl == 4'b0111) ?  (($signed(l_readA) < $signed(b_operand)) ? 32'b1 : 32'b0) :
-                    (tb_ALUCtrl[3:0] == 4'b1101) ? l_readA ^ b_operand :
+    assign alu =    (tb_ALUCtrl == AND_OP) ? l_readA & b_operand :
+                    (tb_ALUCtrl == OR_OP) ? l_readA | b_operand :
+                    (tb_ALUCtrl == ADD_OP) ? l_readA + b_operand :
+                    (tb_ALUCtrl == SUB_OP) ? l_readA - b_operand :
+                    (tb_ALUCtrl == SLT_OP) ?  (($signed(l_readA) < $signed(b_operand)) ? 32'b1 : 32'b0) :
+                    (tb_ALUCtrl[3:0] == XOR_OP) ? l_readA ^ b_operand :
                     l_readA + b_operand;
 	assign int_Zero = (alu == 0);
 	assign tb_PCSrc = int_Zero & tb_branch;
@@ -389,7 +401,7 @@ module tb_simple_datapath();
 		// regiser file
 		(tb_ALUSrc==0) ? l_readB 
 		// store instruction
-		: (tb_instruction[6:0] == 7'b0100011) ? 
+		: (tb_instruction[6:0] == STORE_OPCODE) ? 
 			{{20{tb_instruction[31]}},tb_instruction[31:25], tb_instruction[11:7]}
 		// conventional
 		: {{20{tb_instruction[31]}},tb_instruction[31:20]};
