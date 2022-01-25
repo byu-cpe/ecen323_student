@@ -42,7 +42,7 @@ module tb_simple_datapath();
 	localparam SUB_OP = 4'b0110;
 	localparam AND_OP = 4'b0000;
 	localparam OR_OP = 4'b0001;
-	localparam XOR_OP = 4'b1011;
+	localparam XOR_OP = 4'b1101;
 	localparam SLT_OP = 4'b0111;
 
 	localparam INITIAL_PC = 32'h00400000;
@@ -69,8 +69,8 @@ module tb_simple_datapath();
 	task error();
 		// Provide some delay after error so that you don't have to look at end of waveform
 		#10 clk = 0;
-		$error;
-		//$finish;
+		//$error;
+		$finish;
 	endtask;
 
 	/* Clock cycle period
@@ -435,18 +435,26 @@ module tb_simple_datapath();
 		// ends at the negative clock edge. Add a half period and raise clock (start at clock edge)
 		#5 clk = 1;
 
-		//$display("[%0t]Testing immediate instructions", $time);
+		$display("[%0t]Testing immediate instructions", $time);
+		// addi x1, x0, 1     positive (r1=0+1=1) 0x00000001
 		execute_addi_instruction(.rd(1), .rs1(0), .immediate(1) );
+		// addi x2, x1, -3   negative (r2=r1-3=1-3=-2) 0xfffffffe
 		execute_addi_instruction(.rd(2), .rs1(1), .immediate(-3) );
-		execute_andi_instruction(.rd(3), .rs1(2), .immediate(8'hff) );
+		// andi x3, x2, 0xfff sign extension (r3=r2 AND 0xffffffff=-2) 0xfffffffe
+		execute_andi_instruction(.rd(3), .rs1(2), .immediate(12'hfff) );
+		// andi x3, x3, 0xff  AND no sign extension (r3=r3 AND 0xff=0xfe)
+		execute_andi_instruction(.rd(3), .rs1(3), .immediate(12'h0ff) );
+		// ori, x4, x3, 0x700  0x7fe
 		execute_ori_instruction(.rd(4), .rs1(3), .immediate(12'h700) );
+		// ori, x5, x0, 0xca5 0xfffffcaf
 		execute_ori_instruction(.rd(5), .rs1(0), .immediate(12'hca5) );
-		execute_xori_instruction(.rd(6), .rs1(2), .immediate(12'h7ff) );
+		// xori x6, x2,0xfff  (invert or not) 0x00000001
+		execute_xori_instruction(.rd(6), .rs1(2), .immediate(12'hfff) );
 
-		//$display("[%0t]Testing x0 Register", $time);
+		$display("[%0t]Testing x0 Register", $time);
 		execute_addi_instruction(.rd(0), .rs1(0), .immediate(1) );
 
-		//$display("[%0t]Testing ALU register instructions", $time);
+		$display("[%0t]Testing ALU register instructions", $time);
 		execute_add_instruction(.rd(7), .rs1(1), .rs2(2) );
 		execute_add_instruction(.rd(8), .rs1(3), .rs2(1) );
 		execute_add_instruction(.rd(9), .rs1(0), .rs2(1) );
@@ -468,7 +476,7 @@ module tb_simple_datapath();
 		execute_slt_instruction(.rd(20), .rs1(2), .rs2(1) );
 		execute_slt_instruction(.rd(21), .rs1(1), .rs2(2) );
 
-		//$display("[%0t]Testing Load Memory instructions", $time);
+		$display("[%0t]Testing Load Memory instructions", $time);
 		execute_lw_instruction(.rd(22), .rs1(0), .immediate(0) );
 		execute_lw_instruction(.rd(23), .rs1(0), .immediate(4) );
 		execute_lw_instruction(.rd(24), .rs1(0), .immediate(8) );
@@ -479,7 +487,7 @@ module tb_simple_datapath();
 		execute_lw_instruction(.rd(29), .rs1(26), .immediate(-12) );
 		execute_lw_instruction(.rd(30), .rs1(26), .immediate(-16) );
 
-		//$display("[%0t]Testing Store Memory instructions", $time);
+		$display("[%0t]Testing Store Memory instructions", $time);
 		execute_sw_instruction(.rs2(1), .rs1(0), .immediate(0) );
 		execute_sw_instruction(.rs2(2), .rs1(0), .immediate(4) );
 		execute_sw_instruction(.rs2(3), .rs1(0), .immediate(8) );
@@ -501,6 +509,7 @@ module tb_simple_datapath();
 		execute_lw_instruction(.rd(29), .rs1(26), .immediate(-12) );
 		execute_lw_instruction(.rd(30), .rs1(26), .immediate(-16) );
 
+		$display("[%0t]Testing Branch instructions", $time);
 		// BEQ not taken
 		execute_beq_instruction(.rs1(0), .rs2(1), .immediate(8) );
 		// BEQ taken forrward
