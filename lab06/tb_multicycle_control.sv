@@ -198,12 +198,12 @@ module tb_multicycle_control #(
 
 	task execute_random_instruction;
 		automatic int r1,r2,imm;
-		int num_instructions = 13;
+		automatic int num_instructions = 13;
 
 		// Generate random instruction fields
-		int rd = $urandom_range(0,31);
-		int rs1 = $urandom_range(0,31);
-		int rs2 = $urandom_range(0,31);
+		automatic int rd = $urandom_range(0,31);
+		automatic int rs1 = $urandom_range(0,31);
+		automatic int rs2 = $urandom_range(0,31);
 		imm = $urandom_range(0,12'hfff);
 		
 		case($urandom % num_instructions)

@@ -50,11 +50,12 @@ class simulation_module(tester_module):
 	TODO: Add support for analyzing VHDL and verilog
 	'''
 
-	def __init__(self, sim_top_module_name, hdl_sim_keylist, include_dirs=[] ):
+	def __init__(self, sim_top_module_name, hdl_sim_keylist, include_dirs=[], generics=[] ):
 		''' Initialize the top module name and the keylist for simulation HDL files '''
 		self.sim_top_module = sim_top_module_name
 		self.hdl_sim_keylist = hdl_sim_keylist
 		self.include_dirs = include_dirs
+		self.generics = generics
 
 	def analyze_hdl_files(self, lab_test, hdl_filename_list, log_basename, analyze_cmd):
 		''' Perform HDL analysis on a set of files. This is a generic function and should
@@ -82,7 +83,7 @@ class simulation_module(tester_module):
 		#print(lab_test.execution_path)
 		return_code = lab_test.subprocess_file_print(self.analyze_log_filepath, analyze_cmd, lab_test.execution_path )
 		if return_code != 0 :
-			lab_test.print_error("Failed simulation")
+			lab_test.print_error("Failed analyze")
 			return False
 
 		return True
@@ -104,12 +105,21 @@ class simulation_module(tester_module):
 		self.elaborate_log_filepath = lab_test.execution_path / elaborate_log_filename
 
 		#xelab_cmd = ["xelab", "--debug", "typical", "--nolog", "-L", "unisims_ver", design_name, "work.glbl" ]
-		xelab_cmd = ["xelab", "--debug", "typical", "--nolog", "-L", "unisims_ver", design_name ]
+		xelab_cmd = ["xelab", "--debug", "typical", "--nolog", "-L", "unisims_ver"]
+		if len(self.generics) > 0:
+			# Add generic options
+			for generic in self.generics:
+				xelab_cmd.append("-generic_top")
+				#xelab_cmd.append(str.format("\"{}\"",generic))
+				xelab_cmd.append(str.format("{}",generic))
+		xelab_cmd.append( design_name )
 
 		return_code = lab_test.subprocess_file_print(self.elaborate_log_filepath, xelab_cmd, lab_test.execution_path )
 
 		if return_code != 0:
-			lab_test.print_error("Failed simulation")
+			lab_test.print_error("Failed Elaborate")
+			print(xelab_cmd)
+			print(lab_test.execution_path)
 			return False
 
 		return True
@@ -129,6 +139,8 @@ class simulation_module(tester_module):
 		return_code = lab_test.subprocess_file_print(self.simulation_log_filepath, xsim_cmd, lab_test.execution_path )
 		if return_code != 0:
 			lab_test.print_error("Failed simulation")
+			print(xsim_cmd)
+			print(lab_test.execution_path)
 			return False
 		return True
 
@@ -231,8 +243,8 @@ class tcl_simulation2(simulation_module):
 class testbench_simulation(simulation_module):
 	''' An object that represents a tcl_simulation test.
 	'''
-	def __init__(self, testbench_description, testbench_top, hdl_sim_keylist, xe_options_list, include_dirs=[] ):
-		super().__init__(testbench_top,hdl_sim_keylist,include_dirs)
+	def __init__(self, testbench_description, testbench_top, hdl_sim_keylist, xe_options_list, include_dirs=[], generics=[] ):
+		super().__init__(testbench_top,hdl_sim_keylist,include_dirs,generics)
 		self.testbench_description = testbench_description
 		#self.testbench_top = testbench_top
 		#self.hdl_sim_keylist = hdl_sim_keylist
@@ -249,8 +261,8 @@ class testbench_simulation(simulation_module):
 			tcl_list: the list of items associated with a tcl simulation
 		'''
 		
-		hdl_filename_list = lab_test.get_filenames_from_keylist(self.hdl_sim_keylist)
-		extract_lab_path = lab_test.submission_lab_path
+		#hdl_filename_list = lab_test.get_filenames_from_keylist(self.hdl_sim_keylist)
+		#extract_lab_path = lab_test.submission_lab_path
 
 		if not self.analyze_sv_files(lab_test,self.sim_top_module):
 			return False

@@ -5,7 +5,9 @@ import pathlib
 import sys
 
 # Add lab passoff files
-sys.path.append('../resources')
+resources_path = pathlib.Path(__file__).resolve().parent.parent  / 'resources'
+sys.path.append( str(resources_path) )
+#sys.path.append('../resources')
 import lab_passoff
 import tester_module
 
@@ -14,7 +16,7 @@ import tester_module
 ###########################################################################
 
 # lab-specific constants
-LAB_NUMBER = 5
+LAB_NUMBER = 6
 SCRIPT_VERSION = 1.0
 # Path of script that is being run
 SCRIPT_PATH = pathlib.Path(__file__).absolute().parent.resolve()
@@ -23,15 +25,18 @@ SCRIPT_PATH = pathlib.Path(__file__).absolute().parent.resolve()
 # used to represent a specific file for the lab. The value is the path and filename
 # (relative to the lab directory) of the file to include in the submission.
 submission_files = {
-    "datapathconstants"		: "riscv_datapath_constants.sv",
-    "datapath"				: "riscv_simple_datapath.sv",
+    "multicycle"		: "riscv_multicycle.sv",
 }
 
 # List of files needed for testing that should be in the repository.
 # The key is a lab-specific keyword used to represent a specific file for the lab. 
 # The value is the name of the file (relative to the lab directory)
 test_files = {
-	"tb_simple_datapath"	: "tb_simple_datapath.sv",
+	"tb_multicycle_control"	: "tb_multicycle_control.sv",
+    "testbench_inst"       	: "testbench_inst.txt",
+    "testbench_data"       	: "testbench_data.txt",
+    "datapathconstants"		: "../lab05/riscv_datapath_constants.sv",
+    "datapath"				: "../lab05/riscv_simple_datapath.sv",
     "alu"           		: "../lab02/alu.sv",
     "alu_constants"     	: "../lab02/riscv_alu_constants.sv",
     "regfile"       		: "../lab03/regfile.sv",
@@ -40,13 +45,19 @@ test_files = {
 # TCL simulations
 
 # Testbench simulations
-regfile_tb = tester_module.testbench_simulation( "Datapath Testbench", \
-	"tb_simple_datapath", \
-	[ "tb_simple_datapath", "datapath","alu",  "regfile", "datapathconstants", "alu_constants",   ], [], include_dirs = ["../lab02"])
+multicycle_nomem_tb = tester_module.testbench_simulation( "Multicycle Testbench", \
+	"tb_multicycle_control", \
+	[ "tb_multicycle_control", "multicycle", "datapath", "alu",  "regfile", "datapathconstants", "alu_constants",   ], [], \
+		 include_dirs = ["../lab02","../lab05"])
+
+multicycle_mem_tb = tester_module.testbench_simulation( "Multicycle Testbench", \
+	"tb_multicycle_control", \
+	[ "tb_multicycle_control", "multicycle", "datapath", "alu",  "regfile", "datapathconstants", "alu_constants",   ], [], \
+		 include_dirs = ["../lab02","../lab05"], generics = ["USE_MEMORY=1"])
 
 # Synthesis batches
-datapath_build = tester_module.build_bitstream( "riscv_simple_datapath", [], 
-	[ "datapath", "alu",  "regfile", "datapathconstants", "alu_constants" ], False, False, include_dirs=["../lab02"])
+multicycle_build = tester_module.build_bitstream( "riscv_multicycle", [], 
+	[ "multicycle", "datapath", "alu",  "regfile", "datapathconstants", "alu_constants" ], False, False, include_dirs=["../lab02","../lab05"])
 
 # Bitstream build
 
@@ -61,8 +72,9 @@ def main():
 	# Prepare test
 	lab_test.prepare_test(submission_files,test_files)
 	# Add tests
-	lab_test.add_test_module(regfile_tb)
-	lab_test.add_test_module(datapath_build)
+	lab_test.add_test_module(multicycle_nomem_tb)
+	lab_test.add_test_module(multicycle_mem_tb)
+	lab_test.add_test_module(multicycle_build)
 	# Run tests
 	lab_test.run_tests()
 
