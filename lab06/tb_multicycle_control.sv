@@ -2,15 +2,12 @@
 //
 //////////////////////////////////////////////////////////////////////////////////
 //
-//  Filename: tb_simple_datapath.v
+//  Filename: tb_multicycle_control.v
 //
 //  Author: Mike Wirthlin
 //  
 //  Description: 
 // 
-//  Version 1.2: 'Removed execute_immediate_alu_instruction' function
-//  Version 1.1: Added test for slt instruction
-//  Version 1.0: Initial post
 //
 //  Change Log:
 //   
@@ -18,6 +15,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 module tb_multicycle_control #(
+
 	parameter USE_MEMORY = 0,
 	parameter instruction_memory_filename = "testbench_inst.txt",
 	parameter data_memory_filename = "testbench_data.txt");
@@ -28,7 +26,6 @@ module tb_multicycle_control #(
 	localparam INITIAL_DATA = 32'h10010000;
 	
 	localparam EBREAK_INSTRUCTION = 32'h00100073;
-
 
 	reg clk;
 	//reg [8:0] tb_ControlSignals;
@@ -103,7 +100,7 @@ module tb_multicycle_control #(
 	task execute_sub_instruction;
 		input [4:0] rd, rs1, rs2;
 		$display("[%0t] sub x%0d,x%0d,x%0d", $time, rd, rs1, rs2);
-		execute_rtype_alu_instruction(.rd(rd),.rs1(rs1),.rs2(rs2),.func3(3'b000),.func7(7'b0100000),.ALUCtrl(4'b0011));
+		execute_rtype_alu_instruction(.rd(rd),.rs1(rs1),.rs2(rs2),.func3(3'b000),.func7(7'b0100000),.ALUCtrl(4'b0110));
 	endtask
 
 	task execute_and_instruction;
@@ -171,7 +168,7 @@ module tb_multicycle_control #(
 		logic [31:0] instruction;
 		// all load instructions use the 0000011 opcode. The 011 funct3 is for the ld. I should use
 		// the 010 for lw instead of ld. 
-		instruction = {immediate, rs1, 3'b011, rd, 7'b0000011};
+		instruction = {immediate, rs1, 3'b010, rd, 7'b0000011};
 		$display("[%0t] lw x%0d,%0d(x%0d)", $time, rd,  $signed({ {20{immediate[11]}}, immediate}), rs1 );
 		execute_instruction(.instruction(instruction));
 	endtask
@@ -200,6 +197,28 @@ module tb_multicycle_control #(
 	endtask
 
 	task execute_random_instruction;
+		automatic int r1,r2,imm;
+		int num_instructions = 13;
+
+		// Generate random instruction fields
+		int rd = $urandom_range(0,31);
+		int rs1 = $urandom_range(0,31);
+		int rs2 = $urandom_range(0,31);
+		imm = $urandom_range(0,12'hfff);
+		
+		case($urandom % num_instructions)
+			0: execute_add_instruction(rd,rs1,rs2);
+			1: execute_sub_instruction(rd,rs1,rs2);
+			3: execute_and_instruction(rd,rs1,rs2);
+			4: execute_or_instruction(rd,rs1,rs2);
+			5: execute_xor_instruction(rd,rs1,rs2);
+			6: execute_slt_instruction(rd,rs1,rs2);
+			7: execute_addi_instruction(rd,rs1,imm);
+			8: execute_andi_instruction(rd,rs1,imm);
+			10: execute_ori_instruction(rd,rs1,imm);
+			11: execute_xori_instruction(rd,rs1,imm);
+			12: execute_slti_instruction(rd,rs1,imm);
+		endcase
 	endtask
 
     // Check all signals on negative clock cycle
@@ -209,21 +228,41 @@ module tb_multicycle_control #(
                 $display("*** Error: PC=%h but expect %h at time %0t", tb_PC, int_PC, $time);
                 error();
             end
+			if (^tb_PC[0] === 1'bX) begin
+				$display("**** Error: PC unititialized at time %0t",$time);
+				error();
+			end
             if (alu != tb_dAddress && (cycle_num == 2 | cycle_num == 3 && cycle_num == 4)) begin
                 $display("*** Error: dAddress=%h but expect %h at time %0t", tb_dAddress, alu, $time);
                 error();
             end
+			if (^tb_dAddress[0] === 1'bX) begin
+				$display("**** Error: dAddress unititialized at time %0t",$time);
+				error();
+			end
             if (tb_MemWrite != int_MemWrite) begin
                 $display("*** Error: MemWrite=%h but expect %h at time %0t", tb_MemWrite, int_MemWrite, $time);
                 error();
             end
+			if (tb_MemWrite == 1'bX) begin
+				$display("**** Error: MemWrite unititialized at time %0t",$time);
+				error();
+			end
             if (tb_MemRead != int_MemRead) begin
                 $display("*** Error: MemRead=%h but expect %h at time %0t", tb_MemRead, int_MemRead, $time);
                 error();
             end
+			if (tb_MemRead == 1'bX) begin
+				$display("**** Error: MemRead unititialized at time %0t",$time);
+				error();
+			end
             if (int_MemWrite && tb_dWriteData != l_readB) begin
                 $display("*** Error: dWriteData=%h but expect %h at time %0t", tb_dWriteData,
                 l_readB, $time);
+                error();
+            end
+            if (tb_MemWrite && ^tb_dWriteData[0] === 1'bX) begin
+                $display("*** Error: WriteData unitialized at time %0t", $time);
                 error();
             end
             /* - no need to check memory read : both testbench and circuit will read the same data
@@ -242,6 +281,8 @@ module tb_multicycle_control #(
     end
 
 	task non_memory_simulation;
+		int i;
+
         //shall print %t with scaled in ns (-9), with 2 precision digits, and would print the " ns" string
 		$timeformat(-9, 0, " ns", 20);
 		$display("*** Start of Simulation:Non-Memory Simulation ***");
@@ -261,7 +302,9 @@ module tb_multicycle_control #(
 		// ends at the negative clock edge. Add a half period and raise clock (start at clock edge)
 		//#5 clk = 1;
 
-		//$display("[%0t]Testing immediate instructions", $time);
+		// DO NOT CHANGE THE ISNTRUCTION ORDER - EXAM RELIES ON THIS SEQUENCE
+
+		$display("[%0t]Testing immediate instructions", $time);
 		execute_addi_instruction(.rd(1), .rs1(0), .immediate(1) );
 		execute_addi_instruction(.rd(2), .rs1(1), .immediate(-3) );
 		execute_andi_instruction(.rd(3), .rs1(2), .immediate(8'hff) );
@@ -269,10 +312,10 @@ module tb_multicycle_control #(
 		execute_ori_instruction(.rd(5), .rs1(0), .immediate(12'hca5) );
 		execute_xori_instruction(.rd(6), .rs1(2), .immediate(12'h7ff) );
 
-		//$display("[%0t]Testing x0 Register", $time);
+		$display("[%0t]Testing x0 Register", $time);
 		execute_addi_instruction(.rd(0), .rs1(0), .immediate(1) );
 
-		//$display("[%0t]Testing ALU register instructions", $time);
+		$display("[%0t]Testing ALU register instructions", $time);
 		execute_add_instruction(.rd(7), .rs1(1), .rs2(2) );
 		execute_add_instruction(.rd(8), .rs1(3), .rs2(1) );
 		execute_add_instruction(.rd(9), .rs1(0), .rs2(1) );
@@ -320,7 +363,7 @@ module tb_multicycle_control #(
 		execute_add_instruction(.rd(22), .rs1(22), .rs2(22) ); // 0x08008000
 		execute_add_instruction(.rd(22), .rs1(22), .rs2(22) ); // 0x10001000
 
-		//$display("[%0t]Testing Load Memory instructions", $time);
+		$display("[%0t]Testing Load Memory instructions", $time);
 		execute_lw_instruction(.rd(23), .rs1(22), .immediate(0) );
 		execute_lw_instruction(.rd(24), .rs1(22), .immediate(4) );
 		execute_lw_instruction(.rd(25), .rs1(22), .immediate(8) );
@@ -331,7 +374,7 @@ module tb_multicycle_control #(
 		execute_lw_instruction(.rd(30), .rs1(27), .immediate(-12) );
 		execute_lw_instruction(.rd(31), .rs1(27), .immediate(-16) );
 
-		//$display("[%0t]Testing Store Memory instructions", $time);
+		$display("[%0t]Testing Store Memory instructions", $time);
 		execute_sw_instruction(.rs2(1), .rs1(22), .immediate(0) );
 		execute_sw_instruction(.rs2(2), .rs1(22), .immediate(4) );
 		execute_sw_instruction(.rs2(3), .rs1(22), .immediate(8) );
@@ -353,6 +396,7 @@ module tb_multicycle_control #(
 		execute_lw_instruction(.rd(30), .rs1(27), .immediate(-12) );
 		execute_lw_instruction(.rd(31), .rs1(27), .immediate(-16) );
 
+		$display("[%0t]Testing Branch instructions", $time);
 		// BEQ not taken
 		execute_beq_instruction(.rs1(0), .rs2(1), .immediate(8) );
 		// BEQ taken forrward
@@ -362,12 +406,13 @@ module tb_multicycle_control #(
 		// BEQ taken backward
 		execute_beq_instruction(.rs1(1), .rs2(1), .immediate(-64) );
 
-/*
 		//////////////////////////////////
 		//	Random testing
-		random_commands(1000);
+		$display("[%0t]Testing Random instructions", $time);
+		for(i=0;i<100;i=i+1)
+			execute_random_instruction();
+
 		#100ns;
-*/
 		sim_clocks(20);
 
 		$display("*** Simulation done *** %0t", $time);
