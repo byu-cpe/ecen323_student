@@ -12,8 +12,8 @@
 module rx(clk, rst, rx_in, odd, dout, error, data_strobe, busy);
 
 	// Ports and parameters
-	input clk, rst, rx_in, odd;
-	output error;
+	input logic clk, rst, rx_in, odd;
+	output logic error;
 	output [7:0] dout;
 	output reg busy, data_strobe;
 
@@ -56,8 +56,8 @@ module rx(clk, rst, rx_in, odd, dout, error, data_strobe, busy);
 	reg [3:0] next_state;
         
 	// Baud Rate Timer
-    always@(posedge clk)
-        if (rst || ResetTimer == 1'b1)
+    always_ff@(posedge clk)
+        if (rst | ResetTimer)
             baud_counter <= 0;
         else if (EnableTimer == 1'b1)
             baud_counter <= baud_counter + 1;

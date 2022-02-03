@@ -53,7 +53,6 @@ module multicycle_iosystem (clk, btnc, btnd, btnl, btnr, btnu, sw, led,
 
     // Memories
     logic iMemRead = 1;  // Always read instruction memory
-    logic [31:0] dReadData;
     riscv_mem mem (.clk(clk), .rst(rst), .PC(PC), .iMemRead(iMemRead), .instruction(instruction),
         .dAddress(dAddress), .MemWrite(dMemWrite), .dWriteData(dWriteData), .dReadData(dReadData) );
 
@@ -62,7 +61,7 @@ module multicycle_iosystem (clk, btnc, btnd, btnl, btnr, btnu, sw, led,
         // Clock and reset ports
         .clk(clk_proc), .clkvga(clk_vga), .rst(rst), 
         // Processor bus interface
-        .address(), .MemWrite(), .MemRead(), .io_memory_read(), .io_memory_write(), 
+        .address(), .MemWrite(), .MemRead(), .io_memory_read(), .io_memory_write(), .valid_io_read(),
         // Top-level ports
         .btnc(btnc), .btnd(btnd), .btnl(btnl), .btnr(btnr), .btnu(btnu), .sw(sw), 
         .led(led), .an(an), .seg(seg), .dp(dp), .RsRx(RsRx), .RsTx(RsTx), .vgaBlue(vgaBlue),

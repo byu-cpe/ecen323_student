@@ -22,7 +22,8 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-module iosystem (clk, clkvga, rst, address, MemWrite, MemRead, io_memory_read, io_memory_write, 
+module iosystem (clk, clkvga, rst, address, MemWrite, MemRead, 
+    io_memory_read, io_memory_write, valid_io_read,
     btnc, btnd, btnl, btnr, btnu, sw, led,
     an, seg, dp, RsRx, RsTx, vgaBlue, vgaGreen, vgaRed, Hsync, Vsync);
 
@@ -60,31 +61,32 @@ module iosystem (clk, clkvga, rst, address, MemWrite, MemRead, io_memory_read, i
 	localparam TIMER_CLOCKS_PER_MS = INPUT_CLOCK_RATE / (1000 * TIMER_CLOCK_REDUCTION);
 
 	// Top-level ports
-	input clk;                              // IO Clock
-    input clkvga;                           // VGA Clock (should be 50 MHz)
-    input rst;
-    input [IO_ADDR_BITS-1:0] address;       // Address used in "MEM" stage
-    input MemWrite;                         // Write control signal for I/O (MEM stage)
-    input MemRead;                         
-    output [31:0] io_memory_read;           // IO read data (read from IO)
+	input logic clk;                              // IO Clock
+    input logic clkvga;                           // VGA Clock (should be 50 MHz)
+    input logic rst;
+    input [31:0] address;                       // Address used in "MEM" stage
+    input logic MemWrite;                         // Write control signal for I/O (MEM stage)
+    input logic MemRead;                         
+    output [31:0] io_memory_read;           // IO read data (read from IO). Once cycle delay
     output [31:0] io_memory_write;          // IO write data (write to IO)
-	input btnc;
-	input btnd;
-	input btnl;
-	input btnr;
-	input btnu;
+    output logic  valid_io_read;                   // Indicates that there is valid I/O data this clock cycle
+	input logic btnc;
+	input logic btnd;
+	input logic btnl;
+	input logic btnr;
+	input logic btnu;
 	input [15:0] sw;
 	output [15:0] led;
 	output [3:0] an;
 	output [6:0] seg;
-    output dp;
-	output RsRx;
-	input RsTx;
+    output logic dp;
+	output logic RsRx;
+	input logic RsTx;
 	output [3:0] vgaRed;
 	output [3:0] vgaBlue;
 	output [3:0] vgaGreen;
-	output Hsync;
-	output Vsync;
+	output logic Hsync;
+	output logic Vsync;
 
 	////////////////////////////////////////////////////////////////////
 	// I/O Space decoding
@@ -104,16 +106,29 @@ module iosystem (clk, clkvga, rst, address, MemWrite, MemRead, io_memory_read, i
     // Decoding signals
     logic io_space_mem;
     // Data bus signals
-    logic [31:0] io_memory_read, LED_read, tx_status_read, rx_data_read, rx_status_read, sw_read;
+    logic [31:0] io_memory_read_i, LED_read, tx_status_read, rx_data_read, rx_status_read, sw_read;
     logic [31:0] btn_read, seven_seg_data_read, seven_seg_ctrl_read, ms_timer_cnt, default_color_read;
     // Write control signals
     logic LEDWrite, seven_seg_write, seven_seg_ctrl_write, tx_write;
     logic char_default_color_write, timer_value_write; 
+    // VGA decoding
+    logic valid_upper_vga_address_mem;
+    logic [31:0] char_value_read;
 
     // Decode address for I/O (_mem indicates address in mem stage)
 	assign io_space_mem = (address[31:IO_ADDR_BITS] == IO_START_ADDRESS[31:IO_ADDR_BITS]);
 	logic[3:0] io_addr = address[5:2]; // 16 different 32-bit I/O address spaces
 
+    // Generate valid IO data read signal
+    logic io_space_wb, valid_upper_vga_address_wb;
+	always_ff@(posedge clk) begin
+        io_space_wb <= io_space_mem;
+        valid_upper_vga_address_wb <= valid_upper_vga_address_mem;
+	end
+    assign valid_io_read = (io_space_wb | valid_upper_vga_address_wb); // include MemRead (delayed version of)?
+    assign io_memory_read = char_value_read ? valid_upper_vga_address_wb : io_memory_read_i;
+
+    // Generate io read data
 
 	// Control and decoding for I/O Writes
     always_comb begin
@@ -134,26 +149,27 @@ module iosystem (clk, clkvga, rst, address, MemWrite, MemRead, io_memory_read, i
 			endcase
     end
 
-	// Control and decoding for I/O Reads
+	// Control and decoding for I/O Reads (these are synchronous - one cycle delay)
     always_ff @(posedge clk)
     begin
 		if (rst)
-			io_memory_read <= 0;
+			io_memory_read_i <= 0;
 		else 
 			case(io_addr)
-				LED_ADDR : io_memory_read <= LED_read;
-				TX_ADDR : io_memory_read = tx_status_read;
-				RX_DATA_ADDR : io_memory_read = rx_data_read;
-				RX_STATUS_ADDR : io_memory_read = rx_status_read;
-                SW_ADDR : io_memory_read <= sw_read;
-                BTN_ADDR : io_memory_read <= btn_read;
-				SEG_ADDR : io_memory_read <= seven_seg_data_read;
-				SEG_ADDR_CTRL : io_memory_read <= seven_seg_ctrl_read;
-				TIMER_ADDR : io_memory_read <= ms_timer_cnt;
-				CHAR_DEFAULT_COLOR : io_memory_read <= default_color_read;
+				LED_ADDR : io_memory_read_i <= LED_read;
+				TX_ADDR : io_memory_read_i = tx_status_read;
+				RX_DATA_ADDR : io_memory_read_i = rx_data_read;
+				RX_STATUS_ADDR : io_memory_read_i = rx_status_read;
+                SW_ADDR : io_memory_read_i <= sw_read;
+                BTN_ADDR : io_memory_read_i <= btn_read;
+				SEG_ADDR : io_memory_read_i <= seven_seg_data_read;
+				SEG_ADDR_CTRL : io_memory_read_i <= seven_seg_ctrl_read;
+				TIMER_ADDR : io_memory_read_i <= ms_timer_cnt;
+				CHAR_DEFAULT_COLOR : io_memory_read_i <= default_color_read;
 			endcase
 	end
 
+    
 	////////////////////////////////////////////////////////////////////
 	// Buttons (read only)
 	////////////////////////////////////////////////////////////////////
@@ -270,9 +286,10 @@ module iosystem (clk, clkvga, rst, address, MemWrite, MemRead, io_memory_read, i
 	logic uart_tx_out;
 
     // Transmitter
-	tx tx(.clk(clk), .send(tx_write), .odd(UART_PARITY), .din(io_memory_write[7:0]),.busy(tx_busy),.tx_out(uart_tx_out));
-	defparam tx.CLK_FREQUECY = INPUT_CLOCK_RATE;
-	defparam tx.BAUD_RATE = UART_BAUD_RATE;
+	tx #(.CLK_FREQUECY(INPUT_CLOCK_RATE), .BAUD_RATE(UART_BAUD_RATE) ) 
+	   tx (.clk(clk), .send(tx_write), .odd(UART_PARITY), .din(io_memory_write[7:0]),.busy(tx_busy),.tx_out(uart_tx_out));
+	//defparam tx.CLK_FREQUECY = INPUT_CLOCK_RATE;
+	//defparam tx.BAUD_RATE = UART_BAUD_RATE;
     // assign top level "receive"  (rx) on the PC to the uart transmit port
     assign RsRx = uart_tx_out;
 	assign tx_status_read = {31'd0,tx_busy};
@@ -287,7 +304,7 @@ module iosystem (clk, clkvga, rst, address, MemWrite, MemRead, io_memory_read, i
     // for clarification of the naming.
     assign uart_rx_in = RsTx;
 
-	rx rx(.clk(clk), .rx_in(uart_rx_in), .odd(UART_PARITY), .error(rx_error), .busy(rx_busy), .data_strobe(rx_data_strobe),
+	rx rx (.clk(clk), .rx_in(uart_rx_in), .odd(UART_PARITY), .error(rx_error), .busy(rx_busy), .data_strobe(rx_data_strobe),
 		.dout(rx_data));
 	defparam rx.CLK_RATE = INPUT_CLOCK_RATE;
 	defparam rx.BAUD_RATE = UART_BAUD_RATE;
@@ -343,13 +360,11 @@ module iosystem (clk, clkvga, rst, address, MemWrite, MemRead, io_memory_read, i
 	// The default range is 0x8000 to 0xBFFF
 	////////////////////////////////////////////////////////////////////
 	
-    logic valid_upper_vga_address_mem;
 	logic [VGA_ADDR_BITS-1:0] vga_char_address;
     logic char_value_write;
     logic use_default_color;
 	logic [24:0] default_character_color;
     logic [11:0] char_fg_color, char_bg_color;
-    logic [31:0] char_value_read;
 
 	// Register that contains the default color
 	localparam DEFAULT_COLOR_MODE = 1'b0;  // default color mode is common background/foreground
@@ -362,7 +377,7 @@ module iosystem (clk, clkvga, rst, address, MemWrite, MemRead, io_memory_read, i
     assign vga_char_address = address[VGA_ADDR_BITS-1:0];
 
 	// Control (writes)
-	assign char_value_write = (valid_upper_vga_address_mem && MemWrite);
+	assign char_value_write = (valid_upper_vga_address_mem & MemWrite);
     // Indicate which mode of color to use based on current mode
 	assign use_default_color = default_character_color[24];
     // Determine fg and bg colors
@@ -400,37 +415,6 @@ module iosystem (clk, clkvga, rst, address, MemWrite, MemRead, io_memory_read, i
 		.VGA_G(vgaGreen),
 		.VGA_B(vgaBlue)
 		);
-
-
-
-	
-
-
-
-
-	
-
-	reg io_space_wb, valid_upper_vga_address_wb;
-	reg [31:0] data_memory_read_wb;
-
-	// Pipeline registers for decoding logic
-	always@(posedge clk) begin
-		io_space_wb = io_space_mem;
-		valid_upper_vga_address_wb = valid_upper_vga_address_mem;
-	end
-
-	// Mux for reading
-	logic [31:0] dReadData;
-	logic data_space_wb;
-	assign dReadData = data_space_wb ? data_memory_read_wb :
-					   io_space_wb ? io_memory_read :
-					   valid_upper_vga_address_wb ? char_value_read :
-					   0;
-
-
-
-
-
 
 
 	// BEGIN_SIM_MODEL
@@ -472,14 +456,6 @@ module iosystem (clk, clkvga, rst, address, MemWrite, MemRead, io_memory_read, i
 		end
 	end
 
-	// Address in wb stage (pipeline this so we know what should be written back)
-	reg [31:0] dAddress_wb;
-	reg MemRead_wb;
-	always@(posedge clk) begin
-		dAddress_wb <= dAddress;
-		MemRead_wb <= MemRead;
-	end
-	
 	// I/O Write Messages
 	always@(negedge clk) 
 	begin

@@ -15,10 +15,10 @@ module tx(clk, din, send, odd, tx_out, busy);
     parameter INCORRECT_BAUD_RATE_MULTIPLIER = 1;  // set to higher than 1 or less than one to simulate errors
     
 	// Ports and parameters
-	input clk, send, odd;
-	input [7:0] din;
-	output reg busy;
-	output tx_out;
+	input logic clk, send, odd;
+	input logic [7:0] din;
+	output logic  busy;
+	output logic tx_out;
 
 	// Ceiling log2b function
     function integer clogb2;

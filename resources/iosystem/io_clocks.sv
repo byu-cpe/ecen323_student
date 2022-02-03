@@ -5,8 +5,8 @@
 
 module io_clocks (clk_in, reset_out, clk_proc, clk_vga);
 
-    input clk_in;
-    output reset_out;
+    input logic clk_in;
+    output logic reset_out;
     output clk_proc;
     output clk_vga;
 
@@ -24,14 +24,14 @@ module io_clocks (clk_in, reset_out, clk_proc, clk_vga);
 
 	// Right shifting shift register (least signicant bit is ~reset)
 	logic [7:0] reset_sr = 0;
-	always@(posedge clclk_ink)
+	always@(posedge clk_in)
 		reset_sr <= {1'b1,reset_sr[7:1]};
     logic dcm_reset;
 	assign dcm_reset = ~reset_sr[0];
     
     logic rst = 1;
 	logic mcm_locked;
-	always@(posedge clk) begin
+	always@(posedge clk_in) begin
 	   rst = ~mcm_locked;
 	end
     assign reset_out = rst;
@@ -56,7 +56,7 @@ module io_clocks (clk_in, reset_out, clk_proc, clk_vga);
     
 	// VGA clock
 	logic clk_vga, clk0_vga, clkfb_vga, clkfb_buf_vga;
-	MMCME2_BASE mmcm_vga(.RST(dcm_reset),.CLKIN1(clk),.LOCKED(),.PWRDWN(mcm_pwrdwn),
+	MMCME2_BASE mmcm_vga(.RST(dcm_reset),.CLKIN1(clk_in),.LOCKED(),.PWRDWN(mcm_pwrdwn),
 		.CLKOUT0(clk0_vga),.CLKFBOUT(clkfb_vga),.CLKFBIN(clkfb_buf_vga),
 		// unconnected
 		.CLKFBOUTB(),.CLKOUT0B(),.CLKOUT1(),.CLKOUT1B(),.CLKOUT2(),.CLKOUT2B(),.CLKOUT3(),.CLKOUT3B(),.CLKOUT4(),.CLKOUT5(),.CLKOUT6());
