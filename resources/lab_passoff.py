@@ -499,7 +499,7 @@ class lab_test:
 		else:
 			self.print_log_file(str.format("Failed:{}\n",module_name))
 			self.print_error(str.format("Error executing:{}",module_name))
-			self.proceed_with_tests = False
+			#self.proceed_with_tests = False
 		return result
 
 	def clean_up_test(self):
