@@ -6,6 +6,7 @@
 # buttons, and seven segment display in the I/O sub-system. It is primarily used as the
 # program used for the tb_iosystem.sv testbench. This testbench assumes the
 # following functionality of the program:
+#
 #  - The timer value is copied to the seven segment display
 #  - Button behavior:
 #    - BTNC clears the timer
