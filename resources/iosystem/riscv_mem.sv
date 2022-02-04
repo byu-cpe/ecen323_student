@@ -71,7 +71,7 @@ module riscv_mem (clk, rst, PC, iMemRead, instruction, dAddress, MemWrite, dWrit
 
 		// Load the Data Memory
 		if (DATA_MEMORY_FILENAME == "") begin
-			$display("**** Top-Level I/O System: Warnring: No data memory defined");
+			$display("**** Top-Level I/O System: Warning: No data memory defined");
 		end else begin
         	$readmemh(DATA_MEMORY_FILENAME,data_memory);
 		end
