@@ -1,6 +1,9 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////
 // 
-// multicycle_io_system.sv
+// Filename: multicycle_io_system.sv
+//
+// Author: Mike Wirthlin
+// Date: 2/4/2022
 //
 // Top-level I/O system for multicycle RISC-V processor. 
 //
@@ -30,10 +33,22 @@ module multicycle_iosystem (clk, btnc, btnd, btnl, btnr, btnu, sw, led,
 	output logic Vsync;
 
     // Top-level Parameters
-	//parameter INPUT_CLOCK_RATE = 100000000;
-    //parameter PROC_CLK_DIVIDE = 3;
-	parameter TEXT_START_ADDRESS = 32'h00000000; 
-	parameter DATA_START_ADDRESS = 32'h00002000;
+    parameter TEXT_MEMORY_FILENAME = "";
+    parameter DATA_MEMORY_FILENAME = "";
+    parameter USE_DEBOUNCER = 1;
+    parameter TIMER_CLOCK_REDUCTION = 1;
+
+    // Local constants
+	localparam INPUT_CLOCK_RATE = 100_000_000;
+    localparam PROC_CLK_DIVIDE = 3;
+    localparam VGA_CLK_DIVIDE = 2;
+    localparam INSTRUCTION_BRAMS = 2;
+    localparam DATA_BRAMS = 2;
+	localparam TEXT_START_ADDRESS = 32'h00000000;
+	localparam DATA_START_ADDRESS = 32'h00002000;
+	localparam IO_START_ADDRESS = 32'h00007f00;
+	localparam VGA_START_ADDRESS = 32'h00008000;
+    localparam PROC_CLOCK_RATE = INPUT_CLOCK_RATE / PROC_CLK_DIVIDE;
 
     // Module Signals
     logic clk_proc, clk_vga, rst;
@@ -41,23 +56,31 @@ module multicycle_iosystem (clk, btnc, btnd, btnl, btnr, btnu, sw, led,
     logic dMemRead, dMemWrite;
 
     // Clocking Module
-    io_clocks clocks (.clk_in(clk), .reset_out(rst), .clk_proc(clk_proc), .clk_vga(clk_vga));
+    io_clocks #(.INPUT_CLOCK_RATE(INPUT_CLOCK_RATE), .PROC_CLK_DIVIDE(PROC_CLK_DIVIDE), 
+        .VGA_CLK_DIVIDE(VGA_CLK_DIVIDE))
+        clocks (.clk_in(clk), .reset_out(rst), .clk_proc(clk_proc), .clk_vga(clk_vga));
 
-    // Processor
+    // Processor (Created in Lab 6)
     logic [31:0] wb_data_read; // mux between dReadDAta and i/o
-    riscv_multicycle #(.INITIAL_PC(TEXT_START_ADDRESS)) riscv (
-        .clk(clk_proc), .rst(rst), .PC(PC), .instruction(instruction), 
+    riscv_multicycle #(.INITIAL_PC(TEXT_START_ADDRESS)) 
+        riscv (.clk(clk_proc), .rst(rst), .PC(PC), .instruction(instruction), 
         .dAddress(dAddress), .dReadData(wb_data_read), .dWriteData(dWriteData), 
         .MemRead(dMemRead), .MemWrite(dMemWrite), .WriteBackData(WriteBackData)
 	);
 
     // Memories
     logic iMemRead = 1;  // Always read instruction memory
-    riscv_mem mem (.clk(clk), .rst(rst), .PC(PC), .iMemRead(iMemRead), .instruction(instruction),
+    riscv_mem #(.INSTRUCTION_BRAMS(INSTRUCTION_BRAMS),.DATA_BRAMS(DATA_BRAMS),
+        .TEXT_MEMORY_FILENAME(TEXT_MEMORY_FILENAME),.DATA_MEMORY_FILENAME(DATA_MEMORY_FILENAME),
+        .TEXT_START_ADDRESS(TEXT_START_ADDRESS),.DATA_START_ADDRESS(DATA_START_ADDRESS))
+        mem (.clk(clk_proc), .rst(rst), .PC(PC), .iMemRead(iMemRead), .instruction(instruction),
         .dAddress(dAddress), .MemWrite(dMemWrite), .dWriteData(dWriteData), .dReadData(dReadData) );
 
     // I/O Sub-system
-    iosystem iosystem (
+    iosystem #(.INPUT_CLOCK_RATE(PROC_CLOCK_RATE),.VGA_START_ADDRESS(VGA_START_ADDRESS),
+        .IO_START_ADDRESS(IO_START_ADDRESS),.USE_DEBOUNCER(USE_DEBOUNCER),
+        .TIMER_CLOCK_REDUCTION(TIMER_CLOCK_REDUCTION))
+        iosystem (
         // Clock and reset ports
         .clk(clk_proc), .clkvga(clk_vga), .rst(rst), 
         // Processor bus interface

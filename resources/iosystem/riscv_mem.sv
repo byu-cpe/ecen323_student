@@ -1,5 +1,11 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////
 // 
+// Filename: riscv_mem.sv
+//
+// Author: Mike Wirthlin
+// Date: 2/4/2022
+//
+// Instruction and data memory for the RISC-V procssor.
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -14,13 +20,15 @@ module riscv_mem (clk, rst, PC, iMemRead, instruction, dAddress, MemWrite, dWrit
     output logic [31:0] instruction;
     output logic [31:0] dReadData;
 
-    parameter INSTRUCTION_BRAMS = 1;
-    parameter DATA_BRAMS = 1;
+    // Parameters
+    parameter INSTRUCTION_BRAMS = 2;
+    parameter DATA_BRAMS = 2;
     parameter TEXT_MEMORY_FILENAME = "";
     parameter DATA_MEMORY_FILENAME = "";
     parameter TEXT_START_ADDRESS = 32'h00400000;
     parameter DATA_START_ADDRESS = 32'h00800000;
     
+    // Local constants
 	localparam INSTRUCTION_WORDS = INSTRUCTION_BRAMS*1024;
 	localparam INSTRUCTION_ADDR_BITS = 11 + INSTRUCTION_BRAMS; // 1 BRAM = 2^12 (11:0)
 	localparam DATA_WORDS = DATA_BRAMS*1024;
