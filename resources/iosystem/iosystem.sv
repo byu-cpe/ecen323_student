@@ -68,7 +68,7 @@ module iosystem (clk, clkvga, rst, address, MemWrite, MemRead,
     input logic MemWrite;                         // Write control signal for I/O (MEM stage)
     input logic MemRead;                         
     output [31:0] io_memory_read;           // IO read data (read from IO). Once cycle delay
-    output [31:0] io_memory_write;          // IO write data (write to IO)
+    input [31:0] io_memory_write;          // IO write data (write to IO)
     output logic  valid_io_read;                   // Indicates that there is valid I/O data this clock cycle
 	input logic btnc;
 	input logic btnd;
@@ -456,23 +456,31 @@ module iosystem (clk, clkvga, rst, address, MemWrite, MemRead,
 		end
 	end
 
+	// Register delay for address
+	logic [31:0] address_wb;
+	logic MemRead_wb;
+	always@(posedge clk) begin
+		address_wb <= address;
+		MemRead_wb <= MemRead;
+	end
+
 	// I/O Write Messages
 	always@(negedge clk) 
 	begin
-		if (dAddress[31:IO_ADDR_BITS] == IO_START_ADDRESS[31:IO_ADDR_BITS]) begin
+		if (address[31:IO_ADDR_BITS] == IO_START_ADDRESS[31:IO_ADDR_BITS]) begin
 			// I/O Writes
 			if (MemWrite) begin
-				case (dAddress[5:2]) 
-					LED_BASE_OFFSET[5:2] : $display("%0t:Writing 0x%h to LEDs",$time, dWriteData);
+				case (address[5:2]) 
+					LED_BASE_OFFSET[5:2] : $display("%0t:Writing 0x%h to LEDs",$time, io_memory_write);
 					//SWITCH_BASE_OFFSET - No writing to switches
-					TX_BASE_OFFSET[5:2] : $display("%0t:Writing 0x%h to TX",$time, dWriteData);
+					TX_BASE_OFFSET[5:2] : $display("%0t:Writing 0x%h to TX",$time, io_memory_write);
 					//RX_DATA_BASE_OFFSET
 					//RX_STATUS_BASE_OFFSET
-					SEVEN_SEG_BASE_OFFSET[5:2] : $display("%0t:Writing 0x%h to Seven Segment Display",$time, dWriteData);
+					SEVEN_SEG_BASE_OFFSET[5:2] : $display("%0t:Writing 0x%h to Seven Segment Display",$time, io_memory_write);
 					//BUTTON_BASE_OFFSET
-					TIMER_BASE_OFFSET[5:2] : $display("%0t:Writing 0x%h to Timer",$time, dWriteData);
-					CHAR_COLOR_BASE_OFFSET[5:2] : $display("%0t:Writing 0x%h to Character Default Color",$time, dWriteData);
-					default : $display("%0t:Writing 0x%h to I/O Address 0x%h",$time, dWriteData, dAddress);
+					TIMER_BASE_OFFSET[5:2] : $display("%0t:Writing 0x%h to Timer",$time, io_memory_write);
+					CHAR_COLOR_BASE_OFFSET[5:2] : $display("%0t:Writing 0x%h to Character Default Color",$time, io_memory_write);
+					default : $display("%0t:Writing 0x%h to I/O Address 0x%h",$time, io_memory_write, address);
 				endcase
 			end
 		end
@@ -481,20 +489,20 @@ module iosystem (clk, clkvga, rst, address, MemWrite, MemRead,
 	// I/O Read Messages
 	always@(negedge clk) 
 	begin
-		if (dAddress_wb[31:IO_ADDR_BITS] == IO_START_ADDRESS[31:IO_ADDR_BITS]) begin
+		if (address_wb[31:IO_ADDR_BITS] == IO_START_ADDRESS[31:IO_ADDR_BITS]) begin
 			// I/O Writes
 			if (MemRead_wb) begin
-				case (dAddress_wb[5:2]) 
-					LED_BASE_OFFSET[5:2] : $display("%0t:Reading 0x%h from LEDs",$time, dReadData);
-					SWITCH_BASE_OFFSET[5:2] : $display("%0t:Reading 0x%h from Switches",$time, dReadData);
-					TX_BASE_OFFSET[5:2] : $display("%0t:Reading 0x%h from TX",$time, dReadData);
-					RX_DATA_BASE_OFFSET[5:2] : $display("%0t:Reading 0x%h from RX Data",$time, dReadData);
-					RX_STATUS_BASE_OFFSET[5:2] : $display("%0t:Reading 0x%h from RX status",$time, dReadData);
-					SEVEN_SEG_BASE_OFFSET[5:2] : $display("%0t:Reading 0x%h from Seven Segment Display",$time, dReadData);
-					BUTTON_BASE_OFFSET[5:2] : $display("%0t:Reading 0x%h from Buttons",$time, dReadData);
-					TIMER_BASE_OFFSET[5:2] : $display("%0t:Reading 0x%h from Timer",$time, dReadData);
-					CHAR_COLOR_BASE_OFFSET[5:2] : $display("%0t:Reading 0x%h from Character Default Color",$time, dReadData);
-					default : $display("%0t:Reading 0x%h from I/O Address 0x%h",$time, dReadData, dAddress_wb);
+				case (address_wb[5:2]) 
+					LED_BASE_OFFSET[5:2] : $display("%0t:Reading 0x%h from LEDs",$time, io_memory_read);
+					SWITCH_BASE_OFFSET[5:2] : $display("%0t:Reading 0x%h from Switches",$time, io_memory_read);
+					TX_BASE_OFFSET[5:2] : $display("%0t:Reading 0x%h from TX",$time, io_memory_read);
+					RX_DATA_BASE_OFFSET[5:2] : $display("%0t:Reading 0x%h from RX Data",$time, io_memory_read);
+					RX_STATUS_BASE_OFFSET[5:2] : $display("%0t:Reading 0x%h from RX status",$time, io_memory_read);
+					SEVEN_SEG_BASE_OFFSET[5:2] : $display("%0t:Reading 0x%h from Seven Segment Display",$time, io_memory_read);
+					BUTTON_BASE_OFFSET[5:2] : $display("%0t:Reading 0x%h from Buttons",$time, io_memory_read);
+					TIMER_BASE_OFFSET[5:2] : $display("%0t:Reading 0x%h from Timer",$time, io_memory_read);
+					CHAR_COLOR_BASE_OFFSET[5:2] : $display("%0t:Reading 0x%h from Character Default Color",$time, io_memory_read);
+					default : $display("%0t:Reading 0x%h from I/O Address 0x%h",$time, io_memory_read, address_wb);
 				endcase
 			end
 		end
@@ -503,11 +511,11 @@ module iosystem (clk, clkvga, rst, address, MemWrite, MemRead,
 	always@(negedge clk) 
 	begin
 		// VGA Writes
-		if (dAddress[31:VGA_ADDR_BITS] == VGA_START_ADDRESS[31:VGA_ADDR_BITS] && MemWrite)
-			$display("%0t:Writing 0x%h to VGA at address 0x%h",$time, dWriteData, dAddress);
+		if (address[31:VGA_ADDR_BITS] == VGA_START_ADDRESS[31:VGA_ADDR_BITS] && MemWrite)
+			$display("%0t:Writing 0x%h to VGA at address 0x%h",$time, io_memory_write, address);
 		// VGA Reads
-		if (dAddress_wb[31:VGA_ADDR_BITS] == VGA_START_ADDRESS[31:VGA_ADDR_BITS] && MemRead_wb)
-			$display("%0t:Reading 0x%h from VGA at address 0x%h",$time, dReadData, dAddress_wb);
+		if (address_wb[31:VGA_ADDR_BITS] == VGA_START_ADDRESS[31:VGA_ADDR_BITS] && MemRead_wb)
+			$display("%0t:Reading 0x%h from VGA at address 0x%h",$time, io_memory_read, address_wb);
 					
 	end
 	

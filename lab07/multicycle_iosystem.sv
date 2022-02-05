@@ -33,8 +33,8 @@ module multicycle_iosystem (clk, btnc, btnd, btnl, btnr, btnu, sw, led,
 	output logic Vsync;
 
     // Top-level Parameters
-    parameter TEXT_MEMORY_FILENAME = "";
-    parameter DATA_MEMORY_FILENAME = "";
+    parameter TEXT_MEMORY_FILENAME = "multicycle_iosystem_inst.txt";
+    parameter DATA_MEMORY_FILENAME = "multicycle_iosystem_data.txt";
     parameter USE_DEBOUNCER = 1;
     parameter TIMER_CLOCK_REDUCTION = 1;
 
@@ -53,22 +53,25 @@ module multicycle_iosystem (clk, btnc, btnd, btnl, btnr, btnu, sw, led,
     // Module Signals
     logic clk_proc, clk_vga, rst;
     logic [31:0] PC, instruction, dAddress, dReadData, dWriteData, WriteBackData;
-    logic dMemRead, dMemWrite;
+    logic dMemRead, dMemWrite, io_valid_data;
+    logic [31:0] io_read_data;
 
-    // Clocking Module
+    // Clocking Module: generates clocks and reset
     io_clocks #(.INPUT_CLOCK_RATE(INPUT_CLOCK_RATE), .PROC_CLK_DIVIDE(PROC_CLK_DIVIDE), 
         .VGA_CLK_DIVIDE(VGA_CLK_DIVIDE))
         clocks (.clk_in(clk), .reset_out(rst), .clk_proc(clk_proc), .clk_vga(clk_vga));
 
     // Processor (Created in Lab 6)
-    logic [31:0] wb_data_read; // mux between dReadDAta and i/o
+    logic [31:0] mem_io_read_data; // output of mux between i/o data and dmem data
+     // mux between dReadDAta and i/o
+    assign mem_io_read_data = io_valid_data ? io_read_data : dReadData;
     riscv_multicycle #(.INITIAL_PC(TEXT_START_ADDRESS)) 
         riscv (.clk(clk_proc), .rst(rst), .PC(PC), .instruction(instruction), 
-        .dAddress(dAddress), .dReadData(wb_data_read), .dWriteData(dWriteData), 
+        .dAddress(dAddress), .dReadData(mem_io_read_data), .dWriteData(dWriteData), 
         .MemRead(dMemRead), .MemWrite(dMemWrite), .WriteBackData(WriteBackData)
 	);
 
-    // Memories
+    // Memories (instruction and data)
     logic iMemRead = 1;  // Always read instruction memory
     riscv_mem #(.INSTRUCTION_BRAMS(INSTRUCTION_BRAMS),.DATA_BRAMS(DATA_BRAMS),
         .TEXT_MEMORY_FILENAME(TEXT_MEMORY_FILENAME),.DATA_MEMORY_FILENAME(DATA_MEMORY_FILENAME),
@@ -84,7 +87,8 @@ module multicycle_iosystem (clk, btnc, btnd, btnl, btnr, btnu, sw, led,
         // Clock and reset ports
         .clk(clk_proc), .clkvga(clk_vga), .rst(rst), 
         // Processor bus interface
-        .address(), .MemWrite(), .MemRead(), .io_memory_read(), .io_memory_write(), .valid_io_read(),
+        .address(dAddress), .MemWrite(dMemWrite), .MemRead(dMemRead),
+        .io_memory_read(io_read_data), .io_memory_write(dWriteData), .valid_io_read(io_valid_data),
         // Top-level ports
         .btnc(btnc), .btnd(btnd), .btnl(btnl), .btnr(btnr), .btnu(btnu), .sw(sw), 
         .led(led), .an(an), .seg(seg), .dp(dp), .RsRx(RsRx), .RsTx(RsTx), .vgaBlue(vgaBlue),

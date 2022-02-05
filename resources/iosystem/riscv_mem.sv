@@ -94,7 +94,8 @@ module riscv_mem (clk, rst, PC, iMemRead, instruction, dAddress, MemWrite, dWrit
 
 
 	// Instruction Memory Read (synchronous)
-	logic valid_upper_text_address = 
+	logic valid_upper_text_address;
+    assign valid_upper_text_address =
 		(PC[31:INSTRUCTION_ADDR_BITS] == TEXT_START_ADDRESS[31:INSTRUCTION_ADDR_BITS]);
 
     always_ff @(posedge clk)
