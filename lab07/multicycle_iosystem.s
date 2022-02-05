@@ -3,13 +3,11 @@
 # multicycle_iosystem.s
 #
 # This simple test program demonstrates the operation of all the LEDs, switches,
-# buttons, and seven segment display in the I/O sub-system. It is primarily used as the
-# program used for the tb_iosystem.sv testbench. This testbench assumes the
-# following functionality of the program:
+# buttons, and seven segment display in the I/O sub-system. 
 #
 #  - The timer value is copied to the seven segment display
 #  - Button behavior:
-#    - BTNC clears the timer
+#    - BTNC clears the timer/seven segment display
 #    - BTND turns all the LEDs OFF
 #    - BTNU turns all the LEDs to on
 #    - BTNR inverts values from the switches when displaying on LEDs
@@ -28,10 +26,10 @@
 #   0x7f00-0x7fff : I/O
 #
 # Registers:
-# x3(gp):  I/O base address
-# x8(s0):  Value of buttons
-# x9(s1):  Value of switches
-# x18(s2): Value to write in LEDs
+#  x3(gp):  I/O base address
+#  x8(s0):  Value of buttons
+#  x9(s1):  Value of switches
+#  x18(s2): Value to write in LEDs
 #
 ####################################################################################3#
 .globl  main
@@ -59,7 +57,7 @@
 main:
     # Prepare I/O base address
     addi gp, x0, 0x7f
-    # Add x3 to itself 8 times
+    # Add x3 to itself 8 times (0x7f << 8 = 0x7f00)
     addi t0, x0, 8
 L1:
     add gp, gp, gp
@@ -82,9 +80,9 @@ LOOP_START:
 
     # Mask the buttons for button C
     andi t0, s0, BUTTON_C_MASK
-    # If button is not pressed, skip
+    # If button is not pressed, skip btnc code
     beq t0, x0, UPDATE_SEVEN_SEG
-    # Button pressed - fall through to clear timer and seven segmeent dislplay
+    # Button C pressed - fall through to clear timer and seven segmeent dislplay
     sw x0, SEVENSEG_OFFSET(gp)          # Clear seven segment display
     sw x0, TIMER(gp)                    # Clear timer to zero
     beq x0, x0, LOOP_START              # Don't process other buttons
@@ -94,9 +92,9 @@ UPDATE_SEVEN_SEG:
     # Write timer to seven seg
     sw t0, SEVENSEG_OFFSET(gp)         
 
-BUTTON_CHECK:
+BUTTON_CHECK:       # Label to check all buttons
 
-BTND_CHK:
+BTND_CHK:           # Check btnd
 
     # Check button D: turn LEDs off
     andi t0, s0, BUTTON_D_MASK
@@ -141,3 +139,4 @@ NO_BTN:
 WRITE_LED:
     sw s2, LED_OFFSET(gp)
     beq x0, x0, LOOP_START
+

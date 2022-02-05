@@ -28,7 +28,7 @@ add_force btnu 0
 add_force btnd 0
 add_force sw 0
 add_force RsTx 1
-run 5 us
+run 7 us
 
 # Add your test stimulus here
 
