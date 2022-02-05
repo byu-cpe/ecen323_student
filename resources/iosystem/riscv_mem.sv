@@ -33,6 +33,7 @@ module riscv_mem (clk, rst, PC, iMemRead, instruction, dAddress, MemWrite, dWrit
 	localparam INSTRUCTION_ADDR_BITS = 11 + INSTRUCTION_BRAMS; // 1 BRAM = 2^12 (11:0)
 	localparam DATA_WORDS = DATA_BRAMS*1024;
 	localparam DATA_ADDR_BITS = 11 + DATA_BRAMS;
+	localparam NOP_INSTRUCTION = 32'h00000013;
 
 	// Instruction memory (use property to make sure it is mapped to a BRAM)
     (* rom_style = "block" *) reg [31:0] inst_memory [0:INSTRUCTION_WORDS-1];
@@ -42,6 +43,7 @@ module riscv_mem (clk, rst, PC, iMemRead, instruction, dAddress, MemWrite, dWrit
 	// Initialize instruction memory
     initial
     begin
+		integer i;
 
 		// Load the Instruction Memory
 		if (TEXT_MEMORY_FILENAME == "") begin
@@ -49,6 +51,10 @@ module riscv_mem (clk, rst, PC, iMemRead, instruction, dAddress, MemWrite, dWrit
 			$finish;
 		end
 		else begin
+			// Initialize memory with NOPs
+			for (i = 0; i < INSTRUCTION_WORDS; i=i+1)
+				inst_memory[i] = NOP_INSTRUCTION;
+			// Update memory with contents of memory file
         	$readmemh(TEXT_MEMORY_FILENAME,inst_memory);
 		end
 

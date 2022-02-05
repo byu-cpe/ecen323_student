@@ -33,8 +33,8 @@ module multicycle_iosystem (clk, btnc, btnd, btnl, btnr, btnu, sw, led,
 	output logic Vsync;
 
     // Top-level Parameters
-    parameter TEXT_MEMORY_FILENAME = "multicycle_iosystem_inst.txt";
-    parameter DATA_MEMORY_FILENAME = "multicycle_iosystem_data.txt";
+    parameter TEXT_MEMORY_FILENAME = "";        // Instruction binary file
+    parameter DATA_MEMORY_FILENAME = "";        // Data segment binary file
     parameter USE_DEBOUNCER = 1;
     parameter TIMER_CLOCK_REDUCTION = 1;
 
