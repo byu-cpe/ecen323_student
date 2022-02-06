@@ -117,7 +117,8 @@ module iosystem (clk, clkvga, rst, address, MemWrite, MemRead,
 
     // Decode address for I/O (_mem indicates address in mem stage)
 	assign io_space_mem = (address[31:IO_ADDR_BITS] == IO_START_ADDRESS[31:IO_ADDR_BITS]);
-	logic[3:0] io_addr = address[5:2]; // 16 different 32-bit I/O address spaces
+	logic[3:0] io_addr;
+	assign io_addr = address[5:2]; // 16 different 32-bit I/O address spaces
 
     // Generate valid IO data read signal
     logic io_space_wb, valid_upper_vga_address_wb;

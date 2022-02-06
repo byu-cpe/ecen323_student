@@ -49,7 +49,8 @@ module multicycle_iosystem (clk, btnc, btnd, btnl, btnr, btnu, sw, led,
 	localparam IO_START_ADDRESS = 32'h00007f00;
 	localparam VGA_START_ADDRESS = 32'h00008000;
     localparam PROC_CLOCK_RATE = INPUT_CLOCK_RATE / PROC_CLK_DIVIDE;
-
+    localparam DEBOUNCE_DELAY_US = 1;
+    
     // Module Signals
     logic clk_proc, clk_vga, rst;
     logic [31:0] PC, instruction, dAddress, dReadData, dWriteData, WriteBackData;
@@ -81,7 +82,7 @@ module multicycle_iosystem (clk, btnc, btnd, btnl, btnr, btnu, sw, led,
 
     // I/O Sub-system
     iosystem #(.INPUT_CLOCK_RATE(PROC_CLOCK_RATE),.VGA_START_ADDRESS(VGA_START_ADDRESS),
-        .IO_START_ADDRESS(IO_START_ADDRESS),.USE_DEBOUNCER(USE_DEBOUNCER),
+        .IO_START_ADDRESS(IO_START_ADDRESS),.USE_DEBOUNCER(USE_DEBOUNCER),.DEBOUNCE_DELAY_US(DEBOUNCE_DELAY_US),
         .TIMER_CLOCK_REDUCTION(TIMER_CLOCK_REDUCTION))
         iosystem (
         // Clock and reset ports
