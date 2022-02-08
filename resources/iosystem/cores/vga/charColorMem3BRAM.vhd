@@ -2,15 +2,19 @@
 --
 -- VGA Color and Character Memory
 --
--- This memory can store 128x32 characters (4096) where each character is
--- 32 bits. 
+-- This memory can store characters for a 128x32 character display
+-- (128 columns and 32 rows) for a total of 4096 characters.
+-- Each character is specified as 32 bits as shown described below: 
 --
--- The 32 bits of each character are organized as follows:
 --    7:0 - Actual ASCII character
 --   19:8 - Foreground color (12 bits)
 --  31:20 - Background color (12 bits)
 --
 -- The size of the memory is 4096x32 bits or 16384 bytes (four block rams).
+-- Each block ram is organized as 4096x8 bits and the four block rams each
+-- provide one byte of the 32-bit character address (BRAM 0 provides byte
+-- 0, BRAM 1 provies byte1, and so on).
+--
 -- 14 address bits are needed to address the memory (byte addressable).
 -- The address space is 0x0000 to 0x3fff (byte addressable). This module
 -- is word addressable and as such, only 12 bits addresses are used.
@@ -24,6 +28,7 @@
 --  the 'char_read_addr2' is used for writing and for reading 'char_read_value2'
 --
 -- 
+--------------------------------------------------------------------------
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -60,6 +65,7 @@ architecture arch of charColorMem3BRAM is
 
 begin
 
+    -- BRAM0: Byte 0 (bits 7:0)
     BRAM_inst_0 : bramMacro
     port map(
         clka => clk_data,
@@ -72,6 +78,7 @@ begin
         b_dout => vga_read_value(7 downto 0)
     );
 
+    -- BRAM1: Byte 1 (bits 15:8)
     BRAM_inst_1 : bramMacro
     port map(
         clka => clk_data,
@@ -84,6 +91,7 @@ begin
         b_dout => vga_read_value(15 downto 8)
     );
 
+    -- BRAM2: Byte 2 (bits 23:16)
     BRAM_inst_2 : bramMacro
     port map(
         clka => clk_data,
@@ -96,6 +104,7 @@ begin
         b_dout => vga_read_value(23 downto 16)
     );
 
+    -- BRAM3: Byte 3 (bits 31:24)
     BRAM_inst_3 : bramMacro
     port map(
         clka => clk_data,
@@ -107,28 +116,6 @@ begin
         a_dout=> data_read_value(31 downto 24),
         b_dout => vga_read_value(31 downto 24)
     );
-
-
-
---   -- Data clock domain
---   process(clk_data)
---   begin
---     if (clk_data'event and clk_data='1') then
---       if (data_we = '1') then
---         char_ram(to_integer(unsigned(data_addr))) <= data_write_value;
---       end if;
---       read_a <= data_addr;
---    end if;
---   end process;
---   data_read_value <= char_ram(to_integer(unsigned(read_a)));  
-
---   process(clk_vga)
---   begin
---     if (clk_vga'event and clk_vga='1') then
---       read_b <= vga_addr;
---    end if;
---   end process;
---   vga_read_value <= char_ram(to_integer(unsigned(read_b)));
 
 end arch;
 

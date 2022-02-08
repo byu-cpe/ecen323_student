@@ -26,7 +26,7 @@ SCRIPT_PATH = pathlib.Path(__file__).absolute().parent.resolve()
 # (relative to the lab directory) of the file to include in the submission.
 submission_files = {
 	"multicycle_io_tcl"		: "iosystem.tcl",
-	"vga"		            : "vga.jpg",
+	#"vga"		            : "vga.jpg",
 	"buttoncount"		    : "buttoncount.s",
 }
 
@@ -41,6 +41,19 @@ test_files = {
 	"alu"           		: "../lab02/alu.sv",
 	"alu_constants"     	: "../lab02/riscv_alu_constants.sv",
 	"regfile"       		: "../lab03/regfile.sv",
+	"iosysten"				: "../resources/iosystem/iosystem.sv",
+	"io_clocks" 			: "../resources/iosystem/io_clocks.sv",
+	"riscv_mem"				: "../resources/iosystem/riscv_mem.sv",
+	"SevenSegmentControl4" 	: "../resources/iosystem/cores/SevenSegmentControl4.sv",
+	"debounce" 				: "../resources/iosystem/cores/debounce.sv",
+	"rx" 					: "../resources/iosystem/cores/rx.sv",
+	"tx" 					: "../resources/iosystem/cores/tx.sv",
+	"vga_ctl3" 				: "../resources/iosystem/cores/vga/vga_ctl3.vhd",
+	"charGen3" 				: "../resources/iosystem/cores/vga/charGen3.vhd",
+	"vga_timing" 			: "../resources/iosystem/cores/vga/vga_timing.vhd",
+	"font_rom" 				: "../resources/iosystem/cores/vga/list_ch13_01_font_rom.vhd",
+	"charmem" 				: "../resources/iosystem/cores/vga/charColorMem3BRAM.vhd",
+	"bramMacro" 			: "../resources/iosystem/cores/vga/bramMacro.v",
 }
 
 # TCL simulations
