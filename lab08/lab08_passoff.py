@@ -70,7 +70,7 @@ def main():
 	# Add tests
 	lab_test.add_test_module(pipeline_nop_mem)
 	lab_test.add_test_module(pipeline_tb)
-	#lab_test.add_test_module(pipeline_build)
+	lab_test.add_test_module(pipeline_build)
 	# Run tests
 	lab_test.run_tests()
 
