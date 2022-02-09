@@ -50,14 +50,16 @@ class simulation_module(tester_module):
 	TODO: Add support for analyzing VHDL and verilog
 	'''
 
-	def __init__(self, sim_top_module_name, hdl_sim_keylist, include_dirs=[], generics=[] ):
+	def __init__(self, sim_top_module_name, hdl_sim_keylist, include_dirs=[], generics=[], vhdl_files=[], use_glbl=False ):
 		''' Initialize the top module name and the keylist for simulation HDL files '''
 		self.sim_top_module = sim_top_module_name
 		self.hdl_sim_keylist = hdl_sim_keylist
 		self.include_dirs = include_dirs
 		self.generics = generics
+		self.vhdl_files = vhdl_files
+		self.use_glbl = use_glbl
 
-	def analyze_hdl_files(self, lab_test, hdl_filename_list, log_basename, analyze_cmd):
+	def analyze_hdl_files(self, lab_test, hdl_filename_list, log_basename, analyze_cmd,consider_include=True):
 		''' Perform HDL analysis on a set of files. This is a generic function and should
 		be called by another function to specify the actual command.  '''
 		
@@ -74,7 +76,7 @@ class simulation_module(tester_module):
 			analyze_cmd.append(filename)
 
 		# Add Include DIRS
-		if len(self.include_dirs) > 0:
+		if len(self.include_dirs) > 0 and consider_include:
 			for include_dir in self.include_dirs:
 				analyze_cmd.append("-i")
 				analyze_cmd.append(include_dir)
@@ -97,6 +99,15 @@ class simulation_module(tester_module):
 		sv_xvlog_cmd = ["xvlog", "--nolog", "-sv", ]
 		return self.analyze_hdl_files(lab_test, hdl_filename_list, log_basename, sv_xvlog_cmd)
 
+	def analyze_vhdl_files(self, lab_test, log_basename):
+		''' Perform HDL analysis on a set of files '''
+		
+		# Resolve the filenames
+		hdl_filename_list = lab_test.get_filenames_from_keylist(self.vhdl_files)
+
+		xvhdl_cmd = ["xvhdl", "--nolog", ]
+		return self.analyze_hdl_files(lab_test, hdl_filename_list, log_basename, xvhdl_cmd,consider_include=False)
+
 	def elaborate(self, lab_test):
 		# Elaborate design
 		design_name = self.sim_top_module
@@ -113,6 +124,11 @@ class simulation_module(tester_module):
 				#xelab_cmd.append(str.format("\"{}\"",generic))
 				xelab_cmd.append(str.format("{}",generic))
 		xelab_cmd.append( design_name )
+		#xelab_cmd.append( str.format("work.{}",design_name ))
+		if self.use_glbl:
+			#xelab_cmd.extend( ["-L", "unisims_ver", "work.glbl" ])
+			#xelab_cmd.extend( ["-L", "unisims_ver", "--relax", "work.glbl" ])
+			xelab_cmd.extend( ["-L", "unisims_ver", "--relax", "glbl", "-s", str.format("work.{}",design_name ) ])
 
 		return_code = lab_test.subprocess_file_print(self.elaborate_log_filepath, xelab_cmd, lab_test.execution_path )
 
@@ -165,6 +181,11 @@ class tcl_simulation(simulation_module):
 		
 		if not self.analyze_sv_files(lab_test,self.sim_top_module):
 			return False
+		if len(self.vhdl_files) > 0:
+			if not self.analyze_vhdl_files(lab_test,self.sim_top_module):
+				return False
+
+		# Analyze
 		if not self.elaborate(lab_test):
 			return False
 
@@ -193,8 +214,9 @@ class tcl_simulation2(simulation_module):
 	a script rather than running the script directly. Will exit whether or not the
 	student script finishes.
 	'''
-	def __init__(self,tcl_filename_key, tcl_sim_top_module, hdl_sim_keylist):
-		super().__init__(tcl_sim_top_module,hdl_sim_keylist)
+	def __init__(self,tcl_filename_key, tcl_sim_top_module, hdl_sim_keylist,
+		include_dirs=[], generics=[], vhdl_files=[], use_glbl = False):
+		super().__init__(tcl_sim_top_module,hdl_sim_keylist, include_dirs, generics, vhdl_files, use_glbl)
 
 		self.tcl_filename_key = tcl_filename_key
 
@@ -208,11 +230,22 @@ class tcl_simulation2(simulation_module):
 			sim_path: the path where the simulation should take place
 			tcl_list: the list of items associated with a tcl simulation
 		'''
-		
+
+		# Analyze hdl		
 		if not self.analyze_sv_files(lab_test,self.sim_top_module):
 			return False
+		debug = False
+		if len(self.vhdl_files) > 0:
+			if not self.analyze_vhdl_files(lab_test,self.sim_top_module):
+				return False
+		if debug:
+			input("Pause after analyze")
+
+		# Elaborate hdl		
 		if not self.elaborate(lab_test):
 			return False
+		if debug:
+			input("Pause after elaborate")
 
 		lab_path = lab_test.submission_lab_path
 		design_name = self.sim_top_module
@@ -243,8 +276,8 @@ class tcl_simulation2(simulation_module):
 class testbench_simulation(simulation_module):
 	''' An object that represents a tcl_simulation test.
 	'''
-	def __init__(self, testbench_description, testbench_top, hdl_sim_keylist, xe_options_list, include_dirs=[], generics=[] ):
-		super().__init__(testbench_top,hdl_sim_keylist,include_dirs,generics)
+	def __init__(self, testbench_description, testbench_top, hdl_sim_keylist, xe_options_list, include_dirs=[], generics=[], vhdl_files=[] ):
+		super().__init__(testbench_top,hdl_sim_keylist,include_dirs,generics,vhdl_files)
 		self.testbench_description = testbench_description
 		#self.testbench_top = testbench_top
 		#self.hdl_sim_keylist = hdl_sim_keylist
@@ -294,13 +327,16 @@ class build_bitstream(tester_module):
 	''' An object that represents a bitstream implementation test.
 	'''
 
-	def __init__(self,design_name, xdl_key_list, hdl_key_list, implement_build = True, create_dcp = False,  include_dirs = []):
+	def __init__(self,design_name, xdl_key_list, hdl_key_list, implement_build = True, 
+		create_dcp = False,  include_dirs = [], vhdl_files = [], generics=[]):
 		self.design_name = design_name
 		self.xdl_key_list = xdl_key_list
 		self.hdl_key_list = hdl_key_list
 		self.implement_build = implement_build
 		self.create_dcp = create_dcp
 		self.include_dirs = include_dirs
+		self.vhdl_files = vhdl_files
+		self.generics=generics
 
 	def module_name(self):
 		''' returns a string indicating the name of the module. Used for logging. '''
@@ -336,10 +372,15 @@ class build_bitstream(tester_module):
 			log.write('# No Pre-build script files\n')
 
 		# Read HDL files
-		log.write('# Add sources\n')
+		log.write('# Add verilog sources\n')
 		for hdl_filename in hdl_filenames:
 			#src = get_filename_from_key(src_key)
 			log.write('read_verilog -sv ' + hdl_filename + '\n')
+		# Read VHDL files
+		if len(self.vhdl_files) > 0:
+			log.write('# Add VHDL sources\n')
+			for vhdl_filename in self.vhdl_files:
+				log.write('read_vhdl ' + vhdl_filename + '\n')
 		# Read xdc files
 		if self.implement_build:
 			log.write('# Add XDC file\n')
@@ -355,6 +396,9 @@ class build_bitstream(tester_module):
 			for include_dir in self.include_dirs:
 				synth_command += include_dir + " "
 			synth_command += '}'
+		if len(self.generics) > 0:
+			for generic in self.generics:
+				synth_command += str.format(" -generic {}",generic)
 		synth_command += '\n'
 		log.write(synth_command)
 
@@ -408,7 +452,7 @@ class rars_raw(tester_module):
 		rars_cmd = ["java", "-jar", self.RARS_FILENAME, ]
 		rars_cmd.extend(self.rars_options)
 		rars_cmd.append(asm_filename)
-		proc = subprocess.run(rars_cmd, check=False)
+		proc = subprocess.run(rars_cmd, cwd=lab_test.execution_path,check=False)
 		if proc.returncode:
 			lab_test.print_warning("Failed to simulate assembler files")
 			return False
@@ -416,7 +460,7 @@ class rars_raw(tester_module):
 
 
 class rars_sim_print(rars_raw):
-	''' A tester module that uses RARS
+	''' Assembles the given file and then runs the file with output
 	'''
 
 	def __init__(self, asm_filekey):
@@ -425,11 +469,13 @@ class rars_sim_print(rars_raw):
 
 	def module_name(self):
 		''' returns a string indicating the name of the module. Used for logging. '''
-		return str.format("RARS with file ({})",self.asm_filekey)
+		return str.format("RARS assembly and run with file ({})",self.asm_filekey)
 
 	def perform_test(self, lab_test):
+		# Bug! Using key for filename rather than actual file
 		asm_filename = lab_test.get_filename_from_key(self.asm_filekey)
 		hex_file = str.format("{}.txt",self.asm_filekey)
+		# TODO: SHould add a "ae1" to these options so that an error is given as a return code for failed assembly
 		self.rars_options = ["sp","ic","100000","dump",".text","HexText",hex_file,]
 		result = super().perform_test(lab_test)
 		if not result:
@@ -441,11 +487,37 @@ class rars_sim_print(rars_raw):
 		print(file_contents)
 		f.close()
 		return True
-		# Assembles but does not save anything
-		# java -jar ../resources/rars1_4.jar a fib_recursive.s
-		# Assemble and execute up to 100000
-		# java -jar ../resources/rars1_4.jar 100000 fib_recursive.s
-		# java -jar rars.jar a dump .text HexText hexcode.txt fibonacci.asm
-		# java -jar ../resources/rars1_4.jar h
 
 		
+class rars_mem_file(rars_raw):
+	''' Assembles the given file and generates an ascii memory file
+	'''
+
+	def __init__(self, asm_filekey, generate_data_mem=False):
+		self.asm_filekey = asm_filekey
+		self.generate_data_mem = generate_data_mem
+		self.RARS_FILENAME = "../resources/rars1_4.jar"
+
+	def module_name(self):
+		''' returns a string indicating the name of the module. Used for logging. '''
+		return str.format("RARS memory generation with file ({})",self.asm_filekey)
+
+	def perform_test(self, lab_test):
+		asm_filename = lab_test.get_filename_from_key(self.asm_filekey)
+		asm_path = pathlib.Path(asm_filename)
+		asm_basename = asm_path.stem
+		asm_rootname = asm_path.name
+		i_mem_filename = str.format("{}_text.mem",asm_basename)		
+		d_mem_filename = str.format("{}_data.mem",asm_basename)		
+		# Initial options "ae1" - return a 1 return code with assembly error
+		self.rars_options = ["ae1", "mc", "CompactTextAtZero", "a", "dump", ".text", "HexText", i_mem_filename]
+		# Add options for data memory
+		if self.generate_data_mem:
+			self.rars_options.extend([".data", "HexText", d_mem_filename])
+		# Append orginal filename
+		#self.rars_options.append(asm_rootname)
+		# Run test
+		result = super().perform_test(lab_test)
+		if not result:
+			return False
+		return True
