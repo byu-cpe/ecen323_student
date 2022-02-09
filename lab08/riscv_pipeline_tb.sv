@@ -23,8 +23,8 @@ module riscv_pipeline_tb();
 	integer i;
 	integer error_count;
 	
-	parameter instruction_memory_filename = "pipeline_nop_inst.txt";
-	parameter data_memory_filename = "pipeline_nop_data.txt";
+	parameter instruction_memory_filename = "pipeline_nop_text.mem";
+	parameter data_memory_filename = "pipeline_nop_data.mem";
 	localparam EBREAK_INSTRUCTION = 32'h00100073;
 	localparam TEXT_SEGMENT_START_ADDRESSS = 32'h00000000; // 32'h00400000;
 	localparam INSTRUCTION_MEMORY_WORDS = 128;
