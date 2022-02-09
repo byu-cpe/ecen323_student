@@ -513,7 +513,7 @@ class rars_mem_file(rars_raw):
 		self.rars_options = ["ae1", "mc", "CompactTextAtZero", "a", "dump", ".text", "HexText", i_mem_filename]
 		# Add options for data memory
 		if self.generate_data_mem:
-			self.rars_options.extend([".data", "HexText", d_mem_filename])
+			self.rars_options.extend(["dump", ".data", "HexText", d_mem_filename])
 		# Append orginal filename
 		#self.rars_options.append(asm_rootname)
 		# Run test

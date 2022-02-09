@@ -16,7 +16,7 @@ import tester_module
 ###########################################################################
 
 # lab-specific constants
-LAB_NUMBER = 6
+LAB_NUMBER = 8
 SCRIPT_VERSION = 1.0
 # Path of script that is being run
 SCRIPT_PATH = pathlib.Path(__file__).absolute().parent.resolve()
@@ -25,39 +25,35 @@ SCRIPT_PATH = pathlib.Path(__file__).absolute().parent.resolve()
 # used to represent a specific file for the lab. The value is the path and filename
 # (relative to the lab directory) of the file to include in the submission.
 submission_files = {
-    "multicycle"		: "riscv_multicycle.sv",
+    "pipeline"		: "riscv_basic_pipeline.sv",
 }
 
 # List of files needed for testing that should be in the repository.
 # The key is a lab-specific keyword used to represent a specific file for the lab. 
 # The value is the name of the file (relative to the lab directory)
 test_files = {
-	"tb_multicycle_control"	: "tb_multicycle_control.sv",
-    "testbench_inst"       	: "testbench_inst.txt",
-    "testbench_data"       	: "testbench_data.txt",
-    "datapathconstants"		: "../lab05/riscv_datapath_constants.sv",
-    "datapath"				: "../lab05/riscv_simple_datapath.sv",
+	"riscv_pipeline_tb"		: "riscv_pipeline_tb.sv",
+	"pipeline_nop"			: "pipeline_nop.s",
     "alu"           		: "../lab02/alu.sv",
     "alu_constants"     	: "../lab02/riscv_alu_constants.sv",
     "regfile"       		: "../lab03/regfile.sv",
 }
 
+# Assembly
+pipeline_nop_mem = tester_module.rars_mem_file("pipeline_nop", generate_data_mem=True)
+
 # TCL simulations
 
 # Testbench simulations
-multicycle_nomem_tb = tester_module.testbench_simulation( "Multicycle Testbench", \
-	"tb_multicycle_control", \
-	[ "tb_multicycle_control", "multicycle", "datapath", "alu",  "regfile", "datapathconstants", "alu_constants",   ], [], \
-		 include_dirs = ["../lab02","../lab05"])
-
-multicycle_mem_tb = tester_module.testbench_simulation( "Multicycle Testbench", \
-	"tb_multicycle_control", \
-	[ "tb_multicycle_control", "multicycle", "datapath", "alu",  "regfile", "datapathconstants", "alu_constants",   ], [], \
-		 include_dirs = ["../lab02","../lab05"], generics = ["USE_MEMORY=1"])
+pipeline_tb = tester_module.testbench_simulation( "Pipeline Testbench", \
+	"riscv_pipeline_tb", \
+	[ "riscv_pipeline_tb", "alu_constants", "alu",  "regfile", "pipeline",   ], [], \
+		 include_dirs = ["../lab02",], )
 
 # Synthesis batches
-multicycle_build = tester_module.build_bitstream( "riscv_multicycle", [], 
-	[ "multicycle", "datapath", "alu",  "regfile", "datapathconstants", "alu_constants" ], False, False, include_dirs=["../lab02","../lab05"])
+pipeline_build = tester_module.build_bitstream( "riscv_basic_pipeline", [], 
+	[ "alu_constants", "alu",  "regfile", "pipeline", ], False, False, \
+		include_dirs=["../lab02",])
 
 # Bitstream build
 
@@ -72,9 +68,9 @@ def main():
 	# Prepare test
 	lab_test.prepare_test(submission_files,test_files)
 	# Add tests
-	lab_test.add_test_module(multicycle_nomem_tb)
-	lab_test.add_test_module(multicycle_mem_tb)
-	lab_test.add_test_module(multicycle_build)
+	lab_test.add_test_module(pipeline_nop_mem)
+	lab_test.add_test_module(pipeline_tb)
+	#lab_test.add_test_module(pipeline_build)
 	# Run tests
 	lab_test.run_tests()
 

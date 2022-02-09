@@ -335,7 +335,7 @@ https://forums.xilinx.com/t5/Simulation-and-Verification/readmemh-doesn-t-suppor
 			if (errors > 0)
 				$display(" (%0d errors)",errors);
 			else
-				$display("No Errors");
+				$display("OK");
 			
 			$write("  IF: PC=0x%8h",tb_PC);
 			if (if_PC != tb_PC) begin
