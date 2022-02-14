@@ -12,100 +12,68 @@
 --
 ----------------------------------------------------------------------------------*/
 
-entity charGen3 is
-    Port ( 
-		clk_vga : in  STD_LOGIC;
-		clk_data : in  STD_LOGIC;
-        char_we : in  STD_LOGIC;
-        char_value : in  STD_LOGIC_VECTOR (31 downto 0);		-- Data to write
-        data_addr : in  STD_LOGIC_VECTOR (11 downto 0);
-        pixel_x : in  STD_LOGIC_VECTOR (9 downto 0);
-        pixel_y : in  STD_LOGIC_VECTOR (9 downto 0);
-		data_read_value : out std_logic_vector (31 downto 0);
-        pixel_out : out  STD_LOGIC_vector(11 downto 0)
-		);
-end charGen3;
+module charGen3(clk_vga,clk_data,char_we,char_value,data_addr,pixel_x,pixel_y,data_read_value,pixel_out);
 
-architecture Behavioral of charGen3 is
-	signal vga_read_addr: std_logic_vector(11 downto 0);
-	signal data: std_logic_vector(7 downto 0);
-	signal vga_read_value: std_logic_vector(31 downto 0);
-	signal font_rom_addr: std_logic_vector(10 downto 0);
-	signal char_x_pos: std_logic_vector (6 downto 0);
-	signal char_y_pos: std_logic_vector (4 downto 0);
-	signal char_y_pixel: std_logic_vector (3 downto 0);
-	signal char_x_pixel,ddr,ddr2: std_logic_vector (2 downto 0);
-	--signal color_read_val : std_logic_vector(31 downto 0);
-	signal pixel_fg : std_logic;
-	signal charToDisplay : std_logic_vector(6 downto 0);
-begin
+    input logic clk_vga;
+    input logic clk_data;
+    input logic char_we;
+    input logic[31:0]  char_value;
+    input logic [11:0] data_addr;
+    input logic [9:0] pixel_x;
+    input logic [9:0] pixel_y;
+    output logic [31:0] data_read_value;
+    output logic [11:0] pixel_out;
 
-	-- charmem : entity work.charColorMem
-	-- 	port map(
-	-- 		clk => clk,
-	-- 		char_read_addr => char_read_addr,
-	-- 		char_write_addr=> char_addr,
-	-- 		char_we => char_we,	
-	-- 		char_write_value => char_value,			
-	-- 		char_read_value => vga_read_value,
-	-- 		char_read_value2 => char_read_value2
-	-- 	);
+    logic [11:0] vga_read_addr; 
+    logic [31:0] vga_read_value;
+    logic [10:0] font_rom_addr;
+    logic [7:0] data;
+	logic [2:0] char_x_pixel,ddr,ddr2;
+	logic [6:0] char_x_pos;
+	logic [4:0] signal char_y_pos;
+	logic [3:0] char_y_pixel;
+	logic pixel_fg;
+	logic [6:0] charToDisplay;
 
---    charmem : entity work.charColorMem3
-    charmem : entity work.charColorMem3BRAM
-		port map(
-            clk_vga => clk_vga,
-            clk_data => clk_data,
-            data_we => char_we,
-            data_write_value => char_value,
-            vga_read_value => vga_read_value,
-            data_read_value => data_read_value,
-            vga_addr => vga_read_addr,
-            data_addr => data_addr
-        );         
-        
-	fontrom : entity work.font_rom
-		port map(
-			clk=> clk_vga,
-			addr => font_rom_addr,
-			data => data
-		);
-		
-	process(clk_vga)
-	begin
-		if(clk_vga'event and clk_vga ='1') then
-			ddr<=char_x_pixel;
-			ddr2<=ddr;
-		end if;
-	end process;
+    charColorMem3BRAM charmem (.clk_vga(clk_vga),.clk_data(clk_data),.data_we(char_we),
+        .data_write_value(char_value),
+        .vga_read_value(vga_read_value),.data_read_value(data_read_value),
+        .vga_addr(vga_read_addr),.data_addr(data_addr));
+    
+    font_rom fontrom(.clk(clk_vga),.addr(font_rom_addr),.data(data));
+
+    always_ff@(posedge clk_vga) begin
+        ddr <= char_x_pixel;
+        ddr2 <= ddr;
+    end
 	
-	char_x_pixel <= pixel_x(2 downto 0);
-	char_y_pixel <= pixel_y(3 downto 0);
-	char_x_pos <= pixel_x(9 downto 3);
-	char_y_pos <= pixel_y(8 downto 4);
-	vga_read_addr <= char_y_pos & char_x_pos;
-	-- This odd use of both bit 7 and bit 6 is done to try and trick the synthesis tool into thinking
-	-- that bit 7 is actually used. bit 6 and bit 7 should be the same so the logic shouldn't change
-	-- the functionality. The following line is what noormally would be done:
-	--    charToDisplay <= vga_read_value(6 downto 0);
-	--charToDisplay <= (vga_read_value(7) or vga_read_value(6)) & vga_read_value(5 downto 0);
-	--charToDisplay <= (vga_read_value(7) xnor vga_read_value(6)) & vga_read_value(5 downto 0);
-	charToDisplay <= vga_read_value(6 downto 0);
+	assign char_x_pixel = pixel_x[2:0]
+	assign char_y_pixel = pixel_y[3:0];
+	assign char_x_pos = pixel_x[9:3];
+	assign char_y_pos = pixel_y[8:4];
+	assign vga_read_addr = { char_y_pos , char_x_pos};
+	// This odd use of both bit 7 and bit 6 is done to try and trick the synthesis tool into thinking
+	// that bit 7 is actually used. bit 6 and bit 7 should be the same so the logic shouldn't change
+	// the functionality. The following line is what noormally would be done:
+	//    charToDisplay <= vga_read_value(6 downto 0);
+	//charToDisplay <= (vga_read_value(7) or vga_read_value(6)) & vga_read_value(5 downto 0);
+	//charToDisplay <= (vga_read_value(7) xnor vga_read_value(6)) & vga_read_value(5 downto 0);
+	assign charToDisplay = vga_read_value[6:0];
 
-	font_rom_addr <= charToDisplay & char_y_pixel;
+	assign font_rom_addr = {charToDisplay , char_y_pixel};
 	
-	with ddr2 select pixel_fg <=
-			data(7) when "000",
-			data(6) when "001",
-			data(5) when "010",
-			data(4) when "011",
-			data(3) when "100",
-			data(2) when "101",
-			data(1) when "110",
-			data(0) when others;
+    always_comb
+        case (ddr2)
+            3'b000: pixel_fg = data(7);
+            3'b001: pixel_fg = data(6);
+            3'b010: pixel_fg = data(5);
+            3'b011: pixel_fg = data(4);
+            3'b100: pixel_fg = data(3);
+            3'b101: pixel_fg = data(2);
+            3'b110: pixel_fg = data(1);
+            3'b111: pixel_fg = data(0);
+            default: pixel_fg = data(0);
 	
-	pixel_out <= vga_read_value(31 downto 20) when pixel_fg = '0' else vga_read_value(19 downto 8);
-	--pixel_out <= "000000000000" when pixel_fg = '1' else "111111111111";
+	assign pixel_out = (pixel_fg == 0) ? vga_read_value[31:20] : vga_read_value[19:8];
 
-end Behavioral;
-
+endmodule;
