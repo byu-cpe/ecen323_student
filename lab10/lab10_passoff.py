@@ -16,7 +16,7 @@ import tester_module
 ###########################################################################
 
 # lab-specific constants
-LAB_NUMBER = 9
+LAB_NUMBER = 10
 SCRIPT_VERSION = 1.0
 # Path of script that is being run
 SCRIPT_PATH = pathlib.Path(__file__).absolute().parent.resolve()
