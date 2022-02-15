@@ -48,12 +48,12 @@ pipeline_nop_mem = tester_module.rars_mem_file("pipeline_nop", generate_data_mem
 pipeline_tb = tester_module.testbench_simulation( "Pipeline Testbench", \
 	"riscv_pipeline_tb", \
 	[ "riscv_pipeline_tb", "alu_constants", "alu",  "regfile", "pipeline",   ], [], \
-		 include_dirs = ["../lab02",], )
+		 include_dirs = ["../lab02", "../include"], )
 
 # Synthesis batches
 pipeline_build = tester_module.build_bitstream( "riscv_basic_pipeline", [], 
 	[ "alu_constants", "alu",  "regfile", "pipeline", ], False, False, \
-		include_dirs=["../lab02",])
+		include_dirs=["../lab02", "../include"])
 
 # Bitstream build
 
