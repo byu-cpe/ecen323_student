@@ -24,8 +24,8 @@ module riscv_forwarding_tb();
 	integer i;
 	wire [31:0] error_count;
 	
-	localparam instruction_memory_filename = "forwarding_inst.txt";
-	localparam data_memory_filename = "forwarding_data.txt";
+	localparam instruction_memory_filename = "forwarding_text.mem";
+	localparam data_memory_filename = "forwarding_data.mem";
 	localparam EBREAK_INSTRUCTION = 32'h00100073;
 	localparam TEXT_SEGMENT_START_ADDRESSS = 32'h00000000; // 32'h00400000;
 	localparam INSTRUCTION_MEMORY_WORDS = 128;
@@ -54,9 +54,9 @@ module riscv_forwarding_tb();
 	initial begin
 		$readmemh(instruction_memory_filename, instruction_memory);
 		if (^instruction_memory[0] === 1'bX) begin
-			$display("**** Warning: Testbench failed to load the instruction memory. Make sure the %s file",instruction_memory_filename);
+			$display("**** ERROR: Testbench failed to load the instruction memory. Make sure the %s file",instruction_memory_filename);
 			$display("**** is added to the project.");
-			$error;
+			$finish;
 		end
 		else
 			$display("**** Testbench: Loaded instruction memory ****");
@@ -403,6 +403,11 @@ module riscv_forward_sim_model #(parameter INITIAL_PC = 32'h00400000, DATA_MEMOR
 			if (rtl_Instruction != instruction_id) begin
 				$display(" ** ERR** incorrect I=%h", rtl_Instruction);
 				errors = errors + 1;
+			end
+			// See if there is a bad instruction memory read
+			if ( /*!(^id_PC[0] === 1'bX) && */ ^instruction_id[0] === 1'bx) begin
+				$display(" ** ERR** Bad instruction read");
+				//errors = errors + 1;				
 			end
 			else $display();
 			
