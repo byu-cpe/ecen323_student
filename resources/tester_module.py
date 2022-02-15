@@ -97,6 +97,12 @@ class simulation_module(tester_module):
 		hdl_filename_list = lab_test.get_filenames_from_keylist(self.hdl_sim_keylist)
 
 		sv_xvlog_cmd = ["xvlog", "--nolog", "-sv", ]
+		# Add Include DIRS
+		if len(self.include_dirs) > 0:
+			for include_dir in self.include_dirs:
+				sv_xvlog_cmd.append("-i")
+				sv_xvlog_cmd.append(include_dir)
+		#print(sv_xvlog_cmd)
 		return self.analyze_hdl_files(lab_test, hdl_filename_list, log_basename, sv_xvlog_cmd)
 
 	def analyze_vhdl_files(self, lab_test, log_basename):
