@@ -432,10 +432,11 @@ class build_bitstream(tester_module):
 
 
 class rars_raw(tester_module):
-	''' A tester module that uses RARS
+	''' 
+	A tester module that uses the Java RARs assembler
 	'''
 
-	def __init__(self, asm_filekey, rars_options):
+	def __init__(self, asm_filekey, rars_options=[]):
 		self.rars_options = rars_options
 		self.asm_filekey = asm_filekey
 		self.RARS_FILENAME = "../resources/rars1_4.jar"
@@ -458,14 +459,14 @@ class rars_raw(tester_module):
 			return False
 		return True
 
-
 class rars_sim_print(rars_raw):
 	''' Assembles the given file and then runs the file with output
 	'''
 
 	def __init__(self, asm_filekey):
-		self.asm_filekey = asm_filekey
-		self.RARS_FILENAME = "../resources/rars1_4.jar"
+		super().__init__(asm_filekey)
+		#self.asm_filekey = asm_filekey
+		#self.RARS_FILENAME = "../resources/rars1_4.jar"
 
 	def module_name(self):
 		''' returns a string indicating the name of the module. Used for logging. '''
@@ -494,9 +495,10 @@ class rars_mem_file(rars_raw):
 	'''
 
 	def __init__(self, asm_filekey, generate_data_mem=False):
-		self.asm_filekey = asm_filekey
+		super().__init__(asm_filekey)
+		#self.asm_filekey = asm_filekey
+		#self.RARS_FILENAME = "../resources/rars1_4.jar"
 		self.generate_data_mem = generate_data_mem
-		self.RARS_FILENAME = "../resources/rars1_4.jar"
 
 	def module_name(self):
 		''' returns a string indicating the name of the module. Used for logging. '''

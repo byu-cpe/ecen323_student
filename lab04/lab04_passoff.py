@@ -5,7 +5,9 @@ import pathlib
 import sys
 
 # Add lab passoff files
-sys.path.append('../resources')
+resources_path = pathlib.Path(__file__).resolve().parent.parent  / 'resources'
+sys.path.append( str(resources_path) )
+#sys.path.append('../resources')
 import lab_passoff
 import tester_module
 

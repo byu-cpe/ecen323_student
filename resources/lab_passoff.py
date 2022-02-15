@@ -1,16 +1,9 @@
 #!/usr/bin/python3
 
 '''
-Script for extracting a student submission from a GitHub repository and
-checking the submission.
-
-TODO:
-- Need to figure out a way to run the 'local' mode without generating all the garbage (i.e., run executables in a sub directory but point to files in a upper directory)
-- Change instructions so that the students add the "--squash" flag on the merge so they don't get so
-  many commits when they merge the starter code
-- Squash the commit history of the starter code before the semester begins
-- Checkout the starter code if it doesn't exist (or give a flag to the student code repository) and
-  run the scripts from the known good repository.
+Base script for performing passoffs on ECEN 323 labs.
+Provides core functionality that is used by each labs'
+unique passoff script.
 '''
 
 # Manages file paths
@@ -50,7 +43,42 @@ class TermColor:
 SCRIPT_VERSION = 1.0
 
 class lab_test:
-	''' Represents a specific test for a lab passoff '''
+	''' An instance of this class represents a specific test for a lab passoff.
+		It contains the variables needed to implement a passoff script. The purpose
+		of this class is to consolidate all functionality that is common to all
+		passoff scripts into a single class. Examples of common functionality used
+		by the scripts include:
+		- Argument parsing with common set of arguments
+		- Execute test modules (and save the output to files)
+		- Message printing
+		- Extracting specific tagged repositories before running tests
+		- Managing the mapping between lab specific file keys and their filenames
+
+		Class variables:
+
+		lab_num - the integer lab number
+		script_path - the Path of the lab-specific script (not the path of this class)
+		tests_to_perform - a list of "tester_modul" objects that represet a specific test to perform
+		submission_top_path - represents the top directory where the repository files exist.
+			This is specified as "cwd" for local or "extract_dir" from the arguments
+		submission_lab_path - represents the directory where the lab-specific files exist
+		execution_path - represents the directory where the executables will run. By default
+			this is the 'submission_lab_path'. When the -run_dir flag is given, this is relative
+			to 'cwd'.
+
+		This class also has a number of constants that are the same for all scripts.
+
+		TODO:
+		- The current approach for lab passoffs checks out a tagged copy of the repository under each lab
+		  directory. This will cause the students to have 12 old tagged versions of their repository in
+		  their lab space (although not apart of .git). Come up with a way to checkout the repositories into
+		  the same temporary "passoff" directory in their file space so that only one tagged version of their
+		  repository is in use at any one time.
+		- Checkout the starter code if it doesn't exist (or give a flag to the student code repository) and
+		  run the scripts from the known good repository.
+	'''
+
+
 
 	def __init__(self,script_path,lab_num):
 		''' Initialize variables in lab_test object'''
@@ -76,6 +104,7 @@ class lab_test:
 		self.warnings = 0
 		self.log = None
 		self.tests_to_perform = []
+
 		# Create the argument parser
 		self.parser = lab_passoff_argparse(self.lab_num)
 
@@ -203,8 +232,9 @@ class lab_test:
 
 	def prepare_remote_repo(self):
 		''' Prepares the repository for the pass-off. When this function has completed,
-		the repository has been copied (if necessary), verified, and the  directories 
-		class variable has been set to the appropriate location.  '''
+			the repository has been copied (if necessary), verified, and the  directories 
+			class variable has been set to the appropriate location.
+		'''
 
 		# Determine submission directory for the test
 		# 	submission_top_path:
@@ -285,13 +315,12 @@ class lab_test:
 		else:
 			print("Valid byu-ecen323-classroom repository")
 
-		# Determine execution directory
+		# Determine execution directory where test should be completed
 		#   execution_path:
 		#		represents the directory where the execution of the test will occur. 
 		if self.args.run_dir:
-			# relative to script path
-			#self.execution_path = self.script_path / self.args.run_dir
-			# relative to CWD
+			# If a run directory option is given, create a path that is relative to the
+			# current working directory in which the script was run.
 			self.execution_path = pathlib.Path.cwd() / self.args.run_dir
 
 			# See if directory exists
