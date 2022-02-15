@@ -433,13 +433,19 @@ class build_bitstream(tester_module):
 
 class rars_raw(tester_module):
 	''' 
-	A tester module that uses the Java RARs assembler
+	A tester module that uses the Java RARs assembler.
+
+	This base class contains:
+	- Name of JAR
+	- key for assembly language file
+	- Set of RARs options
 	'''
 
 	def __init__(self, asm_filekey, rars_options=[]):
 		self.rars_options = rars_options
 		self.asm_filekey = asm_filekey
-		self.RARS_FILENAME = "../resources/rars1_4.jar"
+		#self.RARS_FILENAME = "../resources/rars1_4.jar"
+		self.RARS_FILENAME = "resources/rars1_4.jar"
 
 	def module_name(self):
 		''' returns a string indicating the name of the module. Used for logging. '''
@@ -450,17 +456,27 @@ class rars_raw(tester_module):
 
 		print( "RARS execution of", asm_filename,"with options",self.rars_options)
 
-		rars_cmd = ["java", "-jar", self.RARS_FILENAME, ]
+		jar_file_path = lab_test.submission_top_path / self.RARS_FILENAME
+
+		#rars_cmd = ["java", "-jar", self.RARS_FILENAME, ]
+		rars_cmd = ["java", "-jar", jar_file_path, ]
 		rars_cmd.extend(self.rars_options)
 		rars_cmd.append(asm_filename)
-		proc = subprocess.run(rars_cmd, cwd=lab_test.execution_path,check=False)
-		if proc.returncode:
+		rars_log_filename = str(self.asm_filekey + "_exec.txt")
+		rars_log_filepath = lab_test.execution_path / rars_log_filename
+		#proc = subprocess.run(rars_cmd, cwd=lab_test.execution_path,check=False)
+		#if proc.returncode:
+		#	lab_test.print_warning("Failed to simulate assembler files")
+		#	return False
+		return_code = lab_test.subprocess_file_print(rars_log_filepath, rars_cmd, lab_test.execution_path )
+		if return_code:
 			lab_test.print_warning("Failed to simulate assembler files")
 			return False
 		return True
 
 class rars_sim_print(rars_raw):
-	''' Assembles the given file and then runs the file with output
+	''' 
+	Assembles the given file and then runs the file with output
 	'''
 
 	def __init__(self, asm_filekey):
@@ -475,15 +491,16 @@ class rars_sim_print(rars_raw):
 	def perform_test(self, lab_test):
 		# Bug! Using key for filename rather than actual file
 		asm_filename = lab_test.get_filename_from_key(self.asm_filekey)
-		hex_file = str.format("{}.txt",self.asm_filekey)
+		hex_filename = str.format("{}.txt",self.asm_filekey)
 		# TODO: SHould add a "ae1" to these options so that an error is given as a return code for failed assembly
-		self.rars_options = ["sp","ic","100000","dump",".text","HexText",hex_file,]
+		self.rars_options = ["sp","ic","100000","dump",".text","HexText",hex_filename,]
 		result = super().perform_test(lab_test)
 		if not result:
 			return False
 		# Now print the output of each compiled file
 		print("Memory contents")
-		f = open(hex_file,'r')
+		hex_filepath = lab_test.execution_path / hex_filename
+		f = open(hex_filepath,'r')
 		file_contents = f.read()
 		print(file_contents)
 		f.close()
