@@ -2,15 +2,18 @@
 #
 # forwarding.s
 #
-# Version V1.4
-#   2/16/2020
+# Version V1.5
+#   2/16/2022
+#
+# This program is used as a test case for the forwarding processor.
+# This program uses a data segment.
 #
 # This program assumes the "Compact, text at 0" memory configuration
 #
 ######################################################################
 
 .eqv MAJOR_VERSION 1
-.eqv MINOR_VERSION 4
+.eqv MINOR_VERSION 5
 
 
 .text
@@ -71,7 +74,6 @@
 	andi x11, x7, 10
  	# R1 no forwarding, constant may try to forward from WB (imm 10 vs x10)
 	xori x12, x6, 10
-	#ori
 
 	#####################
 	# Prepare the data base pointer for load/store tests
@@ -111,8 +113,12 @@
 	sub x18, x16, x15
 	xor x19, x18, x17
 
+	# load use with a 'load' as the use
+	lw x20, 40(x31)			# Should load 0x2000 into x20
+	lw x21, 0(x20)
+
 	#####################
-	# Forwarding of Load followed by a store
+	# Forwarding of Load followed by a store (load-use hazard with stores)
 	#####################
 	lw x13, 0(x31)
 	sw x13, 32(x31)
@@ -224,16 +230,21 @@ ERROR:
 	nop
 	nop
 	
+##################################################################################
+# Global data segment (0x2000)
+##################################################################################
+
 .data
 Data:
-	.word 0x01234567
-	.word 0xfedcba98 
-	.word 0x89abcdef   
-	.word 0x00000003  
-	.word 0x00000004 
-	.word 0x00000005   
-	.word 0x00000006  
-	.word 0x00000007  
-	.word 0x00000008   
-	.word 0x00000009   
+	.word 0x01234567	# 0x2000
+	.word 0xfedcba98 	# 0x2004
+	.word 0x89abcdef   	# 0x2008
+	.word 0x00000003  	# 0x200c
+	.word 0x00000004 	# 0x2010
+	.word 0x00000005   	# 0x2014
+	.word 0x00000006  	# 0x2018
+	.word 0x00000007  	# 0x201c
+	.word 0x00000008   	# 0x2020
+	.word 0x00000009   	# 0x2024
+	.word 0x00002000   	# 0x2028 (offset decimal 40)
 

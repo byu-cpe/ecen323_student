@@ -273,42 +273,6 @@ module riscv_forward_sim_model #(parameter INITIAL_PC = 32'h00400000, DATA_MEMOR
 				default dec_inst = "N/A";
 			endcase
 	endfunction
-	/*
-	function string dec_inst(input typePack::instruction_t i);
-		case(i.itype.opcode)
-			typePack::L: dec_inst = $sformatf("lw x%1d,0x%1h(x%1d)", i.itype.rd, {{20{i.itype.imm[11]}},i.itype.imm}, i.itype.rs1);
-			typePack::S: dec_inst = $sformatf("sw x%1d,0x%1h(x%1d)", i.stype.rs2, {{20{i.stype.imm11_5[11]}}, i.stype.imm11_5, i.stype.imm4_0}, i.itype.rs1);
-			typePack::BRANCH: dec_inst = $sformatf("beq x%1d,x%1d,0x%1h", i.btype.rs1, i.btype.rs2, 
-				{{20{i.btype.imm12}},i.btype.imm12,i.btype.imm11,i.btype.imm10_5,i.btype.imm4_1,1'b0});
-		typePack::OP: 
-			unique case(i.rtype.funct3)
-				typePack::OR : dec_inst = $sformatf("or x%1d,x%1d,x%1d", i.rtype.rd, i.rtype.rs1, i.rtype.rs2);
-				typePack::AND : dec_inst = $sformatf("and x%1d,x%1d,x%1d", i.rtype.rd, i.rtype.rs1, i.rtype.rs2);
-				typePack::XOR : dec_inst = $sformatf("xor x%1d,x%1d,x%1d", i.rtype.rd, i.rtype.rs1, i.rtype.rs2);
-				typePack::SLT :dec_inst = $sformatf("slt x%1d,x%1d,x%1d", i.rtype.rd, i.rtype.rs1, i.rtype.rs2);
-				typePack::ADD :
-					if (i.rtype.funct7[5] == 1) dec_inst = $sformatf("sub x%1d,x%1d,x%1d", i.rtype.rd, i.rtype.rs1, i.rtype.rs2);
-					else dec_inst = $sformatf("add x%1d,x%1d,x%1d", i.rtype.rd, i.rtype.rs1, i.rtype.rs2);
-			endcase
-		typePack::IMM: 
-			unique case(i.itype.funct3)
-				typePack::OR : dec_inst = $sformatf("ori x%1d,x%1d,0x%1h", i.itype.rd, i.itype.rs1,{{20{i.itype.imm[11]}},i.itype.imm});
-				typePack::AND : dec_inst = $sformatf("andi x%1d,x%1d,0x%1h", i.itype.rd, i.itype.rs1,{{20{i.itype.imm[11]}},i.itype.imm});
-				typePack::XOR : dec_inst = $sformatf("xori x%1d,x%1d,0x%1h", i.itype.rd, i.itype.rs1,{{20{i.itype.imm[11]}},i.itype.imm});
-				typePack::SLT : dec_inst = $sformatf("slti x%1d,x%1d,0x%1h", i.itype.rd, i.itype.rs1,{{20{i.itype.imm[11]}},i.itype.imm});
-				typePack::ADD : dec_inst = $sformatf("addi x%1d,x%1d,0x%1h", i.itype.rd, i.itype.rs1,{{20{i.itype.imm[11]}},i.itype.imm});
-				endcase
-		EBREAK_OPCODE: 
-			dec_inst = "ebreak";
-			default dec_inst = "N/A";
-		endcase
-	endfunction
-
-	function string stage_state(input [31:0] inst);
-		automatic typePack::instruction_t i = inst;
-		stage_state = $sformatf("%s",dec_inst(i));
-	endfunction
-	*/
 	
 
 	function reg [256*8-1:0] copy_string(string str);
