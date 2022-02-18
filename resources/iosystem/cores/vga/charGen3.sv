@@ -30,7 +30,7 @@ module charGen3(clk_vga,clk_data,char_we,char_value,data_addr,pixel_x,pixel_y,da
     logic [7:0] data;
 	logic [2:0] char_x_pixel,ddr,ddr2;
 	logic [6:0] char_x_pos;
-	logic [4:0] signal char_y_pos;
+	logic [4:0] char_y_pos;
 	logic [3:0] char_y_pixel;
 	logic pixel_fg;
 	logic [6:0] charToDisplay;
@@ -47,7 +47,7 @@ module charGen3(clk_vga,clk_data,char_we,char_value,data_addr,pixel_x,pixel_y,da
         ddr2 <= ddr;
     end
 	
-	assign char_x_pixel = pixel_x[2:0]
+	assign char_x_pixel = pixel_x[2:0];
 	assign char_y_pixel = pixel_y[3:0];
 	assign char_x_pos = pixel_x[9:3];
 	assign char_y_pos = pixel_y[8:4];
@@ -63,17 +63,19 @@ module charGen3(clk_vga,clk_data,char_we,char_value,data_addr,pixel_x,pixel_y,da
 	assign font_rom_addr = {charToDisplay , char_y_pixel};
 	
     always_comb
+    begin
         case (ddr2)
-            3'b000: pixel_fg = data(7);
-            3'b001: pixel_fg = data(6);
-            3'b010: pixel_fg = data(5);
-            3'b011: pixel_fg = data(4);
-            3'b100: pixel_fg = data(3);
-            3'b101: pixel_fg = data(2);
-            3'b110: pixel_fg = data(1);
-            3'b111: pixel_fg = data(0);
-            default: pixel_fg = data(0);
-	
+            3'b000: pixel_fg = data[7];
+            3'b001: pixel_fg = data[6];
+            3'b010: pixel_fg = data[5];
+            3'b011: pixel_fg = data[4];
+            3'b100: pixel_fg = data[3];
+            3'b101: pixel_fg = data[2];
+            3'b110: pixel_fg = data[1];
+            3'b111: pixel_fg = data[0];
+            default: pixel_fg = data[0];
+	   endcase
+	end
 	assign pixel_out = (pixel_fg == 0) ? vga_read_value[31:20] : vga_read_value[19:8];
 
-endmodule;
+endmodule
