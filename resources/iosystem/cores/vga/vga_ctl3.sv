@@ -13,6 +13,7 @@
 ----------------------------------------------------------------------------------*/
 
 module vga_ctl3 (clk_vga, clk_data, rst, char_we, char_value, char_addr,
+        custom_foreground, // This is not used but needed for compatibility with VHDL
         foreground_rgb, background_rgb, char_read,
         VGA_HS, VGA_VS,VGA_R, VGA_G,VGA_B );
 
@@ -22,7 +23,7 @@ module vga_ctl3 (clk_vga, clk_data, rst, char_we, char_value, char_addr,
     input logic char_we;
     input logic [31:0] char_value;
     input logic [11:0] char_addr;
-    //input logic custom_foreground;
+    input logic custom_foreground;
     input logic [11:0] foreground_rgb;
     input logic [11:0] background_rgb;
     output logic [31:0] char_read;
