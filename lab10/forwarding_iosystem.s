@@ -14,11 +14,12 @@
 #   0x8000- : VGA
 #
 # Registers:
-# x3(gp):  I/O base address
-# x4(tp):  VGA Base address
-# x8(s0):  Memory pointer to location to display character
-# x9(s1):  Current column index
+# x3(gp):   I/O base address
+# x4(tp):   VGA Base address
+# x8(s0):   Memory pointer to location to display character
+# x9(s1):   Current column index
 # x18(s2):  Current row index
+# x19(s3):  First character flag (indicates first character is displayed)
 #
 ####################################################################################3#
 .globl  main
@@ -104,11 +105,11 @@ L4_2:
 
     # Write a space to all locations in VGA memory
     addi t0, x0, SPACE_CHAR       # ASCII character for space
-    add t1, x0, tp              # Pointer to VGA space that will change
+    add t1, x0, tp                # Pointer to VGA space that will change
     # Create constant 0x1000
-    addi t2, x0, 0x400           # 0x400
-    add t2, t2, t2              # 0x800
-    add t2, t2, t2              # 0x1000
+    addi t2, x0, 0x400            # 0x400
+    add t2, t2, t2                # 0x800
+    add t2, t2, t2                # 0x1000
 
 L5:
     sw t0, 0(t1)
@@ -125,6 +126,8 @@ L6:
     # Clear Seven segment display and LEDs
     sw x0, SEVENSEG_OFFSET(gp)
     sw x0, LED_OFFSET(gp)
+    # Clear the first character flag
+    addi s3, x0, 0              # Clear flag indicating first character
 
     # Wait until all the buttons are released before proceeding to check for status of buttons
 BTN_RELEASE:
@@ -143,9 +146,17 @@ BTN_PRESS:
     addi t1, x0, BUTTON_C_MASK
     beq t0, t1, CLEAR_VGA
 
+    # Check to see if the first character has not been printed.
+    # If not, skip the update on the address and just display the character.
+    beq s0, x0, FIRST_CHARACTER
+    beq x0, x0, UPDATE_DISPLAY_POINTER
+
+FIRST_CHARACTER:
+    addi s0, x0, 1                      # Set flag that first character has been displayed
+    beq x0, x0, DISPLAY_LOCATION        # Jump to display location without updating pointer
+
+UPDATE_DISPLAY_POINTER:
     # Any other button means print the character of the switches on the VGA and move the pointer
-    lw t1, SWITCH_OFFSET(gp)            # Read the switches
-    sw t1, 0(s0)                        # Write the character to the VGA
 
     # Update the pointer based on the button
     addi t1, x0, BUTTON_L_MASK
@@ -191,6 +202,10 @@ PROCESS_BTND:
     beq x0, x0, DISPLAY_LOCATION
 
 DISPLAY_LOCATION:
+    # Display the character at the current location
+    lw t1, SWITCH_OFFSET(gp)            # Read the switches
+    sw t1, 0(s0)                        # Write the character to the VGA
+
     # Display pointer on LCD
     sw s0, SEVENSEG_OFFSET(gp)
     # Display col,row on LEDs
