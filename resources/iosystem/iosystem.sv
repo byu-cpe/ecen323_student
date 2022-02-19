@@ -127,7 +127,7 @@ module iosystem (clk, clkvga, rst, address, MemWrite, MemRead,
         valid_upper_vga_address_wb <= valid_upper_vga_address_mem;
 	end
     assign valid_io_read = (io_space_wb | valid_upper_vga_address_wb); // include MemRead (delayed version of)?
-    assign io_memory_read = char_value_read ? valid_upper_vga_address_wb : io_memory_read_i;
+    assign io_memory_read = valid_upper_vga_address_wb ? char_value_read : io_memory_read_i;
 
     // Generate io read data
 

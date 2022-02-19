@@ -849,9 +849,24 @@ proc findDataPorts { bramList netBaseName } {
 	return $bramDict
 }
 
+# Memory names
+#iosystem/vga/charGen/charmem/BRAM_inst_0/bram
+#iosystem/vga/charGen/charmem/BRAM_inst_1/bram 
+#iosystem/vga/charGen/charmem/BRAM_inst_2/bram 
+#iosystem/vga/charGen/charmem/BRAM_inst_3/bram 
+#iosystem/vga/charGen/fontrom/addr_reg_reg 
+#mem/data_memory_reg_0 
+#mem/data_memory_reg_1
+#mem/instruction_reg_0 
+#mem/instruction_reg_1
+set inst_0 mem/instruction_reg_0
+set inst_1 mem/instruction_reg_1
+set data_0 mem/data_memory_reg_0
+set data_1 mem/data_memory_reg_1
+
 # Process the tcl arguments
-#  dumpMem <cheeckpoint> <output file>
-#  updateMem <cheeckpoint><.text file> <.data file> <bitstream file>
+#  dumpMem <checkpoint file> <output file>
+#  updateMem <checkpoint file> <.text file> <.data file> <bitstream file>
 #
 #  Commands for updating the character memory and font ROM
 if { [llength $argv] > 0 } {
@@ -885,10 +900,10 @@ if { [llength $argv] > 0 } {
 			} else {
 				# Load the .text file
 				set textFileName [lindex $argv 2]
-				load_brams_interleaved_32hextext [list instruction_reg_0 instruction_reg_1] $textFileName
+				load_brams_interleaved_32hextext [list $inst_0 $inst_1] $textFileName
 				# Load the .data file
 				set dataFileName [lindex $argv 3]
-				load_brams_interleaved_32hextext [list data_memory_reg_0 data_memory_reg_1] $dataFileName
+				load_brams_interleaved_32hextext [list $data_0 $data_1] $dataFileName
 				# Write the bitfile
 				set bitstreamName [lindex $argv 4]
 				write_bitstream -force $bitstreamName
@@ -971,11 +986,20 @@ if { [llength $argv] > 0 } {
 	}
 
 } else {
-	puts "Missing Command Name. Options:"
-	puts " dumpMem <checkpoint file> \[output file\]"
-	puts " updateMem <checkpoint file> <.text file> <.data file> <bitstream file> \[Optional .dcp file\]"
-	puts " updateData <checkpoint file> <.data file> <bitstream file> \[Optional .dcp file\]"
-	puts " updateFont <checkpoint file> <font file> <bitfile> \[output checkpoint file\]"
-	puts " updateBackground <checkpoint file> <background file> <bitfile>"
+	# No commandline arguments. Determine whether a project is open
+	set a [current_project -quiet]
+	if { [expr { $a == "" } ] } {
+		# No current project. Missing command line options
+		puts $a
+		puts "Missing Command Name. Options:"
+		puts " dumpMem <checkpoint file> \[output file\]"
+		puts " updateMem <checkpoint file> <.text file> <.data file> <bitstream file> \[Optional .dcp file\]"
+		puts " updateData <checkpoint file> <.data file> <bitstream file> \[Optional .dcp file\]"
+		puts " updateFont <checkpoint file> <font file> <bitfile> \[output checkpoint file\]"
+		puts " updateBackground <checkpoint file> <background file> <bitfile>"
+	} else {
+		puts "Script loaded with current project $a"
+	}
+
 
 }
