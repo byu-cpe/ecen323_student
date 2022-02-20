@@ -24,8 +24,8 @@ module riscv_forwarding_tb();
 	integer i;
 	wire [31:0] error_count;
 	
-	localparam instruction_memory_filename = "forwarding_text.mem";
-	localparam data_memory_filename = "forwarding_data.mem";
+	localparam TEXT_MEMORY_FILENAME = "forwarding_text.mem";
+	localparam DATA_MEMORY_FILENAME = "forwarding_data.mem";
 	localparam EBREAK_INSTRUCTION = 32'h00100073;
 	localparam TEXT_SEGMENT_START_ADDRESSS = 32'h00000000; // 32'h00400000;
 	localparam INSTRUCTION_MEMORY_WORDS = 128;
@@ -45,16 +45,16 @@ module riscv_forwarding_tb();
 							.rtl_ALUResult(tb_ALUResult),
 							.rtl_dAddress(tb_Address), .rtl_dWriteData(tb_dWriteData), .rtl_dReadData(tb_dReadData), 
 							.rtl_MemRead(tb_MemRead), .rtl_MemWrite(tb_MemWrite), .rtl_WriteBackData(tb_WriteBackData),
-							.inst_mem_filename(instruction_memory_filename), .data_mem_filename(data_memory_filename),
+							.inst_mem_filename(TEXT_MEMORY_FILENAME), .data_mem_filename(DATA_MEMORY_FILENAME),
 							.error_count(error_count));
 
 	// Instruction Memory
 	reg [31:0] instruction_memory[INSTRUCTION_MEMORY_WORDS-1:0];
 	localparam NOP_INSTRUCTION = 32'h00000013; // addi x0, x0, 0
 	initial begin
-		$readmemh(instruction_memory_filename, instruction_memory);
+		$readmemh(TEXT_MEMORY_FILENAME, instruction_memory);
 		if (^instruction_memory[0] === 1'bX) begin
-			$display("**** ERROR: Testbench failed to load the instruction memory. Make sure the %s file",instruction_memory_filename);
+			$display("**** ERROR: Testbench failed to load the instruction memory. Make sure the %s file",TEXT_MEMORY_FILENAME);
 			$display("**** is added to the project.");
 			$finish;
 		end
@@ -80,9 +80,9 @@ module riscv_forwarding_tb();
 	reg [31:0] data_memory[DATA_MEMORY_WORDS-1:0];
 
 	initial begin
-		$readmemh(data_memory_filename, data_memory);
+		$readmemh(DATA_MEMORY_FILENAME, data_memory);
 		if (^data_memory[0] === 1'bX) begin
-			$display("**** Warning: Testbench failed to load the data memory. Make sure the %s file",data_memory_filename);
+			$display("**** Warning: Testbench failed to load the data memory. Make sure the %s file",DATA_MEMORY_FILENAME);
 			$display("**** is added to the project.");
 			$finish;
 		end
