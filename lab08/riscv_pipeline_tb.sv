@@ -42,16 +42,16 @@ module riscv_pipeline_tb();
 						riscv_model(.tb_clk(clk), .tb_rst(rst), .tb_PC(tb_PC), .tb_Instruction(tb_instruction), .tb_ALUResult(tb_ALUResult),
 							.tb_dAddress(tb_Address), .tb_dWriteData(tb_dWriteData), .tb_dReadData(tb_dReadData), 
 							.tb_MemRead(tb_MemRead), .tb_MemWrite(tb_MemWrite), .tb_WriteBackData(tb_WriteBackData),
-							.inst_mem_filename(instruction_memory_filename), .data_mem_filename(data_memory_filename),
+							.inst_mem_filename(TEXT_MEMORY_FILENAME), .data_mem_filename(DATA_MEMORY_FILENAME),
 							.error_count(error_count));
 
 	// Instruction Memory
 	reg [31:0] instruction_memory[INSTRUCTION_MEMORY_WORDS-1:0];
 	localparam NOP_INSTRUCTION = 32'h00000013; // addi x0, x0, 0
 	initial begin
-		$readmemh(instruction_memory_filename, instruction_memory);
+		$readmemh(TEXT_MEMORY_FILENAME, instruction_memory);
 		if (^instruction_memory[0] === 1'bX) begin
-			$display("**** Warning: Testbench failed to load the instruction memory. Make sure the %s file",instruction_memory_filename);
+			$display("**** Warning: Testbench failed to load the instruction memory. Make sure the %s file",TEXT_MEMORY_FILENAME);
 			$display("**** is added to the project.");
 			$error;
 		end
@@ -75,9 +75,9 @@ module riscv_pipeline_tb();
 	reg [31:0] data_memory[DATA_MEMORY_WORDS-1:0];
 
 	initial begin
-		$readmemh(data_memory_filename, data_memory);
+		$readmemh(DATA_MEMORY_FILENAME, data_memory);
 		if (^data_memory[0] === 1'bX) begin
-			$display("**** Warning: Testbench failed to load the data memory. Make sure the %s file",data_memory_filename);
+			$display("**** Warning: Testbench failed to load the data memory. Make sure the %s file",DATA_MEMORY_FILENAME);
 			$display("**** is added to the project.");
 			$error;
 		end
