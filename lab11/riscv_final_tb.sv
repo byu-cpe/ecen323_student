@@ -145,8 +145,8 @@ endpackage : typePack
 
 module riscv_final_tb ();
 
-	parameter TEXT_MEMORY_FILENAME = "final_text.txt";
-	parameter DATA_MEMORY_FILENAME = "final_data.txt";
+	parameter TEXT_MEMORY_FILENAME = "final_text.mem";
+	parameter DATA_MEMORY_FILENAME = "final_data.mem";
 	parameter TEXT_SEGMENT_START_ADDRESSS = 32'h00000000; // 32'h00400000;
 	parameter INSTRUCTION_MEMORY_WORDS = 1024;
 	parameter DATA_MEMORY_WORDS = 2048;
