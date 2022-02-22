@@ -145,10 +145,7 @@ endpackage : typePack
 
 module riscv_final_tb ();
 
-	localparam DATA_MEMORY_FILENAME = "forwarding_data.mem";
-
-
-	parameter TEXT_MEMORY_FILENAME = "final_inst.txt";
+	parameter TEXT_MEMORY_FILENAME = "final_text.txt";
 	parameter DATA_MEMORY_FILENAME = "final_data.txt";
 	parameter TEXT_SEGMENT_START_ADDRESSS = 32'h00000000; // 32'h00400000;
 	parameter INSTRUCTION_MEMORY_WORDS = 1024;
