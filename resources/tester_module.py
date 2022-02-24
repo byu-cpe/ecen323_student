@@ -77,9 +77,12 @@ class simulation_module(tester_module):
 
 		# Add Include DIRS
 		if len(self.include_dirs) > 0 and consider_include:
+			# Need to adjust include path relative to execution path
+			rel_path = os.path.relpath(os.path.relpath(lab_test.submission_lab_path,lab_test.execution_path))
 			for include_dir in self.include_dirs:
 				analyze_cmd.append("-i")
-				analyze_cmd.append(include_dir)
+				rel_include_dir = os.path.join(rel_path,include_dir)
+				analyze_cmd.append(rel_include_dir)
 
 		#print(analyze_cmd)
 		#print(lab_test.execution_path)
@@ -97,12 +100,7 @@ class simulation_module(tester_module):
 		hdl_filename_list = lab_test.get_filenames_from_keylist(self.hdl_sim_keylist)
 
 		sv_xvlog_cmd = ["xvlog", "--nolog", "-sv", ]
-		# Add Include DIRS
-		if len(self.include_dirs) > 0:
-			for include_dir in self.include_dirs:
-				sv_xvlog_cmd.append("-i")
-				sv_xvlog_cmd.append(include_dir)
-		#print(sv_xvlog_cmd)
+		# (include DIRS added in analyze_hdl_files)
 		return self.analyze_hdl_files(lab_test, hdl_filename_list, log_basename, sv_xvlog_cmd)
 
 	def analyze_vhdl_files(self, lab_test, log_basename):
@@ -393,14 +391,16 @@ class build_bitstream(tester_module):
 			for xdc_filename in xdl_filenames:
 				log.write('read_xdc ' + xdc_filename + '\n')
 		log.write('# Synthesize design\n')
-		#log.write('synth_design -top ' + design_name + ' -flatten_hierarchy full\n')
-		#log.write('synth_design -top ' + self.design_name + ' -part ' + part + '\n')
+		# Create synthesis command
 		synth_command = 'synth_design -top ' + self.design_name + ' -part ' + part
 		if len(self.include_dirs) > 0:
+			# Need to adjust include path relative to execution path
+			rel_path = os.path.relpath(os.path.relpath(lab_test.submission_lab_path,lab_test.execution_path))
 			# -include_dirs {C:/data/include1 C:/data/include2}
 			synth_command += ' -include {'
 			for include_dir in self.include_dirs:
-				synth_command += include_dir + " "
+				rel_include_dir = os.path.join(rel_path,include_dir)
+				synth_command += rel_include_dir + " "
 			synth_command += '}'
 		if len(self.generics) > 0:
 			for generic in self.generics:
