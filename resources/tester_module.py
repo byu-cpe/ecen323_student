@@ -332,14 +332,14 @@ class build_bitstream(tester_module):
 	'''
 
 	def __init__(self,design_name, xdl_key_list, hdl_key_list, implement_build = True, 
-		create_dcp = False,  include_dirs = [], vhdl_files = [], generics=[]):
+		create_dcp = False,  include_dirs = [], vhdl_key_list = [], generics=[]):
 		self.design_name = design_name
 		self.xdl_key_list = xdl_key_list
 		self.hdl_key_list = hdl_key_list
 		self.implement_build = implement_build
 		self.create_dcp = create_dcp
 		self.include_dirs = include_dirs
-		self.vhdl_files = vhdl_files
+		self.vhdl_key_list = vhdl_key_list
 		self.generics=generics
 
 	def module_name(self):
@@ -353,7 +353,12 @@ class build_bitstream(tester_module):
 		dcp_filename = str(self.design_name + ".dcp")
 		#extract_path = lab_test.submission_lab_path
 		hdl_filenames = lab_test.get_filenames_from_keylist(self.hdl_key_list)
+		#print(self.hdl_key_list)
+		#print(hdl_filenames)
 		xdl_filenames = lab_test.get_filenames_from_keylist(self.xdl_key_list)
+		vhdl_filenames = lab_test.get_filenames_from_keylist(self.vhdl_key_list)
+		#print(self.vhdl_key_list)
+		#print(vhdl_filenames)
 
 		# Get name of new settings file (need to make it relative to execution path)
 		rel_path = os.path.relpath(os.path.relpath(lab_test.submission_lab_path,lab_test.execution_path))
@@ -381,9 +386,9 @@ class build_bitstream(tester_module):
 			#src = get_filename_from_key(src_key)
 			log.write('read_verilog -sv ' + hdl_filename + '\n')
 		# Read VHDL files
-		if len(self.vhdl_files) > 0:
+		if len(vhdl_filenames) > 0:
 			log.write('# Add VHDL sources\n')
-			for vhdl_filename in self.vhdl_files:
+			for vhdl_filename in vhdl_filenames:
 				log.write('read_vhdl ' + vhdl_filename + '\n')
 		# Read xdc files
 		if self.implement_build:
