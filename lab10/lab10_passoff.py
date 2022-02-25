@@ -80,13 +80,14 @@ hdl_files = [ "alu", "regfile", "forwarding",
 	"bramMacro", "tx", "rx", "debounce", "SevenSegmentControl4", "riscv_mem", "io_clocks",
 	"iosystem",
 	"forwarding_io" ]
-vhdl_sources = []
-for vhdl_file in vhdl_files.values():
-	vhdl_sources.append(vhdl_file)
+vhdl_keys = ["vga_timing","font_rom","charmem","charGen3","vga_ctl3"]
+#vhdl_sources = []
+#for vhdl_file in vhdl_files.values():
+#	vhdl_sources.append(vhdl_file)
 
 forwarding_bit = tester_module.build_bitstream( "forwarding_iosystem",["xdc"],hdl_files, implement_build =True, 
 	create_dcp = True, include_dirs = ["../lab02", "../include"],
-	vhdl_files = vhdl_sources,
+	vhdl_key_list = vhdl_keys,
 	generics = ["TEXT_MEMORY_FILENAME=buttoncount_text.mem",
 	"DATA_MEMORY_FILENAME=forwarding_iosystem_data.mem"])
 
