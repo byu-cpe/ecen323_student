@@ -3,7 +3,7 @@
 # forwarding_iosystem.s
 #
 # This program is written using the primitive instruction set
-# for the forwarding RISC-V processor developed in the first labs.
+# for the forwarding RISC-V processor.
 #
 # This program does not use the data segment.
 #
@@ -19,7 +19,6 @@
 # x8(s0):   Memory pointer to location to display character
 # x9(s1):   Current column index
 # x18(s2):  Current row index
-# x19(s3):  First character flag (indicates first character is displayed)
 #
 ####################################################################################3#
 .globl  main
@@ -126,10 +125,12 @@ L6:
     # Clear Seven segment display and LEDs
     sw x0, SEVENSEG_OFFSET(gp)
     sw x0, LED_OFFSET(gp)
-    # Clear the first character flag
-    addi s3, x0, 0              # Clear flag indicating first character
+    # Display the first character at location 0,0
+    beq x0, x0, DISPLAY_LOCATION
 
     # Wait until all the buttons are released before proceeding to check for status of buttons
+    # (this is a one shot functionality to prevent one button press from causing more than one
+    #  response)
 BTN_RELEASE:
     lw t0, BUTTON_OFFSET(gp)
     # Keep jumping back until a button is pressed
@@ -174,42 +175,42 @@ UPDATE_DISPLAY_POINTER:
 PROCESS_BTNR:
     # Move pointer right
     addi t0, x0, LAST_COLUMN
-    beq s1, t0, BTN_RELEASE     # Ignore if on last column
-    addi s1, s1, 1              # Increment column
-    addi s0, s0, 4              # Increment pointer
+    beq s1, t0, BTN_RELEASE                     # Ignore if on last column
+    addi s1, s1, 1                              # Increment column
+    addi s0, s0, 4                              # Increment pointer
     beq x0, x0, DISPLAY_LOCATION
 
 PROCESS_BTNL:
     # Move pointer left
-    beq s1, x0, BTN_RELEASE     # Ignore if on first column
-    addi s1, s1, -1             # Decrement column
-    addi s0, s0, -4             # Decrement pointer
+    beq s1, x0, BTN_RELEASE                     # Ignore if on first column
+    addi s1, s1, -1                             # Decrement column
+    addi s0, s0, -4                             # Decrement pointer
     beq x0, x0, DISPLAY_LOCATION
 
 PROCESS_BTNU:
     # Move pointer Up
-    beq s2, x0, BTN_RELEASE     # Ignore if on first row
-    addi s2, s2, -1             # Decrement row
-    addi s0, s0, NEG_ADDRESSES_PER_ROW           # Decrement pointer
+    beq s2, x0, BTN_RELEASE                     # Ignore if on first row
+    addi s2, s2, -1                             # Decrement row
+    addi s0, s0, NEG_ADDRESSES_PER_ROW          # Decrement pointer
     beq x0, x0, DISPLAY_LOCATION
 
 PROCESS_BTND:
     # Move pointer Down
     addi t0, x0, LAST_ROW
-    beq s2, t0, BTN_RELEASE     # Ignore if on last row
-    addi s2, s2, 1             # Increment row
-    addi s0, s0, ADDRESSES_PER_ROW            # Increment pointer
+    beq s2, t0, BTN_RELEASE                     # Ignore if on last row
+    addi s2, s2, 1                              # Increment row
+    addi s0, s0, ADDRESSES_PER_ROW              # Increment pointer
     beq x0, x0, DISPLAY_LOCATION
 
 DISPLAY_LOCATION:
     # Display the character at the current location
-    lw t1, SWITCH_OFFSET(gp)            # Read the switches
-    sw t1, 0(s0)                        # Write the character to the VGA
+    lw t1, SWITCH_OFFSET(gp)                    # Read the switches
+    sw t1, 0(s0)                                # Write the character to the VGA
 
     # Display pointer on LCD
     sw s0, SEVENSEG_OFFSET(gp)
     # Display col,row on LEDs
-    add t0, s1, x0                          # Load s1 (column) to t0
+    add t0, s1, x0                              # Load s1 (column) to t0
     # Shift by 8
     add t0, t0, t0
     add t0, t0, t0
