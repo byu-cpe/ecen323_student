@@ -147,15 +147,6 @@ BTN_PRESS:
     addi t1, x0, BUTTON_C_MASK
     beq t0, t1, CLEAR_VGA
 
-    # Check to see if the first character has not been printed.
-    # If not, skip the update on the address and just display the character.
-    beq s0, x0, FIRST_CHARACTER
-    beq x0, x0, UPDATE_DISPLAY_POINTER
-
-FIRST_CHARACTER:
-    addi s0, x0, 1                      # Set flag that first character has been displayed
-    beq x0, x0, DISPLAY_LOCATION        # Jump to display location without updating pointer
-
 UPDATE_DISPLAY_POINTER:
     # Any other button means print the character of the switches on the VGA and move the pointer
 
