@@ -365,7 +365,7 @@ module riscv_forward_sim_model #(parameter INITIAL_PC = 32'h00400000, DATA_MEMOR
 			if (insert_ex_bubble)
 				$write(" Insert Bubble");			
 			if (rtl_Instruction != instruction_id) begin
-				$display(" ** ERR** incorrect I=%h", rtl_Instruction);
+				$display(" ** ERR** I=%h but expecting:%h", rtl_Instruction, instruction_id);
 				errors = errors + 1;
 			end
 			// See if there is a bad instruction memory read
