@@ -396,7 +396,7 @@ module riscv_forward_sim_model #(parameter INITIAL_PC = 32'h00400000, DATA_MEMOR
 				else if (forwardB == 2)
 					$write(" [FWD WB(0x%1h) to r2]",wb_writedata);
 				if (rtl_ALUResult != ex_alu_result) begin
-					$write(" ** ERR** incorrect alu result=%1h", rtl_ALUResult);
+					$write(" ** ERR** incorrect alu result=%1h but expecting %1h", rtl_ALUResult, ex_alu_result);
 					errors = errors + 1;
 				end
 					
