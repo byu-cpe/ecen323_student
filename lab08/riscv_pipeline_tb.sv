@@ -241,10 +241,11 @@ module riscv_sim_model #(parameter INITIAL_PC = 32'h00400000, DATA_MEMORY_START_
 						3'b110 : dec_inst = $sformatf("or x%1d,x%1d,x%1d", rd, rs1, rs2);
 						3'b111 : dec_inst = $sformatf("and x%1d,x%1d,x%1d", rd, rs1, rs2);
 						3'b100 : dec_inst = $sformatf("xor x%1d,x%1d,x%1d", rd, rs1, rs2);
-						3'b010 :dec_inst = $sformatf("slt x%1d,x%1d,x%1d", rd, rs1, rs2);
+						3'b010 : dec_inst = $sformatf("slt x%1d,x%1d,x%1d", rd, rs1, rs2);
 						3'b000 :
 							if (funct7[5] == 1) dec_inst = $sformatf("sub x%1d,x%1d,x%1d", rd, rs1, rs2);
 							else dec_inst = $sformatf("add x%1d,x%1d,x%1d",  rd, rs1, rs2);
+						default: dec_inst = $sformatf("Register/Register Instruction with unknown funct3 0x%1h",funct3);
 					endcase
 				// Immediate (double)
 				I_OPCODE:
