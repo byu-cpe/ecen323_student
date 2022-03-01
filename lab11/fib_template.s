@@ -12,8 +12,10 @@
 # Registers:
 #   x0: Zero
 #   x1: return address
-#   x2: stack pointer (starts at 0x3ffc)
-#   x3: global pointer (to data: 0x2000)
+#   x2 (sp): stack pointer (starts at 0x3ffc)
+#   x3 (gp): global pointer (to data: 0x2000)
+#   s0: Loop index for Fibonacci call
+#   s1: Pointer to 'fib_count' in data segment
 #   x10-x11: function arguments/return values
 #
 #######################
@@ -23,15 +25,16 @@
 main:
 
 	# Setup the stack: sp = 0x3ffc
-	lui sp, 4		# 4 << 12 = 0x4000
-	addi sp, sp, -4		# 0x4000 - 4 = 0x3ffc
+	lui sp, 4				# 4 << 12 = 0x4000
+	addi sp, sp, -4			# 0x4000 - 4 = 0x3ffc
 	# setup the global pointer to the data segment (2<<12 = 0x2000)
 	lui gp, 2
 	
 	# Prepare the loop to iterate over each Fibonacci call
 	addi s0, x0, 0			# Loop index (initialize to zero)
-	# This macro is used to compute the offset of 'fib_input' in the
-	# data segment (x3) so we don't have to manually compute this offset.
+	# This macro is used to compute the offset of the memory address associated
+	# with 'fib_input' in the data segment (x3) so we don't have to manually
+	# compute this offset.
 	lw s1,%lo(fib_count)(gp)	 # Loop terminal count
 
 FIB_LOOP:

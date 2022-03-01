@@ -42,18 +42,22 @@ module vga_timing (clk, rst, HS, VS, pixel_x, pixel_y, last_column, last_row, bl
             end
         end
 
-    assign x_next = (x_reg == X_MAX) ? 0 : x_reg + 1;
-    assign y_next = (x_reg == X_MAX && y_reg == Y_MAX) ? 0 :
-                    (x_reg == X_MAX) ? y_reg + 1 :
+    //assign x_next = (x_reg == X_MAX) ? 0 : x_reg + 1;
+    assign x_next = (x_reg == 799) ? 0 : x_reg + 1;
+    //assign y_next = (x_reg == X_MAX && y_reg == Y_MAX) ? 0 :
+    //                (x_reg == X_MAX) ? y_reg + 1 :
+    //                y_reg;
+    assign y_next = (x_reg == 799 && y_reg == 520) ? 0 :
+                    (x_reg == 799) ? y_reg + 1 :
                     y_reg;
 
     assign pixel_x = x_reg;
     assign pixel_y = y_reg;
-    assign last_column = (x_reg == LAST_COLUMN_NUM);
-    assign last_row = (y_reg == LAST_ROW_NUM);
-    assign HS = ~(x_reg >= HS_LOW_COL_MIN && x_reg <= HS_LOW_COL_MAX );
-    assign VS = ~(y_reg >= VS_LOW_COL_MIN && y_reg <= VS_LOW_COL_MAX );
-    assign blank = (x_reg >= BLANK_FIRST_COL && y_reg >= BLANK_FIRST_ROW );
+    assign last_column = (x_reg == 639);
+    assign HS = ~(x_reg > 655 && x_reg < 752 );
+    assign VS = ~(y_reg > 489 && y_reg < 492 );
+    assign last_row = (y_reg == 479);
+    assign blank = ~(x_reg < 640 && y_reg < 480 );
 
 endmodule
 

@@ -58,9 +58,15 @@ module vga_ctl3 (clk_vga, clk_data, rst, char_we, char_value, char_addr,
         default_char_value : char_value;
 
     // charGen3
-    charGen3 charGen (.clk_vga(clk_vga), .clk_data(clk_data), .char_value(char_data_to_write), 
+    charGen3 charGen (
+        .clk_vga(clk_vga), 
+        .clk_data(clk_data), 
+        .char_value(char_data_to_write), 
         .char_we(char_we), 
-        .data_addr(char_addr), .pixel_x(pixel_x), .pixel_y(pixel_y), .data_read_value(char_read),
+        .data_addr(char_addr), 
+        .pixel_x(pixel_x), 
+        .pixel_y(pixel_y), 
+        .data_read_value(char_read),
         .pixel_out(pixel_out) );
 
     // VGA Timing
@@ -79,19 +85,19 @@ module vga_ctl3 (clk_vga, clk_data, rst, char_we, char_value, char_addr,
     // Two cycle delay on VGA signals
     always_ff@(posedge clk_vga)
         if(rst)  begin
-            vs_d = 1;
-            hs_d = 1;
-            vs_d2 = 1;
-            hs_d2 = 1;
-            blank_d = 1;
-            blank_d2 = 1;
+            vs_d <= 0;
+            hs_d <= 0;
+            vs_d2 <= 0;
+            hs_d2 <= 0;
+            blank_d <= 0;
+            blank_d2 <= 0;
         end else begin
-            vs_d = vs;
-            hs_d = hs;
-            vs_d2 = vs_d;
-            hs_d2 = hs_d;
-            blank_d = blank;
-            blank_d2 = blank_d;
+            vs_d <= vs;
+            hs_d <= hs;
+            vs_d2 <= vs_d;
+            hs_d2 <= hs_d;
+            blank_d <= blank;
+            blank_d2 <= blank_d;
         end
 
     // VGA outputs        

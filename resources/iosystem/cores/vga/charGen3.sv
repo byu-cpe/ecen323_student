@@ -35,12 +35,22 @@ module charGen3(clk_vga,clk_data,char_we,char_value,data_addr,pixel_x,pixel_y,da
 	logic pixel_fg;
 	logic [6:0] charToDisplay;
 
-    charColorMem3BRAM charmem (.clk_vga(clk_vga),.clk_data(clk_data),.data_we(char_we),
+    charColorMem3BRAM charmem (
+        .clk_vga(clk_vga),
+        .clk_data(clk_data),
+        .data_we(char_we),
         .data_write_value(char_value),
-        .vga_read_value(vga_read_value),.data_read_value(data_read_value),
-        .vga_addr(vga_read_addr),.data_addr(data_addr));
+        .vga_read_value(vga_read_value),
+        .data_read_value(data_read_value),
+        .vga_addr(vga_read_addr),
+        .data_addr(data_addr)
+    );
     
-    font_rom fontrom(.clk(clk_vga),.addr(font_rom_addr),.data(data));
+    font_rom fontrom(
+        .clk(clk_vga),
+        .addr(font_rom_addr),
+        .data(data)
+    );
 
     always_ff@(posedge clk_vga) begin
         ddr <= char_x_pixel;
@@ -76,6 +86,7 @@ module charGen3(clk_vga,clk_data,char_we,char_value,data_addr,pixel_x,pixel_y,da
             default: pixel_fg = data[0];
 	   endcase
 	end
+    
 	assign pixel_out = (pixel_fg == 0) ? vga_read_value[31:20] : vga_read_value[19:8];
 
 endmodule

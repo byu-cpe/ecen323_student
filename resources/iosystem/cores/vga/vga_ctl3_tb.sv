@@ -43,7 +43,6 @@ module vga_ctl3_tb();
         // Wait a clock
         @(negedge clk_data)
         $display("[%0tns] Reading character of 0x%h to col,row=0x%h,0x%h", $time/1000, char_read[7:0],col,row );
-        char_we <= 1'b0;
     endtask
 
     vga_ctl3 vga (.clk_vga(clk_vga), .clk_data(clk_data), .rst(rst), 
@@ -54,16 +53,16 @@ module vga_ctl3_tb();
     // VGA Clock (50 MHz)
     initial begin
         forever begin
-            clk_vga =1; #10;
-            clk_vga =0; #10;        
+            clk_vga = 1; #10;
+            clk_vga = 0; #10;        
         end
     end
 
     // Data Clock (33 MHz)
     initial begin
         forever begin
-            clk_data =1; #16.5;
-            clk_data =0; #16.5;        
+            clk_data = 1; #16.5;
+            clk_data = 0; #16.5;        
         end
     end
 
@@ -92,7 +91,15 @@ module vga_ctl3_tb();
             @(negedge clk_data);
         end
 
+        // Write space character (' ') on first line
         write_character( 64, 0, 32'h20);
+        for (i = 0 ; i < 20; i = i +1)
+            @(negedge clk_data);
+
+        // Make sure the character was properly written
+        read_character (64,0);
+        
+        // Write character (first corner before new frame is displayed)
         write_character( 0, 0, 32'h21);
 
 	end
