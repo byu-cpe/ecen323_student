@@ -61,7 +61,7 @@ module riscv_mem (clk, rst, PC, iMemRead, instruction, dAddress, MemWrite, dWrit
 		// Debug messages for simulation
 
 		// synthesis translate_off
-		if (^inst_memory[0] === 1'bX) begin
+		if (^inst_memory[0] === 1'bX || inst_memory[0] == NOP_INSTRUCTION ) begin
 			$display("**** Top-Level I/O System: Error - Instruction memory file '%s' failed to load ****",TEXT_MEMORY_FILENAME);
 			$finish;
 		end
