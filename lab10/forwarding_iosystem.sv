@@ -49,7 +49,7 @@ module forwarding_iosystem (clk, btnc, btnd, btnl, btnr, btnu, sw, led,
 	localparam IO_START_ADDRESS = 32'h00007f00;
 	localparam VGA_START_ADDRESS = 32'h00008000;
     localparam PROC_CLOCK_RATE = INPUT_CLOCK_RATE / PROC_CLK_DIVIDE;
-    localparam DEBOUNCE_DELAY_US = 1;
+    localparam DEBOUNCE_DELAY_US = 20;
     
     // Module Signals
     logic clk_proc, clk_vga, rst;
