@@ -49,7 +49,8 @@ module io_clocks (clk_in, reset_out, clk_proc, clk_vga);
 	// Processor MCM
 	logic mcm_pwrdwn = 0;
 	logic clk0,clk_proc,clkfb,clkfb_buf;
-	MMCME2_BASE mmcm(.RST(dcm_reset),.CLKIN1(clk_in),.LOCKED(mcm_locked),.PWRDWN(mcm_pwrdwn),.CLKOUT0(clk0),.CLKFBOUT(clkfb),.CLKFBIN(clkfb_buf),
+	//MMCME2_BASE - symbiflow needs ADV
+	MMCME2_ADV mmcm(.RST(dcm_reset),.CLKIN1(clk_in),.LOCKED(mcm_locked),.PWRDWN(mcm_pwrdwn),.CLKOUT0(clk0),.CLKFBOUT(clkfb),.CLKFBIN(clkfb_buf),
 		// unconnected
 		.CLKFBOUTB(),.CLKOUT0B(),.CLKOUT1(),.CLKOUT1B(),.CLKOUT2(),.CLKOUT2B(),.CLKOUT3(),.CLKOUT3B(),.CLKOUT4(),.CLKOUT5(),.CLKOUT6());
 	localparam CLKFBOUT_MULT_F = 8.000;
@@ -62,7 +63,8 @@ module io_clocks (clk_in, reset_out, clk_proc, clk_vga);
     
 	// VGA clock
 	logic clk_vga, clk0_vga, clkfb_vga, clkfb_buf_vga;
-	MMCME2_BASE mmcm_vga(.RST(dcm_reset),.CLKIN1(clk_in),.LOCKED(),.PWRDWN(mcm_pwrdwn),
+	//MMCME2_BASE - symbiflow needs ADV
+	MMCME2_ADV mmcm_vga(.RST(dcm_reset),.CLKIN1(clk_in),.LOCKED(),.PWRDWN(mcm_pwrdwn),
 		.CLKOUT0(clk0_vga),.CLKFBOUT(clkfb_vga),.CLKFBIN(clkfb_buf_vga),
 		// unconnected
 		.CLKFBOUTB(),.CLKOUT0B(),.CLKOUT1(),.CLKOUT1B(),.CLKOUT2(),.CLKOUT2B(),.CLKOUT3(),.CLKOUT3B(),.CLKOUT4(),.CLKOUT5(),.CLKOUT6());
