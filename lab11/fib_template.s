@@ -2,6 +2,8 @@
 #
 # fib_template.asm
 #
+# Put Your name here
+#
 # Template for completing Fibinnoci sequence in lab 11
 #
 # Version 1.2
@@ -24,6 +26,10 @@
 .text
 main:
 
+	#########################
+	# Program Initialization
+	#########################
+
 	# Setup the stack: sp = 0x3ffc
 	lui sp, 4				# 4 << 12 = 0x4000
 	addi sp, sp, -4			# 0x4000 - 4 = 0x3ffc
@@ -32,10 +38,18 @@ main:
 	
 	# Prepare the loop to iterate over each Fibonacci call
 	addi s0, x0, 0			# Loop index (initialize to zero)
-	# This macro is used to compute the offset of the memory address associated
-	# with 'fib_input' in the data segment (x3) so we don't have to manually
-	# compute this offset.
-	lw s1,%lo(fib_count)(gp)	 # Loop terminal count
+
+	# Load the loop terminal count value (in the .data segment)
+
+	# The following assembly language macro is useful for accessing variables
+	# in the data segment. This macro helps determine the address of data variables.
+	# The form of the macro is '%lo(label)(register). The 'label' refers to
+	# a label in the data segment and the register refers to the RISC-V base
+	# register used to access the memory. In this case, the label is 
+	# 'fib_count' (see the .data segment) and the register is 'gp' which points
+	# to the data segment. The assembler will figure out what the offset is for
+	# 'fib_count' from the data segment.
+	lw s1,%lo(fib_count)(gp)	 # Load terminal count into s1
 
 FIB_LOOP:
 	# Set up argument for call to iterative fibinnoci
@@ -70,6 +84,7 @@ FIB_LOOP:
 	# Increment pointer and see if we are done
 	beq s0, s1, done
 	addi s0, s0, 1
+	# Not done, jump back to do another iteration
 	j FIB_LOOP
 
 done:
@@ -83,6 +98,7 @@ done:
 	# create a pointer to the recursive data
 	addi t3, gp, %lo(recursive_data)
 	
+	# Add the results of all the calls
 final_add:
 	lw t4, (t2)
 	add a0, a0, t4
@@ -119,6 +135,7 @@ recursive_fibinnoci:
 
 		
 	ret
+	# Extra NOPs inserted to make sure we have instructions in the pipeline
 	nop
 	nop
 	nop
@@ -129,9 +146,11 @@ recursive_fibinnoci:
 fib_count:
 	.word 15   # Perform Fibonacci sequence from 0 to 15
 # Reserve 16 words for results of iterative sequences
+# (16 words of 4 bytes each for a total of 64 bytes)
 iterative_data:
-	.space 64 # reserve 16 words of 4 bytes each for a total of 64 bytes
+	.space 64 
 # Reserve 16 words for results of recursive sequences
+# (16 words of 4 bytes each for a total of 64 bytes)
 recursive_data:
-	.space 64 # reserve 16 words of 4 bytes each for a total of 64 bytes
+	.space 64 
 
