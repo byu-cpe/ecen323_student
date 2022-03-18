@@ -33,8 +33,8 @@ module riscv_io_final (clk, btnc, btnd, btnl, btnr, btnu, sw, led,
 	output logic Vsync;
 
     // Top-level Parameters
-    parameter TEXT_MEMORY_FILENAME = "";        // Instruction binary file
-    parameter DATA_MEMORY_FILENAME = "";        // Data segment binary file
+    parameter TEXT_MEMORY_FILENAME = "final_iosystem_text.mem";        // Instruction binary file
+    parameter DATA_MEMORY_FILENAME = "final_iosystem_data.mem";        // Data segment binary file
     parameter USE_DEBOUNCER = 1;
     parameter TIMER_CLOCK_REDUCTION = 1;
 
