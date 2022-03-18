@@ -858,7 +858,7 @@ proc findMemoryWithBase { base_name} {
 	# Iterate over all of the BRAMs to see if a match can be found
 	foreach bram $bramList {
 		#puts "BRAM $bram"
-		if {[string first $base_name $bramList] != -1} {
+		if {[string first $base_name $bram] != -1} {
 			#puts "Match with $base_name"
 			return $bram
 		}
@@ -872,6 +872,8 @@ proc updateRiscvMemories { textFileName dataFileName bitstreamName { checkpointf
 	set inst_1 [findMemoryWithBase "instruction_reg_1"]
 	set data_0 [findMemoryWithBase "data_memory_reg_0"]
 	set data_1 [findMemoryWithBase "data_memory_reg_1"]
+	puts "Instruction memories: $inst_0 $inst_1"
+	puts "Data memories: $data_0 $data_1"
 	if {[string equal "None" $inst_0] || [string equal "None" $inst_1] ||
 		[string equal "None" $data_0] || [string equal "None" $data_1]} {
 		puts "Cannot find instruction memory"

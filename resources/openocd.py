@@ -19,6 +19,8 @@ def main():
 	parser = argparse.ArgumentParser(description="Run 'openocd' command with arbitrary bitfile")
 	# Add filename argument
 	parser.add_argument('filename', type=str, help="Bitstream filename")
+	# Don't delete download file
+	parser.add_argument('--nodelete', action="store_true", help="Don't delete openocd file when done")
 	# Parse arguments
 	args = parser.parse_args()
 
@@ -57,8 +59,9 @@ def main():
 		print("Error running openocd")
 
 	# Delete the temporary ocd file
-	if os.path.exists(ocd_filename):
-		os.remove(ocd_filename)
+	if not args.nodelete:
+		if os.path.exists(ocd_filename):
+			os.remove(ocd_filename)
 
 if __name__ == "__main__":
 	main()
