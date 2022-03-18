@@ -31,7 +31,7 @@ set debug 0
 
 # Get a list of the BRAMs that are used in a design
 proc get_brams {} {
-    puts [get_cells -hierarchical -filter { PRIMITIVE_TYPE =~ BMEM.bram.* }]
+    return [get_cells -hierarchical -filter { PRIMITIVE_TYPE =~ BMEM.bram.* }]
 }
 
 # creates an ordered list of strings from the BRAM init values with
@@ -849,6 +849,48 @@ proc findDataPorts { bramList netBaseName } {
 	return $bramDict
 }
 
+# Find the bram memory that includes the base_name. This is used to find memories
+# whose hierarchy may not match what is expected
+proc findMemoryWithBase { base_name} {
+	#puts "Finding $base_name"
+	# Get a list of all of the BRAMs
+	set bramList [get_brams]
+	# Iterate over all of the BRAMs to see if a match can be found
+	foreach bram $bramList {
+		#puts "BRAM $bram"
+		if {[string first $base_name $bramList] != -1} {
+			#puts "Match with $base_name"
+			return $bram
+		}
+	}
+	return "None"
+}
+
+proc updateRiscvMemories { textFileName dataFileName bitstreamName { checkpointfilename ""}} {
+	# Determine the names of the instruction memory
+	set inst_0 [findMemoryWithBase "instruction_reg_0"]
+	set inst_1 [findMemoryWithBase "instruction_reg_1"]
+	set data_0 [findMemoryWithBase "data_memory_reg_0"]
+	set data_1 [findMemoryWithBase "data_memory_reg_1"]
+	if {[string equal "None" $inst_0] || [string equal "None" $inst_1] ||
+		[string equal "None" $data_0] || [string equal "None" $data_1]} {
+		puts "Cannot find instruction memory"
+		return
+	}
+	# Load the instruction memories
+	load_brams_interleaved_32hextext [list $inst_0 $inst_1] $textFileName
+	# Load the .data file
+	load_brams_interleaved_32hextext [list $data_0 $data_1] $dataFileName
+	# Write the bitfile
+	write_bitstream -force $bitstreamName
+	# See if there is a checkpoint write command
+	if {![string equal $checkpointfilename ""]} {
+		puts "Generating new checkpoint file"
+		write_checkpoint $checkpointfilename -force
+	}
+}
+
+
 # Memory names
 #iosystem/vga/charGen/charmem/BRAM_inst_0/bram
 #iosystem/vga/charGen/charmem/BRAM_inst_1/bram 
@@ -898,21 +940,16 @@ if { [llength $argv] > 0 } {
 			if {[llength $argv] < 5} {
 				puts "Missing arguments: updateMem <checkpoint file> <.text file> <.data file> <bitstream file> \[optional .dcp file\]"
 			} else {
-				# Load the .text file
+				# Extract parameters
 				set textFileName [lindex $argv 2]
-				load_brams_interleaved_32hextext [list $inst_0 $inst_1] $textFileName
-				# Load the .data file
 				set dataFileName [lindex $argv 3]
-				load_brams_interleaved_32hextext [list $data_0 $data_1] $dataFileName
-				# Write the bitfile
 				set bitstreamName [lindex $argv 4]
-				write_bitstream -force $bitstreamName
-				# See if there is a checkpoint write command
 				if {[llength $argv] >= 6} {
-					puts "Generating new checkpoint file"
-					set bitstreamName [lindex $argv 5]
-					write_checkpoint $bitstreamName -force
+					set checkpointname [lindex $argv 5]
+				} else {
+					set checkpointname ""
 				}
+				updateRiscvMemories $textFileName $dataFileName $bitstreamName $checkpointname
 			}
 		} elseif {[string equal $command "updateData"]} {
 			puts "Executing 'updateData' command"
