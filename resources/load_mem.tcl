@@ -978,7 +978,8 @@ if { [llength $argv] > 0 } {
 			} else {
 				# Load the .text file
 				set textFileName [lindex $argv 2]
-				set bram vga/charGen/fontrom/addr_reg_reg
+				#set bram vga/charGen/fontrom/addr_reg_reg
+				set bram iosystem/vga/charGen/fontrom/addr_reg_reg
 				load_mem_font $bram $textFileName
 				# Write the bitfile
 				set bitstreamName [lindex $argv 3]
@@ -998,10 +999,11 @@ if { [llength $argv] > 0 } {
 			} else {
 				# Load the .text file
 				set textFileName [lindex $argv 2]
-				set bram0 vga/charGen/charmem/BRAM_inst_0/bram
-				set bram1 vga/charGen/charmem/BRAM_inst_1/bram
-				set bram2 vga/charGen/charmem/BRAM_inst_2/bram
-				set bram3 vga/charGen/charmem/BRAM_inst_3/bram
+				# Set background vga values
+				set bram0 iosystem/vga/charGen/charmem/BRAM_inst_0/bram
+				set bram1 iosystem/vga/charGen/charmem/BRAM_inst_1/bram
+				set bram2 iosystem/vga/charGen/charmem/BRAM_inst_2/bram
+				set bram3 iosystem/vga/charGen/charmem/BRAM_inst_3/bram
 				set bramList [ list $bram0 $bram1 $bram2 $bram3 ]
 
 				# Load memories
