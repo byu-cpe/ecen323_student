@@ -278,6 +278,8 @@ class lab_test:
 				if self.args.force:
 					print( "Target directory",self.submission_top_path,"exists. Will be deleted before proceeding")
 					shutil.rmtree(self.submission_top_path, ignore_errors=True)
+				elif self.args.nodelete:
+					print( "Target directory",self.submission_top_path,"exists. Will proceed WITHOUT deleting")
 				else:
 					self.print_error("Target directory",self.submission_top_path,"exists. Use --force option to overwrite")
 					self.proceed_with_tests = False
@@ -567,7 +569,8 @@ class lab_passoff_argparse(argparse.ArgumentParser):
 			help="GitHub Remote Repository. If no repository is specified, the URL of the current repo will be used.")
 
 		# Force use of directories if they already exists
-		self.add_argument("-f", "--force", action="store_true", help="Force use of directories if they already exists")
+		self.add_argument("-f", "--force", action="store_true", help="Force use of directories if they already exists: delete existing")
+		self.add_argument("--nodelete", action="store_true", help="Force use of directory if it exists and to not delete")
 
 		# Extract the prepository at the fiven directory.
 		self.add_argument("--extract_dir", type=str,

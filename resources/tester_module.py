@@ -552,6 +552,15 @@ class rars_mem_file(rars_raw):
 			return False
 		return True
 
+class update_bistream(tester_module):
+	''' 
+	A base update bitstream class for generating a new bitstream using the 'load_mem.tcl' vivado script
+	'''
+	def __init__(self, input_dcp_filename, bitstream_filename, output_dcp = ""):
+		self.input_dcp_filename = input_dcp_filename
+		self.bitstream_filename = bitstream_filename
+		self.output_dcp = output_dcp
+
 class update_bitstream_mem(tester_module):
 	''' 
 	A tester module that updates riscv bitstream memory with a program
@@ -584,6 +593,81 @@ class update_bitstream_mem(tester_module):
 		if self.output_dcp != "":
 			updatemem_cmd.append(self.output_dcp)
 		print(updatemem_cmd)
+		proc = subprocess.run(updatemem_cmd, cwd=lab_test.execution_path,check=False)
+		if proc.returncode:
+			lab_test.print_warning("Failed to update bitfile")
+			return False
+		return True
+
+
+class update_font_mem(tester_module):
+	''' 
+	A tester module that updates riscv bitstream memory with a program
+
+	'''
+
+	def __init__(self,input_dcp_filename, font_memory_file, bitstream_filename, output_dcp = ""):
+		self.font_file = font_memory_file
+		self.input_dcp_filename = input_dcp_filename
+		self.bitstream_filename = bitstream_filename
+		self.output_dcp = output_dcp
+
+	def module_name(self):
+		''' returns a string indicating the name of the module. Used for logging. '''
+		return str.format("Bitstream Font Update with ({})",
+			self.font_file)
+
+	def perform_test(self, lab_test):
+
+		#print( "RARS execution of", asm_filename,"with options",self.rars_options)
+
+		load_mem_path = lab_test.submission_top_path / "resources/load_mem.tcl"
+
+		updatemem_cmd = ["vivado", "-mode", "batch", "-source", str(load_mem_path), 
+			 "-tclargs", "updateFont",
+			self.input_dcp_filename, self.font_file,
+			self.bitstream_filename]
+		if self.output_dcp != "":
+			updatemem_cmd.append(self.output_dcp)
+		print(updatemem_cmd)
+		print(lab_test.execution_path)
+		proc = subprocess.run(updatemem_cmd, cwd=lab_test.execution_path,check=False)
+		if proc.returncode:
+			lab_test.print_warning("Failed to update bitfile")
+			return False
+		return True
+
+class update_background_mem(tester_module):
+	''' 
+	A tester module that updates riscv bitstream memory with a program
+
+	'''
+
+	def __init__(self,input_dcp_filename, background_memory_file, bitstream_filename, output_dcp = ""):
+		self.background_file = background_memory_file
+		self.input_dcp_filename = input_dcp_filename
+		self.bitstream_filename = bitstream_filename
+		self.output_dcp = output_dcp
+
+	def module_name(self):
+		''' returns a string indicating the name of the module. Used for logging. '''
+		return str.format("Bitstream Background Update with ({})",
+			self.background_file)
+
+	def perform_test(self, lab_test):
+
+		#print( "RARS execution of", asm_filename,"with options",self.rars_options)
+
+		load_mem_path = lab_test.submission_top_path / "resources/load_mem.tcl"
+
+		updatemem_cmd = ["vivado", "-mode", "batch", "-source", str(load_mem_path), 
+			 "-tclargs", "updateBackground",
+			self.input_dcp_filename, self.background_file,
+			self.bitstream_filename]
+		if self.output_dcp != "":
+			updatemem_cmd.append(self.output_dcp)
+		print(updatemem_cmd)
+		print(lab_test.execution_path)
 		proc = subprocess.run(updatemem_cmd, cwd=lab_test.execution_path,check=False)
 		if proc.returncode:
 			lab_test.print_warning("Failed to update bitfile")
