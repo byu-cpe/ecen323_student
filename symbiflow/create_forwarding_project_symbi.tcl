@@ -4,7 +4,7 @@ set_property "part" "xc7a35tcpg236-1" [get_projects [current_project]]
 source ../resources/new_project_settings.tcl
 # Add the top-level I/O system and constraints file (provided in the lab)
 #add_files forwarding_iosystem.sv
-add_files ../symbiflow/forwarding_iosystem.sv
+add_files ../symbiflow/forwarding_iosystem_symbi.sv
 #add_files -fileset constrs_1 ../resources/iosystem/iosystem.xdc
 add_files -fileset constrs_1 ../symbiflow/iosystem.xdc
 # Add files from your previous labs and set the include directories
