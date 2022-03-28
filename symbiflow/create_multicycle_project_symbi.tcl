@@ -28,6 +28,7 @@ add_files ../resources/iosystem/cores/vga/charGen3.sv
 add_files ../resources/iosystem/cores/vga/vga_timing.sv
 add_files ../resources/iosystem/cores/vga/font_rom.sv
 add_files ../resources/iosystem/cores/vga/charColorMem3BRAM.sv
+# Add the memory file
 add_files multicycle_iosystem_text.mem
 # add_files ../resources/iosystem/cores/vga/bramMacro.v
 add_files ../symbiflow/bramMacro.sv
