@@ -111,23 +111,26 @@ module riscv_mem #(TEXT_MEMORY_FILENAME,DATA_MEMORY_FILENAME, INSTRUCTION_BRAMS 
 	assign valid_read = iMemRead & valid_upper_text_address;
 
 	// Create a register that holds the last valid read
+	/*
 	always_ff @(posedge clk) begin
 		if (valid_read)
 			last_instruction <= instruction;
 	end
-		
+	*/		
 	
-		always_ff @(posedge clk)
-		begin
-			// Force a reset on the synchronous output register. This will act sort of like act
-			// "NOP" in the pipeline for the first instruction.
-			//if (rst)   
-			//	pre_instruction <= 0;// only supports reset to zero, not a non-zero value
-			//else if(iMemRead == 1 && valid_upper_text_address)
-			//else
-				pre_instruction <= inst_memory[PC[INSTRUCTION_ADDR_BITS-1:2]];            
-		end
+	always_ff @(posedge clk)
+	begin
+		// Force a reset on the synchronous output register. This will act sort of like act
+		// "NOP" in the pipeline for the first instruction.
+		//if (rst)   
+		//	pre_instruction <= 0;// only supports reset to zero, not a non-zero value
+		//else if(iMemRead == 1 && valid_upper_text_address)
+		//else
+		if (valid_read)
+			instruction <= inst_memory[PC[INSTRUCTION_ADDR_BITS-1:2]];            
+	end
 
+	/*
 	// Output multiplexer for memory
 	always_comb begin
 		if (rst)
@@ -138,6 +141,7 @@ module riscv_mem #(TEXT_MEMORY_FILENAME,DATA_MEMORY_FILENAME, INSTRUCTION_BRAMS 
 		else
 			instruction = pre_instruction;
 	end
+	*/
 
     // Data Memory
     logic data_space_mem;
