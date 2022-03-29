@@ -1,4 +1,4 @@
-# Create project, specify part, and update project settings
+# Create lab 10 project for symbiflow
 create_project -force forwarding_symbi ./proj_symbi
 set_property "part" "xc7a35tcpg236-1" [get_projects [current_project]]
 source ../resources/new_project_settings.tcl
