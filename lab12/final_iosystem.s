@@ -29,9 +29,6 @@
 #  x4(tp):  I/O base address
 #  x8(s0):  VGA base address
 #
-#  x3(gp):  I/O base address
-#  x4(tp):  VGA Base address
-#
 #
 ####################################################################################3#
 .globl  main
