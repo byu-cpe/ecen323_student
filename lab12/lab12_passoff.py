@@ -94,7 +94,7 @@ riscv_io_final_bit = tester_module.build_bitstream( "riscv_io_final",["xdc"],hdl
 # Update font
 font_bit = tester_module.update_font_mem( "riscv_io_final.dcp", "project_font.txt", 
 	"project_font.bit", "project_font.dcp")
-project_bit = tester_module.update_font_mem( "project_font.dcp", "project_background.txt", 
+project_bit = tester_module.update_background_mem( "project_font.dcp", "project_background.txt", 
 	"project.bit", "project.dcp")
 
 def main():
