@@ -135,7 +135,7 @@ recursive_fibinnoci:
 
 		
 	ret
-	# Extra NOPs inserted to make sure we have instructions in the pipeline
+	# Extra NOPs inserted to make sure we have instructions in the pipeline for the last instruction
 	nop
 	nop
 	nop
