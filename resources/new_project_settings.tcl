@@ -8,6 +8,8 @@ set_msg_config -new_severity "ERROR" -id "Synth 8-327"
 set_msg_config -new_severity "ERROR" -id "Synth 8-3352"
 # Multi-driven net
 set_msg_config -new_severity "ERROR" -id "Synth 8-5559"
+# [Synth 8-5972] variable 'Zero' cannot be written by both continuous and procedural assignments
+set_msg_config -new_severity "ERROR" -id "Synth 8-5972"
 set_msg_config -new_severity "ERROR" -id "Synth 8-6090"
 # "multi-driven net" caused by continuous assign statements along with wire declaration
 set_msg_config -new_severity "ERROR" -id "Synth 8-6858"
