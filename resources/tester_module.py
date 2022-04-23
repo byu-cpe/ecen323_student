@@ -623,10 +623,17 @@ class update_font_mem(tester_module):
 
 		load_mem_path = lab_test.submission_top_path / "resources/load_mem.tcl"
 
+		# Determine relative path to the font memory
+		rel_path = os.path.relpath(os.path.relpath(lab_test.submission_lab_path,lab_test.execution_path))
+		font_path = os.path.join(rel_path,self.font_file)
+
 		updatemem_cmd = ["vivado", "-mode", "batch", "-source", str(load_mem_path), 
 			 "-tclargs", "updateFont",
-			self.input_dcp_filename, self.font_file,
+			self.input_dcp_filename, 
+			#self.font_file,
+			font_path,
 			self.bitstream_filename]
+
 		if self.output_dcp != "":
 			updatemem_cmd.append(self.output_dcp)
 		print(updatemem_cmd)
@@ -660,9 +667,15 @@ class update_background_mem(tester_module):
 
 		load_mem_path = lab_test.submission_top_path / "resources/load_mem.tcl"
 
+		# Determine relative path to the background memory
+		rel_path = os.path.relpath(os.path.relpath(lab_test.submission_lab_path,lab_test.execution_path))
+		background_path = os.path.join(rel_path,self.background_file)
+
 		updatemem_cmd = ["vivado", "-mode", "batch", "-source", str(load_mem_path), 
 			 "-tclargs", "updateBackground",
-			self.input_dcp_filename, self.background_file,
+			self.input_dcp_filename, 
+			#self.background_file,
+			background_path,
 			self.bitstream_filename]
 		if self.output_dcp != "":
 			updatemem_cmd.append(self.output_dcp)
