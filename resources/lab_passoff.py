@@ -58,7 +58,7 @@ class lab_test:
 
 		lab_num - the integer lab number
 		script_path - the Path of the lab-specific script (not the path of this class)
-		tests_to_perform - a list of "tester_modul" objects that represet a specific test to perform
+		tests_to_perform - a list of "tester_module" objects that represet a specific test to perform
 		submission_top_path - represents the top directory where the repository files exist.
 			This is specified as "cwd" for local or "extract_dir" from the arguments
 		submission_lab_path - represents the directory where the lab-specific files exist
