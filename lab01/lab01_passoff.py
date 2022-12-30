@@ -7,7 +7,6 @@ import sys
 # Add to the system path the "resources" directory relative to the script that was run
 resources_path = pathlib.Path(__file__).resolve().parent.parent  / 'resources'
 sys.path.append( str(resources_path) )
-#sys.path.append(str(pathlib.Path(__file__).parent / "src"))
 import lab_passoff
 import tester_module
 
@@ -35,7 +34,7 @@ submission_files = {
 # The key is a lab-specific keyword used to represent a specific file for the lab. 
 # The value is the name of the file (relative to the lab directory)
 test_files = {
-	"oneshot"			: "./buttoncount/OneShot.sv"
+	"oneshot"			: "./OneShot.sv"
 }
 
 # TCL simulation
