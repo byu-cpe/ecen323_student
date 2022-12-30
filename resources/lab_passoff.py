@@ -308,7 +308,9 @@ class lab_test:
 		#URL_MATCH_STRING = "git@github.com:byu-ecen323-classroom/323-labs-(\w+)"
 		# Students using HTTPs fail on the match string above.. The less restrictive one
 		# below works for https and the script proceeds.
-		URL_MATCH_STRING = "(.*)byu-ecen323-classroom/323-labs-(\w+)"
+		#URL_MATCH_STRING = "(.*)byu-ecen323-classroom/323-labs-(\w+)"
+		# For winter 2023
+		URL_MATCH_STRING = "(.*)byu-ecen323-winter2023/323-labs-(\w+)"
 		match = re.match(URL_MATCH_STRING,actual_origin_url)
 		if not match:
 			self.print_error("Cloned repository is not part of the byu-ecen323-classroom:",actual_origin_url)
