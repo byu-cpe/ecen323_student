@@ -1,19 +1,11 @@
 #!/usr/bin/python3
 
 '''
-Script for extracting a student submission from a GitHub repository and
-checking the submission.
-
-TODO:
-- Add modules for assembly
+A set of classes for performing a variety of tests on ECEN 323 student submissions.
 '''
 
 # Manages file paths
 import pathlib
-# Command line argunent parser
-import argparse
-# Get the username of the current user
-import getpass
 # Shell utilities for copying, 
 import shutil
 import subprocess
@@ -21,12 +13,6 @@ import sys
 import re
 # For os.remove
 import os
-# for File IO status flags
-import stat
-# for serialization
-import pickle
-# for time delay
-import time
 
 import lab_passoff
 from lab_passoff import TermColor

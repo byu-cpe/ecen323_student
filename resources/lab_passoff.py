@@ -19,12 +19,6 @@ import sys
 import re
 # For os.remove
 import os
-# for File IO status flags
-import stat
-# for serialization
-import pickle
-# for time delay
-import time
 
 
 # TODO Reused from pygrader
