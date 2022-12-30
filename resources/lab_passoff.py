@@ -553,7 +553,9 @@ class lab_passoff_argparse(argparse.ArgumentParser):
 		self.lab_num = lab_num
 
 		# Constants
-		self.DEFAULT_EXTRACT_DIR = "passoff_temp_dir"
+		#self.DEFAULT_EXTRACT_DIR = "passoff_temp_dir"
+		# Default passoff directory is in the /tmp folder so it doesn't gum up student caedm space
+		self.DEFAULT_EXTRACT_DIR = "/tmp/ecen323_passoff"
 
 		# call parent initialization
 		description = str.format('Create and test submission archive for lab {} (v {}).', \
