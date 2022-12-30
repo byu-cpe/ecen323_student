@@ -4,10 +4,10 @@
 import pathlib
 import sys
 
-# Add to the system path the "resources" directory relative to the script that was run
+# Add lab passoff files
 resources_path = pathlib.Path(__file__).resolve().parent.parent  / 'resources'
 sys.path.append( str(resources_path) )
-#sys.path.append(str(pathlib.Path(__file__).parent / "src"))
+#sys.path.append('../resources')
 import lab_passoff
 import tester_module
 
@@ -16,7 +16,7 @@ import tester_module
 ###########################################################################
 
 # lab-specific constants
-LAB_NUMBER = 1
+LAB_NUMBER = 2
 # Path of script that is being run
 SCRIPT_PATH = pathlib.Path(__file__).absolute().parent.resolve()
 
@@ -24,25 +24,33 @@ SCRIPT_PATH = pathlib.Path(__file__).absolute().parent.resolve()
 # used to represent a specific file for the lab. The value is the path and filename
 # (relative to the lab directory) of the file to include in the submission.
 submission_files = {
-	"aboutme"           : "aboutme.txt",
-	"updown"            : "UpDownButtonCount.sv",
-	"updown_tcl"        : "UpDownButtonCount_sim.tcl",
-	"updown_xdc"        : "UpDownButtonCount.xdc",
-	"updown_jpg"        : "UpDownButtonCount.jpg",
+	"alu"            	: "alu.sv",
+	"alu_tcl"           : "alu_sim.tcl",
+	"alu_consts"        : "riscv_alu_constants.sv",
+	"calc"        		: "calc.sv",
+	"calc_tcl"        	: "calc_sim.tcl",
+	"calc_xdc"        	: "calc.xdc",
 }
 
 # List of files needed for testing that should be in the repository.
 # The key is a lab-specific keyword used to represent a specific file for the lab. 
 # The value is the name of the file (relative to the lab directory)
 test_files = {
-	"oneshot"			: "./buttoncount/OneShot.sv"
+	"oneshot"			: "../lab01/buttoncount/OneShot.sv",
+	"tb_alu"			: "tb_alu.sv",
+	"tb_calc"			: "tb_calc.sv",
 }
 
-# TCL simulation
-tcl_sim = tester_module.tcl_simulation( "updown_tcl", "UpDownButtonCount", [ "updown", "oneshot" ])
+# TCL simulations
+alu_tcl = tester_module.tcl_simulation2( "alu_tcl", "alu", [ "alu", "alu_consts" ])
+calc_tcl = tester_module.tcl_simulation2( "calc_tcl", "calc", [ "calc", "alu",  "alu_consts", "oneshot" ])
+
+# Testbench simulations
+alu_tb = tester_module.testbench_simulation( "ALU Testbench", "tb_alu", [ "tb_alu", "alu", "alu_consts" ], [])
+calc_tb = tester_module.testbench_simulation( "Calc Testbench", "tb_calc", [ "tb_calc", "calc", "alu", "alu_consts", "oneshot" ], [])
 
 # Bitstream build
-bit_build = tester_module.build_bitstream("UpDownButtonCount",["updown_xdc"], [ "updown", "oneshot" ], True, False)
+bit_build = tester_module.build_bitstream("calc",["calc_xdc"], [ "calc", "alu",  "alu_consts", "oneshot" ], True, False)
 
 def main():
 	''' Main executable for script
@@ -54,10 +62,14 @@ def main():
 	# Prepare test
 	lab_test.prepare_test(submission_files,test_files)
 	# Add tests
-	lab_test.add_test_module(tcl_sim)
+	lab_test.add_test_module(alu_tcl)
+	lab_test.add_test_module(calc_tcl)
+	lab_test.add_test_module(alu_tb)
+	lab_test.add_test_module(calc_tb)
 	lab_test.add_test_module(bit_build)
 	# Run tests
 	lab_test.run_tests()
+
 
 if __name__ == "__main__":
 	main()

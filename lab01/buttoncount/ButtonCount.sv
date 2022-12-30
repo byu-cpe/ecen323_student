@@ -16,10 +16,10 @@
 *
 * Description:
 *    This module includes a state machine that will provide a one cycle
-*    signal every time the center button (btnc) is pressed (this is sometimes
+*    signal every time the top button (btnu) is pressed (this is sometimes
 *    called a 'single-shot' filter of the button signal). This signal
 *    is used to increment a counter that is displayed on the LEDs. The
-*    bottom button (btnb) is used as an asynchronous reset.
+*    center button (btnc) is used as an asynchronous reset.
 *
 *    This module is used to help students review their RTL design skills and
 *    get the design tools working.  
