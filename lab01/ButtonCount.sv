@@ -38,21 +38,28 @@ module ButtonCount(clk, btnc, btnu, led);
 	// reset signal
 	logic rst;
 	// increment signals (synchronized version of btnu)
-	logic btnu_d, inc;
+	logic btnu_d, btnu_dd, inc;
 
 	// Assign the 'rst' signal to button c
 	assign rst = btnc;
 
-	// Create a synchonizer for btnu (synchronize the button to the clock)
+	// The following always block creates a "synchronizer" for the 'btnu' input.
+	// A synchronizer synchronizes the asynchronous 'btnu' input to the global
+	// clock (when you press a button you are not synchronous with anything!).
+	// This particular synchronizer is just two flip-flop in series: 'btnu_d'
+	// is the first flip-flop of the synchronizer and 'btnu_dd' is the second
+	// flip-flop of the synchronizer. You should always have a synchronizer on
+	// ant button input if they are used in a sequential circuit.
 	always_ff@(posedge clk)
 		if (rst) begin
 			btnu_d <= 0;
-			inc <= 0;
+			btnu_dd <= 0;
 		end
 		else begin
 			btnu_d <= btnu;
-			inc <= btnu_d;            
+			btnu_dd <= btnu_d;
 		end
+	assign inc = btnu_dd;
 
 	// Instance the OneShot module
 	OneShot os (.clk(clk), .rst(rst), .in(inc), .os(inc_count));
