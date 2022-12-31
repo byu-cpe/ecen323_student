@@ -27,7 +27,8 @@ submission_files = {
 	"updown"            : "UpDownButtonCount.sv",
 	"updown_tcl"        : "UpDownButtonCount_sim.tcl",
 	"updown_xdc"        : "UpDownButtonCount.xdc",
-	"updown_jpg"        : "UpDownButtonCount.jpg",
+	# No longer require JPEG - TAs will download and test bitstream
+	#"updown_jpg"        : "UpDownButtonCount.jpg",
 }
 
 # List of files needed for testing that should be in the repository.
