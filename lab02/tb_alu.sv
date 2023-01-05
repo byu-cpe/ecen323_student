@@ -39,6 +39,12 @@ module tb_alu();
 	localparam[3:0] ALUOP_SRA = 4'b1010;
 	localparam[3:0] ALUOP_XOR = 4'b1101;
 
+	// Constants for the operands of the deterministic ALU test
+	localparam[31:0] OP1_VAL = 32'h12345678;
+	localparam[31:0] OP2_VAL = 32'h2456fdec;
+	// Number of random tests per ALU op
+	localparam NUM_RANDOM_TESTS = 10;
+
     localparam non_specified_alu_op_tests = 2;
     localparam specified_alu_op_tests = 16;
 
@@ -58,23 +64,38 @@ module tb_alu();
 			results_defined = 1;
     endfunction
 
+	// Task for simulating a single ALU operation
 	task sim_alu_op;
 		input [3:0] operation;
 		input [31:0] operand1, operand2;
 		begin
-			#5
+			#10
 			tb_op1 = operand1;
 			tb_op2 = operand2;
 			tb_alu_op = operation;
 			#5
+			tb_op1 = operand1;
 		end
 	endtask
 
+	// Task for simulating a single ALU operation multiple times with random inputs
+	task sim_alu_op_random;
+		input [3:0] operation;
+		input int num_tests;
+		int i;
+		begin
+			for(i=0; i < num_tests; i=i+1) begin
+				#10
+				sim_alu_op(operation,$urandom,$urandom);
+			end
+		end
+	endtask
 
 	// Instance alu module
 	alu alu_dut(.op1(tb_op1), .op2(tb_op2), .alu_op(tb_alu_op),
 		.result(tb_result), .zero(tb_zero));
 
+	// Start of simulation
 	initial begin
 	    int i,j,test_count;
 	     
@@ -92,29 +113,32 @@ module tb_alu();
 		#50
 
 		// Perform a few deterministic tests with no random inputs
-		
+		sim_alu_op(ALUOP_AND, OP1_VAL, OP2_VAL);
+		sim_alu_op(ALUOP_OR, OP1_VAL, OP2_VAL);
+		sim_alu_op(ALUOP_ADD, OP1_VAL, OP2_VAL);
+		sim_alu_op(ALUOP_SUB, OP1_VAL, OP2_VAL);
+		sim_alu_op(ALUOP_LT, OP1_VAL, OP2_VAL);
+		sim_alu_op(ALUOP_SUB, OP1_VAL, OP2_VAL);
+		sim_alu_op(ALUOP_SRL, OP1_VAL, OP2_VAL);
+		sim_alu_op(ALUOP_SLL, OP1_VAL, OP2_VAL);
+		sim_alu_op(ALUOP_SRA, OP1_VAL, OP2_VAL);
+		sim_alu_op(ALUOP_XOR, OP1_VAL, OP2_VAL);
+
 		// Test all control inputs with random stimulus
-		for(i=0; i < 16; i=i+1) begin
-            #10
-			tb_alu_op = i;
-			$display("Testing alu_op ");
-	        $display("[%0t] Testing alu op 0x%h", $time, tb_alu_op);
-			// Perform fewer tests for non-specified op-codes
-			if (i == UNDEFINED_OP1 || i == UNDEFINED_OP2 || i == UNDEFINED_OP3 || i == UNDEFINED_OP4 ||
-				i == UNDEFINED_OP5 || i == UNDEFINED_OP6 || i == UNDEFINED_OP7)
-				test_count = non_specified_alu_op_tests;
-			else
-				test_count = 16;
-			for (j=0; j < test_count; j=j+1) begin
-				#10
-				// Generate random number for both operands
-				tb_op1 = $urandom();
-				tb_op2 = $urandom();
-				// 10 ns delay
-			end
-		end
+		sim_alu_op_random(ALUOP_AND, NUM_RANDOM_TESTS);
+		
+		sim_alu_op_random(ALUOP_OR, NUM_RANDOM_TESTS);
+		sim_alu_op_random(ALUOP_ADD, NUM_RANDOM_TESTS);
+		sim_alu_op_random(ALUOP_SUB, NUM_RANDOM_TESTS);
+		sim_alu_op_random(ALUOP_LT, NUM_RANDOM_TESTS);
+		sim_alu_op_random(ALUOP_SUB, NUM_RANDOM_TESTS);
+		sim_alu_op_random(ALUOP_SRL, NUM_RANDOM_TESTS);
+		sim_alu_op_random(ALUOP_SLL, NUM_RANDOM_TESTS);
+		sim_alu_op_random(ALUOP_SRA, NUM_RANDOM_TESTS);
+		sim_alu_op_random(ALUOP_XOR, NUM_RANDOM_TESTS);
 
 		// Wrap up tests
+		#200
 		tb_op1 = 32'h1;
 		tb_op2 = 32'hffffffff; // -1
 		tb_alu_op = ALUOP_ADD;

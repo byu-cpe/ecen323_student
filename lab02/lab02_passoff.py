@@ -26,7 +26,7 @@ SCRIPT_PATH = pathlib.Path(__file__).absolute().parent.resolve()
 submission_files = {
 	"alu"            	: "alu.sv",
 	"alu_tcl"           : "alu_sim.tcl",
-	"alu_consts"        : "riscv_alu_constants.sv",
+	"alu_consts"        : "../include/riscv_alu_constants.sv",
 	"calc"        		: "calc.sv",
 	"calc_tcl"        	: "calc_sim.tcl",
 	"calc_xdc"        	: "calc.xdc",
@@ -36,7 +36,7 @@ submission_files = {
 # The key is a lab-specific keyword used to represent a specific file for the lab. 
 # The value is the name of the file (relative to the lab directory)
 test_files = {
-	"oneshot"			: "../lab01/buttoncount/OneShot.sv",
+	"oneshot"			: "../lab01/OneShot.sv",
 	"tb_alu"			: "tb_alu.sv",
 	"tb_calc"			: "tb_calc.sv",
 }
