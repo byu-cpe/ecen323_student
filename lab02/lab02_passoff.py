@@ -42,15 +42,15 @@ test_files = {
 }
 
 # TCL simulations
-alu_tcl = tester_module.tcl_simulation2( "alu_tcl", "alu", [ "alu", "alu_consts" ])
-calc_tcl = tester_module.tcl_simulation2( "calc_tcl", "calc", [ "calc", "alu",  "alu_consts", "oneshot" ])
+alu_tcl = tester_module.tcl_simulation2( "alu_tcl", "alu", [ "alu", "alu_consts" ], include_dirs=[ "../include" ])
+calc_tcl = tester_module.tcl_simulation2( "calc_tcl", "calc", [ "calc", "alu",  "alu_consts", "oneshot" ],  include_dirs=[ "../include" ])
 
 # Testbench simulations
-alu_tb = tester_module.testbench_simulation( "ALU Testbench", "tb_alu", [ "tb_alu", "alu", "alu_consts" ], [])
-calc_tb = tester_module.testbench_simulation( "Calc Testbench", "tb_calc", [ "tb_calc", "calc", "alu", "alu_consts", "oneshot" ], [])
+alu_tb = tester_module.testbench_simulation( "ALU Testbench", "tb_alu", [ "tb_alu", "alu", "alu_consts" ], [], include_dirs=[ "../include" ])
+calc_tb = tester_module.testbench_simulation( "Calc Testbench", "tb_calc", [ "tb_calc", "calc", "alu", "alu_consts", "oneshot" ], [], include_dirs=[ "../include" ])
 
 # Bitstream build
-bit_build = tester_module.build_bitstream("calc",["calc_xdc"], [ "calc", "alu",  "alu_consts", "oneshot" ], True, False)
+bit_build = tester_module.build_bitstream("calc",["calc_xdc"], [ "calc", "alu",  "alu_consts", "oneshot" ], True, False, include_dirs=[ "../include" ])
 
 def main():
 	''' Main executable for script
