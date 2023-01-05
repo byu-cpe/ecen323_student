@@ -43,18 +43,33 @@ module tb_alu();
     localparam specified_alu_op_tests = 16;
 
 
-    function logic [15:0] inputs_valid();
-        inputs_valid = 1;
+	// Function to check if inputs are defined
+    function logic [15:0] inputs_defined();
+        inputs_defined = 1;
 		if (^tb_op1 === 1'bX || ^tb_op2 === 1'bX || ^tb_alu_op === 1'bX)
-			inputs_valid = 0;
+			inputs_defined = 0;
     endfunction
 
-    function logic [15:0] result_valid();
+	// function to check if the outputs are defined
+    function logic [15:0] results_defined();
 		if (^tb_result === 1'bX)
-			result_valid = 0;
+			results_defined = 0;
 		else
-			result_valid = 1;
+			results_defined = 1;
     endfunction
+
+	task sim_alu_op;
+		input [3:0] operation;
+		input [31:0] operand1, operand2;
+		begin
+			#5
+			tb_op1 = operand1;
+			tb_op2 = operand2;
+			tb_alu_op = operation;
+			#5
+		end
+	endtask
+
 
 	// Instance alu module
 	alu alu_dut(.op1(tb_op1), .op2(tb_op2), .alu_op(tb_alu_op),
@@ -76,7 +91,9 @@ module tb_alu();
 		tb_op2 = 0;
 		#50
 
-		// Test all control inputs 
+		// Perform a few deterministic tests with no random inputs
+		
+		// Test all control inputs with random stimulus
 		for(i=0; i < 16; i=i+1) begin
             #10
 			tb_alu_op = i;
@@ -118,7 +135,7 @@ module tb_alu();
 		// Wait 5 ns after op has changed
 		#5
 		// See if any of the inputs are 'x'. If so, ignore
-		if (inputs_valid()) begin
+		if (inputs_defined()) begin
 			if ((tb_zero == 1'bz) || (tb_zero == 1'bx)) begin
 		        $error("[%0t] Error: Invalid 'zero' value", $time);
 				$fatal;
@@ -141,8 +158,8 @@ module tb_alu();
 		// Wait 5 ns after op has changed
 		#5
 		// See if any of the inputs are 'x'. If so, ignore
-		if (inputs_valid()) begin
-			if (!result_valid()) begin
+		if (inputs_defined()) begin
+			if (!results_defined()) begin
 		        $error("[%0t] Error: Invalid result (x's)", $time);
 				$fatal;
 			end
