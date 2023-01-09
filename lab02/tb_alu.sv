@@ -74,7 +74,6 @@ module tb_alu();
 			tb_op2 = operand2;
 			tb_alu_op = operation;
 			#5
-			tb_op1 = operand1;
 		end
 	endtask
 
@@ -118,7 +117,6 @@ module tb_alu();
 		sim_alu_op(ALUOP_ADD, OP1_VAL, OP2_VAL);
 		sim_alu_op(ALUOP_SUB, OP1_VAL, OP2_VAL);
 		sim_alu_op(ALUOP_LT, OP1_VAL, OP2_VAL);
-		sim_alu_op(ALUOP_SUB, OP1_VAL, OP2_VAL);
 		sim_alu_op(ALUOP_SRL, OP1_VAL, OP2_VAL);
 		sim_alu_op(ALUOP_SLL, OP1_VAL, OP2_VAL);
 		sim_alu_op(ALUOP_SRA, OP1_VAL, OP2_VAL);
@@ -126,12 +124,10 @@ module tb_alu();
 
 		// Test all control inputs with random stimulus
 		sim_alu_op_random(ALUOP_AND, NUM_RANDOM_TESTS);
-		
 		sim_alu_op_random(ALUOP_OR, NUM_RANDOM_TESTS);
 		sim_alu_op_random(ALUOP_ADD, NUM_RANDOM_TESTS);
 		sim_alu_op_random(ALUOP_SUB, NUM_RANDOM_TESTS);
 		sim_alu_op_random(ALUOP_LT, NUM_RANDOM_TESTS);
-		sim_alu_op_random(ALUOP_SUB, NUM_RANDOM_TESTS);
 		sim_alu_op_random(ALUOP_SRL, NUM_RANDOM_TESTS);
 		sim_alu_op_random(ALUOP_SLL, NUM_RANDOM_TESTS);
 		sim_alu_op_random(ALUOP_SRA, NUM_RANDOM_TESTS);
@@ -155,7 +151,7 @@ module tb_alu();
 	logic expected_zero;
 	assign expected_zero = (tb_result == 0);
 	// Check the zero output
-	always@(tb_alu_op) begin
+	always@(tb_alu_op, tb_op1, tb_op2) begin
 		// Wait 5 ns after op has changed
 		#5
 		// See if any of the inputs are 'x'. If so, ignore
@@ -178,7 +174,7 @@ module tb_alu();
 
 	// Check the result
 	logic [31:0] expected_result;
-	always@(tb_alu_op) begin
+	always@(tb_alu_op, tb_op1, tb_op2) begin
 		// Wait 5 ns after op has changed
 		#5
 		// See if any of the inputs are 'x'. If so, ignore
