@@ -74,6 +74,7 @@ module tb_alu();
 			tb_op2 = operand2;
 			tb_alu_op = operation;
 			#5
+			;
 		end
 	endtask
 
