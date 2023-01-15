@@ -36,11 +36,11 @@ submission_files = {
 # The key is a lab-specific keyword used to represent a specific file for the lab. 
 # The value is the name of the file (relative to the lab directory)
 test_files = {
-	"oneshot"			: "../lab01/OneShot.sv",
-	"alu"           	: "../lab02/alu.sv",
-    "alu_consts"     	: "../include/riscv_alu_constants.sv",
-	"tb_regfile"		: "tb_regfile.sv",
-	"tb_regfile_top"	: "tb_regfile_top.sv",
+    "oneshot"           : "../lab01/OneShot.sv",
+    "alu"               : "../lab02/alu.sv",
+    "alu_consts"        : "../include/riscv_alu_constants.sv",
+    "tb_regfile"        : "tb_regfile.sv",
+    "tb_regfile_top"    : "tb_regfile_top.sv",
 }
 
 # TCL simulations
