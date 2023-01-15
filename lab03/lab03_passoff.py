@@ -26,8 +26,6 @@ SCRIPT_PATH = pathlib.Path(__file__).absolute().parent.resolve()
 # (relative to the lab directory) of the file to include in the submission.
 submission_files = {
     "regfile"       : "regfile.sv",
-    "alu"           : "../lab02/alu.sv",
-    "constants"     : "../lab02/riscv_alu_constants.sv",
     "top"           : "regfile_top.sv",
     "xdc"           : "regfile_top.xdc",
     "regfile_tcl"   : "regfile_sim.tcl",
@@ -38,21 +36,23 @@ submission_files = {
 # The key is a lab-specific keyword used to represent a specific file for the lab. 
 # The value is the name of the file (relative to the lab directory)
 test_files = {
-	"oneshot"			: "../lab01/buttoncount/OneShot.sv",
+	"oneshot"			: "../lab01/OneShot.sv",
+	"alu"           	: "../lab02/alu.sv",
+    "alu_consts"     	: "../include/riscv_alu_constants.sv",
 	"tb_regfile"		: "tb_regfile.sv",
 	"tb_regfile_top"	: "tb_regfile_top.sv",
 }
 
 # TCL simulations
 regfile_tcl = tester_module.tcl_simulation2( "regfile_tcl", "regfile", [ "regfile",])
-top_tcl = tester_module.tcl_simulation2( "top_tcl", "regfile_top", [ "constants", "oneshot", "alu", "regfile", "top", "oneshot" ])
+top_tcl = tester_module.tcl_simulation2( "top_tcl", "regfile_top", [ "alu_consts", "oneshot", "alu", "regfile", "top" ], include_dirs=[ "../include" ])
 
 # Testbench simulations
 regfile_tb = tester_module.testbench_simulation( "Regfile Testbench", "tb_regfile", [ "tb_regfile", "regfile",], [])
-top_tb = tester_module.testbench_simulation( "Regfile Top Testbench", "tb_regfile_top", [ "tb_regfile_top", "regfile", "alu", "constants", "oneshot" ], [])
+top_tb = tester_module.testbench_simulation( "Regfile Top Testbench", "tb_regfile_top", [ "tb_regfile_top", "regfile", "alu", "alu_consts", "oneshot", "top" ], [], include_dirs=[ "../include" ])
 
 # Bitstream build
-bit_build = tester_module.build_bitstream("regfile_top",["xdc"], [ "constants", "alu", "oneshot", "regfile", "top" ], True, False)
+bit_build = tester_module.build_bitstream("regfile_top",["xdc"], [ "alu_consts", "alu", "oneshot", "regfile", "top" ], True, False, include_dirs=[ "../include" ])
 
 def main():
 	''' Main executable for script
