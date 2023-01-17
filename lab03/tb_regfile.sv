@@ -55,6 +55,7 @@ module tb_regfile();
 
 	initial begin
 	    int i,j;
+
         //shall print %t with scaled in ns (-9), with 2 precision digits, and would print the " ns" string
 		$timeformat(-9, 0, " ns", 20);
 		$display("*** Start of Regfile Testbench Simulation ***");
@@ -71,10 +72,19 @@ module tb_regfile();
         regAddrWrite=0;
         regWriteData=0;
         tb_write = 0;
+
+        // Run a few clock cycles.
         sim_clocks(5);
 
         tb_init = 1;
         sim_clocks(1);
+
+        // Check to see if all register values are initiqlized to zero
+		$display("*** Read initial values of register at time %0t", $time);
+        for(i=0; i < 32; i=i+1) begin
+            read_words(i,i);
+            sim_clocks(1);
+        end
 
 		$display("*** Testing x0 register at time %0t", $time);
         // Write non-zero values to register x0
@@ -92,7 +102,7 @@ module tb_regfile();
         end
         sim_clocks(5);
 
-        // initialize memories (with non-zero value in 0)
+        // Perform simultaneous reads and writes to the same register
 		$display("*** Testing simultaneous reads and writes to each register at %0t", $time);
         for(i=1; i < 32; i=i+1) begin
             regAddrA=i;
