@@ -87,7 +87,7 @@ class lab_test:
 		self.BASYS3_PART = "xc7a35tcpg236-1"
 		self.STARTER_CODE_REPO = "git@github.com:byu-cpe/ecen323_student.git"
 		self.LAB_DIR_NAME = str.format("lab{:02d}",self.lab_num)
-		self.DEFAULT_EXTRACT_DIR = "passoff_temp_dir"
+		#self.DEFAULT_EXTRACT_DIR = "passoff_temp_dir"
 		self.TEST_RESULT_FILENAME = str.format("lab{}_test_result.txt",self.lab_num)
 		self.LAB_TAG_STRING = str.format("lab{}_submission",self.lab_num)
 		self.TEST_RESULT_FILENAME = str.format("lab{}_test_result.txt",self.lab_num)
@@ -124,6 +124,7 @@ class lab_test:
 		''' Run all the registered tests '''
 		if not self.args.notest:
 			for test in self.tests_to_perform:
+				# Print start of test message
 				self.execute_test_module(test)
 		# Wrap up
 		self.print_message_summary()
@@ -307,7 +308,7 @@ class lab_test:
 		URL_MATCH_STRING = "(.*)byu-ecen323-winter2023/323-labs-(\w+)"
 		match = re.match(URL_MATCH_STRING,actual_origin_url)
 		if not match:
-			self.print_error("Cloned repository is not part of the byu-ecen323-classroom:",actual_origin_url)
+			self.print_error("Cloned repository is not part of the byu-ecen323-winter2023:",actual_origin_url)
 			self.proceed_with_tests = False
 			return False
 		else:

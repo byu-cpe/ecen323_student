@@ -6,15 +6,6 @@
 //
 //  Author: Mike Wirthlin
 //  
-//  Description: 
-// 
-//  Version 1.2: 'Removed execute_immediate_alu_instruction' function
-//  Version 1.1: Added test for slt instruction
-//  Version 1.0: Initial post
-//
-//  Change Log:
-//   
-
 //////////////////////////////////////////////////////////////////////////////////
 
 module tb_simple_datapath();
@@ -56,6 +47,7 @@ module tb_simple_datapath();
     endtask
 
 	task init_control();
+		// Initializes all of the control signals to zero
 		tb_branch = 0;
 		tb_ALUSrc = 0;
 		tb_RegWrite = 0;
@@ -128,6 +120,7 @@ module tb_simple_datapath();
 		end else
 		#5 clk = 1;
 	endtask
+
 	// activate: internal tesbench MemWrite signals
 	// check: dWriteData if doing a write(address was already checked in last cycle)
 	task mem_stage;
@@ -144,6 +137,7 @@ module tb_simple_datapath();
 		end else
 		#5 clk = 1;
 	endtask
+
 	// activate: loadPC=1 and set pcsrc and regwrite. Provide read result
 	// check: writebackdata
 	task wb_stage;
@@ -318,7 +312,7 @@ module tb_simple_datapath();
 	task execute_random_instruction;
 	endtask
 
-	// Datapath module
+	// Instance Datapath module
 	riscv_simple_datapath datapath(
 		.clk(clk), 
 		.rst(tb_rst),
@@ -352,6 +346,7 @@ module tb_simple_datapath();
 		data_memory[3] = 32'h89abcdef;
 	end
 
+	// Simulate the writing and reading to the memory
 	always@(posedge clk) begin
 		if (tb_MemWrite)
 			data_memory[tb_dAddress>>2] <= tb_dWriteData;
@@ -361,6 +356,7 @@ module tb_simple_datapath();
 			tb_dReadData <= 32'hxxxxxxxx;
 	end
 
+	// Simulate the PC
 	always_ff@(posedge clk) begin
 		if (tb_rst)
 			int_PC <= INITIAL_PC;
@@ -372,6 +368,7 @@ module tb_simple_datapath();
 				int_PC <= int_PC + 4;
 	end
 
+	// Simulate the ALU
     assign alu =    (tb_ALUCtrl == AND_OP) ? l_readA & b_operand :
                     (tb_ALUCtrl == OR_OP) ? l_readA | b_operand :
                     (tb_ALUCtrl == ADD_OP) ? l_readA + b_operand :
@@ -384,6 +381,7 @@ module tb_simple_datapath();
 
 	assign writeData = tb_MemtoReg ? tb_dReadData : alu;
 
+	// Simulate the register file
 	always@(posedge clk) begin
         l_readA <= tmpfile[tb_instruction[19:15]]; // rs1
         l_readB <= tmpfile[tb_instruction[24:20]]; // rs2
@@ -409,7 +407,7 @@ module tb_simple_datapath();
 
 	initial begin
 	
-		// Regfile
+		// Initialize Regfile
         for (i=0;i<32;i=i+1)
            tmpfile[i] = 0;
 
@@ -420,7 +418,6 @@ module tb_simple_datapath();
 		// Initialize the inputs
 		sim_clocks(3);
 		tb_rst = 0;
-		//set_control_signals(.PCSrc(0), .loadPC(0), .ALUSrc(0), .RegWrite(0), .RegDst(0), .MemtoReg(0), .ALUCtrl(0), .MemWrite(0));
 		tb_instruction = 0;
 		sim_clocks(3);
 		// Default control signals
@@ -518,14 +515,10 @@ module tb_simple_datapath();
 		execute_beq_instruction(.rs1(0), .rs2(1), .immediate(-64) );
 		// BEQ taken backward
 		execute_beq_instruction(.rs1(1), .rs2(1), .immediate(-64) );
-
-/*
-		//////////////////////////////////
-		//	Random testing
-		random_commands(1000);
-		#100ns;
-*/
-
+		// BEQ taken forrward
+		execute_beq_instruction(.rs1(5), .rs2(5), .immediate(128) );
+		// BEQ taken backward
+		execute_beq_instruction(.rs1(21), .rs2(21), .immediate(-128) );
 
 		init_control();
 		
