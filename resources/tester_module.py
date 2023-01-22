@@ -9,8 +9,6 @@ import pathlib
 # Shell utilities for copying, 
 import shutil
 import subprocess
-import sys
-import re
 # For os.remove
 import os
 

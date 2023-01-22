@@ -87,7 +87,6 @@ class lab_test:
 		self.BASYS3_PART = "xc7a35tcpg236-1"
 		self.STARTER_CODE_REPO = "git@github.com:byu-cpe/ecen323_student.git"
 		self.LAB_DIR_NAME = str.format("lab{:02d}",self.lab_num)
-		#self.DEFAULT_EXTRACT_DIR = "passoff_temp_dir"
 		self.TEST_RESULT_FILENAME = str.format("lab{}_test_result.txt",self.lab_num)
 		self.LAB_TAG_STRING = str.format("lab{}_submission",self.lab_num)
 		self.TEST_RESULT_FILENAME = str.format("lab{}_test_result.txt",self.lab_num)
@@ -98,6 +97,7 @@ class lab_test:
 		self.warnings = 0
 		self.log = None
 		self.tests_to_perform = []
+		self.stepnum=1
 
 		# Create the argument parser
 		self.parser = lab_passoff_argparse(self.lab_num)
@@ -109,9 +109,22 @@ class lab_test:
 		# Parse the arguments
 		self.args = self.parser.parse_args()
 
+	def print_step_message(self,msg_str):
+		self.print_color(TermColor.YELLOW, f"Step {self.stepnum}: {msg_str}")
+		self.stepnum += 1
 
 	def prepare_test(self, submission_dict, testfiles_dict):
 		''' Prepare the repository and check for all files '''
+
+		# Print start of test message header
+		msg_str=f"Performing passoff script for lab {self.lab_num}"
+		self.print_color(TermColor.YELLOW, '#'*len(msg_str))
+		self.print_color(TermColor.YELLOW, msg_str)
+		self.print_color(TermColor.YELLOW, '#'*len(msg_str))
+		print()
+
+		# Print step 1 message header
+		self.print_step_message("Checking repository and submission files")
 		if not self.prepare_remote_repo():
 			return False
 		self.set_lab_fileset(submission_dict, testfiles_dict)
@@ -124,7 +137,8 @@ class lab_test:
 		''' Run all the registered tests '''
 		if not self.args.notest:
 			for test in self.tests_to_perform:
-				# Print start of test message
+				#print_step_message(self,msg_str):
+				self.print_step_message(test.module_name())
 				self.execute_test_module(test)
 		# Wrap up
 		self.print_message_summary()
@@ -165,6 +179,12 @@ class lab_test:
 		TODO:Provide more options on output: 1. to stdout and file, 2. To one or the other, or 3. None
 		"""
 		with open(process_output_filepath, "w") as fp:
+			# Print command to file
+			fp.write("Executing the following command in directory:"+str(proc_cwd)+"\n\t")
+			for cmd in proc_cmd:
+				fp.write(cmd+" ")
+			fp.write("\n")
+			# Execute command		
 			proc = subprocess.Popen(
 				proc_cmd,
 				cwd=proc_cwd,
