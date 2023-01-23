@@ -25,6 +25,8 @@ set_msg_config -new_severity "ERROR" -id "VRFC 10-3091"
 set_msg_config -new_severity "WARNING" -id "Timing 38-313"
 # Downgrade the 'no constraints slected for write' from a warning to INFO
 set_msg_config -new_severity "INFO" -id "Constraints 18-5210"
+# Downgrade the 'WARNING: [DRC RTSTAT-10] No routable loads: 35 net(s) have no routable loads.' to INFO
+set_msg_config -new_severity "INFO" -id "DRC RTSTAT-10"
 # Set incremental simulation to False (force all files to be re-analyzed)
 set_property INCREMENTAL false [get_filesets sim_1]
 # Set the initial simulation runtime when you open the simulator to zero
