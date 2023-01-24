@@ -182,7 +182,7 @@ class lab_test:
 			# Print command to file
 			fp.write("Executing the following command in directory:"+str(proc_cwd)+"\n\t")
 			for cmd in proc_cmd:
-				fp.write(cmd+" ")
+				fp.write(str(cmd)+" ")
 			fp.write("\n")
 			# Execute command		
 			proc = subprocess.Popen(
