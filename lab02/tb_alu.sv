@@ -14,6 +14,9 @@
 //
 //////////////////////////////////////////////////////////////////////////////////
 
+// Note for Instructor and TA's: If this testbench is modified, make sure that the exercise questions from the learning  
+// suite lab report are accurate with corresponding the simulation timing and answer. 
+
 module tb_alu();
 
 	logic tb_zero;

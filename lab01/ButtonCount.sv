@@ -19,7 +19,7 @@
 *    signal every time the top button (btnu) is pressed (this is sometimes
 *    called a 'single-shot' filter of the button signal). This signal
 *    is used to increment a counter that is displayed on the LEDs. The
-*    center button (btnc) is used as an asynchronous reset.
+*    center button (btnc) is used as a synchronous reset.
 *
 *    This module is used to help students review their RTL design skills and
 *    get the design tools working.  
@@ -49,7 +49,7 @@ module ButtonCount(clk, btnc, btnu, led);
 	// This particular synchronizer is just two flip-flop in series: 'btnu_d'
 	// is the first flip-flop of the synchronizer and 'btnu_dd' is the second
 	// flip-flop of the synchronizer. You should always have a synchronizer on
-	// ant button input if they are used in a sequential circuit.
+	// any button input if they are used in a sequential circuit.
 	always_ff@(posedge clk)
 		if (rst) begin
 			btnu_d <= 0;
@@ -59,6 +59,8 @@ module ButtonCount(clk, btnc, btnu, led);
 			btnu_d <= btnu;
 			btnu_dd <= btnu_d;
 		end
+
+	// Rename the output of the synchronizer to something more descriptive
 	assign inc = btnu_dd;
 
 	// Instance the OneShot module
