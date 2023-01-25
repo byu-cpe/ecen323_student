@@ -113,14 +113,18 @@ class lab_test:
 		self.print_color(TermColor.YELLOW, f"Step {self.stepnum}: {msg_str}")
 		self.stepnum += 1
 
+	def print_message_with_header(self, msg_str, header_char='#', color = TermColor.YELLOW):
+		''' Prints a message with a header and footer based on the message length.  '''
+		self.print_color(color, header_char*len(msg_str))
+		self.print_color(color, msg_str)
+		self.print_color(color, header_char*len(msg_str))
+
 	def prepare_test(self, submission_dict, testfiles_dict):
 		''' Prepare the repository and check for all files '''
 
 		# Print start of test message header
 		msg_str=f"Performing passoff script for lab {self.lab_num}"
-		self.print_color(TermColor.YELLOW, '#'*len(msg_str))
-		self.print_color(TermColor.YELLOW, msg_str)
-		self.print_color(TermColor.YELLOW, '#'*len(msg_str))
+		self.print_message_with_header(msg_str)
 		print()
 
 		# Print step 1 message header
@@ -163,12 +167,23 @@ class lab_test:
 		self.warnings += 1
 
 	def print_message_summary(self):
+		''' Prints final message after the completion of the runs. ''' 
 		if self.errors:
 			self.print_error("Completed - Submission has",str(self.errors),"error(s)")
 		elif self.warnings:
 			self.print_warning("Completed - Submission has",str(self.warnings),"warning(s)")
 		else:
 			self.print_color(TermColor.GREEN, "Completed - No Warnings or Errors")
+
+		# Commit String
+		commit_string = self.get_tag_commit_date()
+		if commit_string is None:
+			self.print_warning("No commit string to evaluate submission time")
+		else:
+			self.print_color(TermColor.GREEN, f" Submission date of of lab:{commit_string}")
+
+		self.print_message_with_header("End of Passoff Script")
+
 
 	def subprocess_file_print(self,process_output_filepath, proc_cmd, proc_cwd):
 		""" 
@@ -232,18 +247,28 @@ class lab_test:
 			current_repo = p.stdout.strip()
 		return current_repo
 
-	def print_tag_commit_date(self):
+	def get_tag_commit_date(self):
 		'''
-		Reads the ".commit" file to find commit date. Prints date
+		Reads the ".commit" file to find commit date and returns as a string.
+		Returns None if the .commit file does not exist.
 		'''
 		# determin path of commit string
 		COMMIT_STRING_FILEPATH = self.submission_top_path / self.COMMIT_STRING_FILENAME
 		try:
 			fp = open(COMMIT_STRING_FILEPATH, "r")
 			commit_string = fp.read()
-			print(str.format("Tag '{}' committed on {}",self.LAB_TAG_STRING,commit_string))
+			return commit_string
 		except FileNotFoundError:
 			self.print_warning("Warning: No Commit Time String Found",COMMIT_STRING_FILEPATH)
+			return None
+
+	def print_tag_commit_date(self):
+		'''
+		Prints the tag commit date
+		'''
+		commit_string = self.get_tag_commit_date()
+		if not (commit_string is None):
+			print(str.format("Tag '{}' committed on {}",self.LAB_TAG_STRING,commit_string))
 
 	def prepare_remote_repo(self):
 		''' Prepares the repository for the pass-off. When this function has completed,
