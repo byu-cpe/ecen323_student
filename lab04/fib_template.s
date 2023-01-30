@@ -50,7 +50,7 @@ main:
     ecall                 # Make system call
 
     # Print the number        
-     mv a0, s2
+    mv a0, s2
     li a7,PRINT_INT               # System call code for print_int
     ecall                 # Make system call
 
