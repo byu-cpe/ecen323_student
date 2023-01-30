@@ -210,7 +210,7 @@ module datapathBehavioralModel(clk, sw, btnc, btnd, btnl, btnu, led);
     // Signal to check the state
     int check_led_cnt = 0;
     logic check_led;
-    localparam BUTTON_DELAY_CHECK = 3;
+    localparam BUTTON_DELAY_CHECK = 5;
 	always@(negedge clk) begin
         check_led <= 0;
 		if (initialized) begin
