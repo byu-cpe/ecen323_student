@@ -86,7 +86,6 @@ class lab_test:
 		self.BASYS3_PART = "xc7a35tcpg236-1"
 		self.STARTER_CODE_REPO = "git@github.com:byu-cpe/ecen323_student.git"
 		self.LAB_DIR_NAME = str.format("lab{:02d}",self.lab_num)
-		self.DEFAULT_EXTRACT_DIR = "passoff_temp_dir"
 		self.TEST_RESULT_FILENAME = str.format("lab{}_test_result.txt",self.lab_num)
 		self.LAB_TAG_STRING = str.format("lab{}_submission",self.lab_num)
 		self.TEST_RESULT_FILENAME = str.format("lab{}_test_result.txt",self.lab_num)
@@ -97,6 +96,7 @@ class lab_test:
 		self.warnings = 0
 		self.log = None
 		self.tests_to_perform = []
+		self.stepnum=1
 
 		# Create the argument parser
 		self.parser = lab_passoff_argparse(self.lab_num)
@@ -108,9 +108,26 @@ class lab_test:
 		# Parse the arguments
 		self.args = self.parser.parse_args()
 
+	def print_step_message(self,msg_str):
+		self.print_color(TermColor.YELLOW, f"Step {self.stepnum}: {msg_str}")
+		self.stepnum += 1
+
+	def print_message_with_header(self, msg_str, header_char='#', color = TermColor.YELLOW):
+		''' Prints a message with a header and footer based on the message length.  '''
+		self.print_color(color, header_char*len(msg_str))
+		self.print_color(color, msg_str)
+		self.print_color(color, header_char*len(msg_str))
 
 	def prepare_test(self, submission_dict, testfiles_dict):
 		''' Prepare the repository and check for all files '''
+
+		# Print start of test message header
+		msg_str=f"Performing passoff script for lab {self.lab_num}"
+		self.print_message_with_header(msg_str)
+		print()
+
+		# Print step 1 message header
+		self.print_step_message("Checking repository and submission files")
 		if not self.prepare_remote_repo():
 			return False
 		self.set_lab_fileset(submission_dict, testfiles_dict)
@@ -124,6 +141,8 @@ class lab_test:
 		''' Run all the registered tests '''
 		if not self.args.notest:
 			for test in self.tests_to_perform:
+				#print_step_message(self,msg_str):
+				self.print_step_message(test.module_name())
 				self.execute_test_module(test)
 		# Wrap up
 		self.print_message_summary()
@@ -148,12 +167,23 @@ class lab_test:
 		self.warnings += 1
 
 	def print_message_summary(self):
+		''' Prints final message after the completion of the runs. ''' 
 		if self.errors:
 			self.print_error("Completed - Submission has",str(self.errors),"error(s)")
 		elif self.warnings:
 			self.print_warning("Completed - Submission has",str(self.warnings),"warning(s)")
 		else:
 			self.print_color(TermColor.GREEN, "Completed - No Warnings or Errors")
+
+		# Commit String
+		commit_string = self.get_tag_commit_date()
+		if commit_string is None:
+			self.print_warning("No commit string to evaluate submission time")
+		else:
+			self.print_color(TermColor.GREEN, f" Submission date of of lab:{commit_string}")
+
+		self.print_message_with_header("End of Passoff Script")
+
 
 	def subprocess_file_print(self,process_output_filepath, proc_cmd, proc_cwd):
 		""" 
@@ -164,6 +194,12 @@ class lab_test:
 		TODO:Provide more options on output: 1. to stdout and file, 2. To one or the other, or 3. None
 		"""
 		with open(process_output_filepath, "w") as fp:
+			# Print command to file
+			fp.write("Executing the following command in directory:"+str(proc_cwd)+"\n\t")
+			for cmd in proc_cmd:
+				fp.write(str(cmd)+" ")
+			fp.write("\n")
+			# Execute command		
 			proc = subprocess.Popen(
 				proc_cmd,
 				cwd=proc_cwd,
@@ -211,18 +247,28 @@ class lab_test:
 			current_repo = p.stdout.strip()
 		return current_repo
 
-	def print_tag_commit_date(self):
+	def get_tag_commit_date(self):
 		'''
-		Reads the ".commit" file to find commit date. Prints date
+		Reads the ".commit" file to find commit date and returns as a string.
+		Returns None if the .commit file does not exist.
 		'''
 		# determin path of commit string
 		COMMIT_STRING_FILEPATH = self.submission_top_path / self.COMMIT_STRING_FILENAME
 		try:
 			fp = open(COMMIT_STRING_FILEPATH, "r")
 			commit_string = fp.read()
-			print(str.format("Tag '{}' committed on {}",self.LAB_TAG_STRING,commit_string))
+			return commit_string
 		except FileNotFoundError:
 			self.print_warning("Warning: No Commit Time String Found",COMMIT_STRING_FILEPATH)
+			return None
+
+	def print_tag_commit_date(self):
+		'''
+		Prints the tag commit date
+		'''
+		commit_string = self.get_tag_commit_date()
+		if not (commit_string is None):
+			print(str.format("Tag '{}' committed on {}",self.LAB_TAG_STRING,commit_string))
 
 	def prepare_remote_repo(self):
 		''' Prepares the repository for the pass-off. When this function has completed,
@@ -555,7 +601,8 @@ class lab_passoff_argparse(argparse.ArgumentParser):
 		# Constants
 		#self.DEFAULT_EXTRACT_DIR = "passoff_temp_dir"
 		# Default passoff directory is in the /tmp folder so it doesn't gum up student caedm space
-		self.DEFAULT_EXTRACT_DIR = "/tmp/ecen323_passoff"
+		#self.DEFAULT_EXTRACT_DIR = "/tmp/ecen323_passoff"
+		self.DEFAULT_EXTRACT_DIR = "/tmp/" + f"ecen323_{os.getlogin()}"
 
 		# call parent initialization
 		description = str.format('Create and test submission archive for lab {} (v {}).', \

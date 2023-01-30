@@ -6,9 +6,7 @@
 //
 //  Author: Mike Wirthlin
 //  
-//  Description: 
-//
-//  Version 1.0
+//  Description: Testbench for top-level calculator circuit
 //
 //  1/11/2021
 //
@@ -131,7 +129,7 @@ module tb_calc();
 
 endmodule
 
-// Behavioral module that will test UpDownButtonCount
+// Behavioral module that will test ALU
 module ALUTester(clk, rst, func, ex, sw, result);
 
     input wire logic clk;
