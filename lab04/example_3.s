@@ -88,7 +88,7 @@ fact_func:                   # Performs factorial for input a0 (a0!) and returns
     li s2,1                  # Load 1 in s2 (callee saved), (the next factorial operand (fo) to multiple the current result)
 
 do_fact:                     # Performs the factorial when n > 0,1. Multiplies (result * fo) into a single product where
-                             # # fo increments per loop execution. Loop terminates when (loop counter) <= 0
+                             # fo increments per loop execution. Loop terminates when (loop counter) <= 0
     blez s1,done_fact        # If t0 (loop counter) is less than or equal to zero then jump to end otherwise continue
     addi s2,s2,1             # Increment s2 (f0) by 1 to obtain next factorial operand    
     
