@@ -5,8 +5,8 @@
 # Date: 1/22/2020
 #
 # Description: Program to calculate the factorial for given 
-# non-zero, non-negative integer input (output = input!) with subroutine
-# that utilizes the stack and system calls.
+# non-zero, non-negative integer input (output = input!) with system calls 
+# and subroutine that utilizes the stack.
 #
 # Functions:
 #  - fact_func: Performs factorial for input a0 (a0!) and returns result to a0
@@ -27,10 +27,10 @@ input:						# The location for the input factorial value
 	.word 6 				# Allocates 4 bytes and sets the input to 6 (arbitrary)
 	
 output:						# The location for the output calculated factorial
-
-	.word 0					# allocates 4 byte set to 0
 							# value given the input value data
-							# Allocates 4 bytes and sets the output to 0 for initialization
+	.word 0					# Allocates 4 bytes and sets the output to 0 for initialization
+							
+							
 
 result_str:					# The location for the result string data
 	.asciz "! = "			# allocates 1 byte per character plus null character
@@ -40,19 +40,17 @@ result_str:					# The location for the result string data
 main:						# Label for start of program
 
 	lw a0,input				# Loads the desired input value from memory to compute the factorial
-
-	jal fact_func			# Jump and link (save return address) to factorial subroutine (function)
+	jal fact_func			# Jump and link (save return address) to factorial subroutine (function), argument (a0 (input)) return value (a0)
 	la t0,output			# Load output address to t0
 	sw a0,0(t0)				# Save the calculated factorial result to output memory location
 	
 exit:						# The factorial has finished computing, perform system calls to print
 							# result and waits on debug breakpoint
 
-	lw a0,input				# Load Input value into a0  to be printed
+	lw a0,input				# Load Input value into a0 to be printed
 	li a7,PRINT_INT        	# System call code for print_int code 1
 	ecall                 	# Make system call
 		
-
 	la a0,result_str     	# Put result_str address in a0 to be printed
 	li a7,PRINT_STR       	# System call code for print_str code 4
 	ecall                	# Make system call
@@ -60,7 +58,6 @@ exit:						# The factorial has finished computing, perform system calls to print
 	lw a0,output			# Load output value into a0 to be printed
 	li a7,PRINT_INT      	# System call code for print_int code 1
 	ecall                 	# Make system call
-
 	
 	li a0, 0				# Exit (93) with code 0 (NULL character to represent end of string)
 	li a7,EXIT_CODE			# System call value

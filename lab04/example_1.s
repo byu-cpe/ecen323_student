@@ -24,9 +24,7 @@ output: 				# The location for the output calculated factorial
 main:					# Label for start of program
 	
 	lw a0,input 		# Loads the desired input value from memory to compute the factorial
-	
 	li t0,1				# Loads the value 1 into a t0
-
 	ble a0,t0,done_fact	# Check if input is 1 or less, if so then the factorial is already computed since
 						# input = 1 results in output = 1, jump to the end of program otherwise compute the factorial
 

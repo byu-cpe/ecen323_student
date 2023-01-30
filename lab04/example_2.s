@@ -5,8 +5,9 @@
 # Date: 1/22/2020
 #
 # Description: Program to calculate the factorial for given 
-# non-zero, non-negative integer input (output = input!) with subroutine
-# and system calls
+# non-zero, non-negative integer input (output = input!) with system calls
+# and subroutine
+#
 #
 # Functions:
 #  - fact_func: Performs factorial for input a0 (a0!) and returns result to a0
@@ -38,7 +39,7 @@ main:						# Label for start of program
 
 	lw a0,input				# Loads the desired input value from memory to compute the factorial
 
-	jal fact_func			# Jump and link (save return address) to factorial subroutine (function)
+	jal fact_func			# Jump and link (save return address) to factorial subroutine (function), argument (a0 (input)) return value (a0)
 	la t0,output			# Load output address to t0
 	sw a0,0(t0)				# Save the calculated factorial result to output memory location
 	
