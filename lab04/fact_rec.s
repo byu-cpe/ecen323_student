@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 #########################################################################
 # fact_rec.s
 # 
@@ -13,15 +12,6 @@
 #  - fact_func: Performs factorial for input a0 (a0!) and returns result to a0
 #
 #########################################################################
-=======
-##########################################
-# fact_rec.s
-# 
-# Factorial demonstration using recursion
-#
-##########################################
-
->>>>>>> startercode/main
 
 .globl  main
 
@@ -32,7 +22,6 @@
 
 # Global data segment
 .data
-<<<<<<< HEAD
 input:					# The location for the input factorial value
 	.word 6 			# Allocates 4 bytes and sets the input to 6 (arbitrary)
 	
@@ -70,43 +59,6 @@ exit:					# The factorial has finished computing, perform system calls to print
     li a7,EXIT_CODE		# System call value
     ecall				# Make system call
     ebreak				# Finish with breakpoint
-=======
-input:                          # The location for the input data
-    .word 6                     # allocates 4 byte set to 4
-    
-output:                         # The location for the output data
-    .word 0                     # allocates 4 byte set to 4
-    
-result_str:                     # The location for the result string data
-    .asciz "! = "               # allocates 1 byte per chacter plus null character
-
-.text
-main:                           # Label for start of program
-    lw a0,input                 # Load input Value
-    jal fact_func
-    la t0,output                # Load output address to t0
-    sw a0,0(t0)                 # Save output value to output memory location
-    
-exit:
-    lw a0,input                 # Load Input value into a0 
-    li a7,1                     # System call code for print_int code 1
-    ecall                       # Make system call
-        
-
-    la a0,result_str            # Put result_str address in a0
-    li a7,4                     # System call code for print_str code 4
-    ecall                       # Make system call
- 
-    lw a0,output                # Load output value into a0
-    li a7,1                     # System call code for print_int code 1
-    ecall                       # Make system call
-
-    
-    li a0, 0                    # Exit (93) with code 0
-    li a7, 93                   # System call value
-    ecall                       # Make system call
-    ebreak                      # Finish with breakpoint
->>>>>>> startercode/main
 
 fact_func:				# Performs factorial for input a0 (a0!) and returns result to a0
 
