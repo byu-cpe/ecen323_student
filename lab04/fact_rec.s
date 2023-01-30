@@ -62,7 +62,6 @@ exit:					# The factorial has finished computing, perform system calls to print
 
 fact_func:				# Performs factorial for input a0 (a0!) and returns result to a0
 
-<<<<<<< HEAD
 	addi sp, sp, -8 	# Make room to save values on the stack
 	sw s0, 0(sp)		# The subroutine needs s0, save the caller s0 on stack. Used as the subroutine factorial operand 
 	sw ra, 4(sp)		# The return address needs to be saved to know where subroutine was called from
@@ -85,27 +84,3 @@ $L1:
 	addi sp, sp, 8		# Update stack pointer
 
 	ret					# Jump to return address
-=======
-    addi sp, sp, -8             # Make room to save values on the stack
-    sw s0, 0(sp)                # This function uses 1 callee save regs
-    sw ra, 4(sp)                # The return address needs to be saved 
-
-    mv s0, a0                   # Save the argument into s0
-
-    bgtz a0,$L2                 # Branch if n > 0
-    li a0,1                     # Return 1
-    j $L1                       # Jump to code to return
-
-$L2:
-    addi a0,a0,-1               # Compute n - 1
-    jal fact_func               # Call factorial function
-    mul a0,a0,s0                # Compute fact(n-1) * n
-       
-$L1:
-    
-    lw s0, 0(sp)                # Restore any callee saved regs used
-    lw ra, 4(sp)                # Restore return address
-    addi sp, sp, 8              # Update stack pointer
-
-    ret                         # Jump to return address
->>>>>>> startercode/main
