@@ -29,7 +29,7 @@ module tb_regfile_top();
         end
     endtask
 
-    localparam POST_SW_CLOCKS = 4;
+    localparam POST_SW_CLOCKS = 6;
     localparam BUTTON_HIGH_CLOCKS = 3;
     localparam POST_BUTTON_CLOCKS = 4;
 
