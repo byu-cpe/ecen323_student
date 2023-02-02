@@ -36,7 +36,8 @@ module tb_simple_datapath();
 	localparam XOR_OP = 4'b1101;
 	localparam SLT_OP = 4'b0111;
 
-	localparam INITIAL_PC = 32'h00400000;
+	//localparam INITIAL_PC = 32'h00400000;
+	localparam TB_INITIAL_PC = 32'h00200000;		// Use a non-standard initial PC to make sure parameters are supported
 
     task sim_clocks(input int clocks);
 		automatic int i;
@@ -83,7 +84,7 @@ module tb_simple_datapath();
 		tb_loadPC = 0;  // return loadPC to zero
 		tb_RegWrite = 0;  // return reg write back to zero
 		#3 clk = 0;
-		if (int_PC != tb_PC) begin
+		if (int_PC != tb_PC || ^tb_PC[0] === 1'bX) begin
 			$display("*** Error: PC=%h but expect %h at time %0t", tb_PC, int_PC, $time);
 			error();
 		end else
@@ -108,12 +109,12 @@ module tb_simple_datapath();
 		tb_ALUCtrl = ALUCtrl;
 		tb_ALUSrc = ALUSrc;
 		#3 clk = 0;
-		if (alu != tb_dAddress) begin
+		if (alu != tb_dAddress || ^tb_dAddress[0] === 1'bX) begin
 			$display("*** Error: dAddress=%h but expect %h at time %0t", tb_dAddress,
 			alu, $time);
 			error();
 		end else
-		if (int_Zero != tb_Zero) begin
+		if (int_Zero != tb_Zero || tb_Zero == 1'bX) begin
 			$display("*** Error: Zero=%h but expect %h at time %0t", tb_Zero,
 			int_Zero, $time);
 			error();
@@ -130,7 +131,7 @@ module tb_simple_datapath();
 		tb_MemWrite = MemWrite;
 		tb_MemRead = MemRead;
 		#3 clk = 0;
-		if (MemWrite && tb_dWriteData != l_readB) begin
+		if (MemWrite && (tb_dWriteData != l_readB || ^tb_dWriteData[0] === 1'bX ) ) begin
 			$display("*** Error: dWriteData=%h but expect %h at time %0t", tb_dWriteData,
 			l_readB, $time);
 			error();
@@ -152,7 +153,7 @@ module tb_simple_datapath();
 		tb_RegWrite = RegWrite;
 		tb_MemtoReg = MemtoReg;
 		#3 clk = 0;
-		if (RegWrite && tb_WriteBackData != writeData) begin
+		if (RegWrite && (tb_WriteBackData != writeData || ^tb_WriteBackData[0] === 1'bX)) begin
 			$display("*** Error: WriteBackData=%h but expect %h at time %0t", tb_WriteBackData,
 			writeData, $time);
 			error();
@@ -161,6 +162,7 @@ module tb_simple_datapath();
 	endtask
 
 	task execute_instruction;
+		// Perform the five instruction phases
 		input [31:0] instruction;
 		input ALUSrc;
 		input [3:0] ALUCtrl;
@@ -313,7 +315,7 @@ module tb_simple_datapath();
 	endtask
 
 	// Instance Datapath module
-	riscv_simple_datapath datapath(
+	riscv_simple_datapath #(.INITIAL_PC(TB_INITIAL_PC)) datapath(
 		.clk(clk), 
 		.rst(tb_rst),
 		.PCSrc(tb_PCSrc), 
@@ -359,7 +361,7 @@ module tb_simple_datapath();
 	// Simulate the PC
 	always_ff@(posedge clk) begin
 		if (tb_rst)
-			int_PC <= INITIAL_PC;
+			int_PC <= TB_INITIAL_PC;
 		else if (tb_loadPC)
 			if (tb_PCSrc)
 				int_PC <= int_PC + 
