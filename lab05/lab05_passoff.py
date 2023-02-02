@@ -24,7 +24,7 @@ SCRIPT_PATH = pathlib.Path(__file__).absolute().parent.resolve()
 # used to represent a specific file for the lab. The value is the path and filename
 # (relative to the lab directory) of the file to include in the submission.
 submission_files = {
-    "datapathconstants"		: "riscv_datapath_constants.sv",
+    "datapathconstants"		: "../include/riscv_datapath_constants.sv",
     "datapath"				: "riscv_simple_datapath.sv",
 }
 
@@ -34,7 +34,7 @@ submission_files = {
 test_files = {
 	"tb_simple_datapath"	: "tb_simple_datapath.sv",
     "alu"           		: "../lab02/alu.sv",
-    "alu_constants"     	: "../lab02/riscv_alu_constants.sv",
+    "alu_constants"     	: "../include/riscv_alu_constants.sv",
     "regfile"       		: "../lab03/regfile.sv",
 }
 
@@ -43,11 +43,11 @@ test_files = {
 # Testbench simulations
 regfile_tb = tester_module.testbench_simulation( "Datapath Testbench", \
 	"tb_simple_datapath", \
-	[ "tb_simple_datapath", "datapath","alu",  "regfile", "datapathconstants", "alu_constants",   ], [], include_dirs = ["../lab02"])
+	[ "tb_simple_datapath", "datapath","alu",  "regfile", "datapathconstants", "alu_constants",   ], [], include_dirs = ["../include"])
 
 # Synthesis batches
 datapath_build = tester_module.build_bitstream( "riscv_simple_datapath", [], 
-	[ "datapath", "alu",  "regfile", "datapathconstants", "alu_constants" ], False, False, include_dirs=["../lab02"])
+	[ "datapath", "alu",  "regfile", "datapathconstants", "alu_constants" ], False, False, include_dirs=["../include"])
 
 # Bitstream build
 
