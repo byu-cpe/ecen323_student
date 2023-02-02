@@ -29,7 +29,7 @@ module tb_regfile_top();
         end
     endtask
 
-    localparam POST_SW_CLOCKS = 4;
+    localparam POST_SW_CLOCKS = 6;
     localparam BUTTON_HIGH_CLOCKS = 3;
     localparam POST_BUTTON_CLOCKS = 4;
 
@@ -210,7 +210,7 @@ module datapathBehavioralModel(clk, sw, btnc, btnd, btnl, btnu, led);
     // Signal to check the state
     int check_led_cnt = 0;
     logic check_led;
-    localparam BUTTON_DELAY_CHECK = 3;
+    localparam BUTTON_DELAY_CHECK = 5;
 	always@(negedge clk) begin
         check_led <= 0;
 		if (initialized) begin

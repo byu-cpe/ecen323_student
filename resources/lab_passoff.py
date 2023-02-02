@@ -1,9 +1,13 @@
 #!/usr/bin/python3
 
 '''
-Base script for performing passoffs on ECEN 323 labs.
-Provides core functionality that is used by each labs'
-unique passoff script.
+Contains base code for performing ECEN 323 passoffs.
+Classes:
+ TermColor: for constants for terminal text color
+ lab_test: represents a specific test as part of the 
+ lab_passoff_argparse: Provides lab testing default arguments
+
+Each lab will call the classes to complete a lab-specific passoff.
 '''
 
 # Manages file paths
@@ -63,11 +67,6 @@ class lab_test:
 		This class also has a number of constants that are the same for all scripts.
 
 		TODO:
-		- The current approach for lab passoffs checks out a tagged copy of the repository under each lab
-		  directory. This will cause the students to have 12 old tagged versions of their repository in
-		  their lab space (although not apart of .git). Come up with a way to checkout the repositories into
-		  the same temporary "passoff" directory in their file space so that only one tagged version of their
-		  repository is in use at any one time.
 		- Checkout the starter code if it doesn't exist (or give a flag to the student code repository) and
 		  run the scripts from the known good repository.
 	'''
@@ -135,6 +134,7 @@ class lab_test:
 		return self.check_lab_fileset()
 
 	def add_test_module(self, test_module):
+		''' Add a test module. '''
 		self.tests_to_perform.append(test_module)
 
 	def run_tests(self):
@@ -357,7 +357,7 @@ class lab_test:
 			self.proceed_with_tests = False
 			return False
 		else:
-			print("Valid byu-ecen323-classroom repository")
+			print("Valid byu-ecen323-winter2023 repository")
 
 		# Determine execution directory where test should be completed
 		#   execution_path:
@@ -617,7 +617,7 @@ class lab_passoff_argparse(argparse.ArgumentParser):
 		self.add_argument("-f", "--force", action="store_true", help="Force use of directories if they already exists: delete existing")
 		self.add_argument("--nodelete", action="store_true", help="Force use of directory if it exists and to not delete")
 
-		# Extract the prepository at the fiven directory.
+		# Extract the prepository at the given directory.
 		self.add_argument("--extract_dir", type=str,
 			help="Temporary directory where repository will be extracted (relative to directory script is run)",
 			default=self.DEFAULT_EXTRACT_DIR)

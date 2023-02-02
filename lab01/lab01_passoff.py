@@ -10,10 +10,6 @@ sys.path.append( str(resources_path) )
 import lab_passoff
 import tester_module
 
-###########################################################################
-# Global constants
-###########################################################################
-
 # lab-specific constants
 LAB_NUMBER = 1
 # Path of script that is being run

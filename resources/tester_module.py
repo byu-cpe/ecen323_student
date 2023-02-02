@@ -1,7 +1,23 @@
 #!/usr/bin/python3
 
 '''
-A set of classes for performing a variety of tests on ECEN 323 student submissions.
+A set of classes for performing specific tests on ECEN 323 student submissions.
+
+Classes:
+  tester_module: base class for all test modules
+  simulation_module: base class for performing Vivado simulations
+  tcl_simulation: class for performing simulations with a tcl script
+  tcl_simulation2: improved class (what is the difference?)
+  testbench_simulation: class for performing testbench simulations
+  build_bitstream: performs full implementation to generate a bitstream
+  rars_raw: run the rars simulator
+  rars_sim_print:
+  rars_mem_file:
+  update_bitstream:
+  update_bitstream_mem:
+  update_font_mem:
+  update_background_mem:
+  
 '''
 
 # Manages file paths
