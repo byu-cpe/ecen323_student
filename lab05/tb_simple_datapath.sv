@@ -282,7 +282,9 @@ module tb_simple_datapath();
 		input [11:0] immediate;
 
 		logic [31:0] instruction;
-		instruction = {immediate, rs1, 3'b011, rd, 7'b0000011};
+		logic [6:0] LW_OPCODE = 7'b0000011;
+		logic [2:0] LW_FUNC3 = 3'b010;
+		instruction = {immediate, rs1, LW_FUNC3, rd, LW_OPCODE};
 		$display("[%0t] lw x%0d,%0d(x%0d)", $time, rd,  $signed({ {20{immediate[11]}}, immediate}), rs1 );
 		execute_instruction(.instruction(instruction), .ALUSrc(1), .ALUCtrl(ADD_OP), // add
 			 .MemWrite(0),.MemRead(1),.branch(0),.RegWrite(1),.MemtoReg(1));
