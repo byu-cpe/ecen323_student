@@ -98,6 +98,9 @@ class lab_test:
 		self.tests_to_perform = []
 		self.stepnum=1
 
+		# Final messages to print at end of passoff script
+		self.final_messages = []
+
 		# Create the argument parser
 		self.parser = lab_passoff_argparse(self.lab_num)
 
@@ -181,6 +184,10 @@ class lab_test:
 			self.print_warning("No commit string to evaluate submission time")
 		else:
 			self.print_color(TermColor.GREEN, f" Submission date of of lab:{commit_string}")
+
+		# Print any final passoff-specific messages
+		for msg in self.final_messages:
+			self.print_color(TermColor.YELLOW, msg)
 
 		self.print_message_with_header("End of Passoff Script")
 
