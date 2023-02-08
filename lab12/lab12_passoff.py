@@ -36,7 +36,7 @@ sv_files = {
 	"final_io"		    	: "riscv_io_final.sv",
 	"riscv_final"		    : "../lab11/riscv_final.sv",
 	"alu"           		: "../lab02/alu.sv",
-	"alu_constants"     	: "../lab02/riscv_alu_constants.sv",
+	"alu_constants"     	: "../include/riscv_alu_constants.sv",
 	"regfile"       		: "../lab03/regfile.sv",
 	"iosystem"				: "../resources/iosystem/iosystem.sv",
 	"io_clocks" 			: "../resources/iosystem/io_clocks.sv",
@@ -86,7 +86,7 @@ vhdl_keys = ["vga_timing","font_rom","charmem","charGen3","vga_ctl3"]
 #	vhdl_sources.append(vhdl_file)
 
 riscv_io_final_bit = tester_module.build_bitstream( "riscv_io_final",["xdc"],hdl_files, implement_build =True, 
-	create_dcp = True, include_dirs = ["../lab02", "../include"],
+	create_dcp = True, include_dirs = ["../include"],
 	vhdl_key_list = vhdl_keys,
 	generics = ["TEXT_MEMORY_FILENAME=project_text.mem",
 	"DATA_MEMORY_FILENAME=project_data.mem"])

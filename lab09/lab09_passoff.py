@@ -34,7 +34,7 @@ test_files = {
 	"riscv_forwarding_tb"	: "riscv_forwarding_tb.sv",
 	"forwarding_asm"		: "forwarding.s",
     "alu"           		: "../lab02/alu.sv",
-    "alu_constants"     	: "../lab02/riscv_alu_constants.sv",
+    "alu_constants"     	: "../include/riscv_alu_constants.sv",
     "regfile"       		: "../lab03/regfile.sv",
 }
 
@@ -47,12 +47,12 @@ forwarding_mem = tester_module.rars_mem_file("forwarding_asm", generate_data_mem
 forwarding_tb = tester_module.testbench_simulation( "Forwarding Testbench", \
 	"riscv_forwarding_tb", \
 	[ "riscv_forwarding_tb", "alu_constants", "alu",  "regfile", "forwarding",   ], [], \
-		 include_dirs = ["../lab02", "../include"], )
+		 include_dirs = ["../include"], )
 
 # Synthesis batches
 forwarding_build = tester_module.build_bitstream( "riscv_forwarding_pipeline", [], 
 	[ "alu_constants", "alu",  "regfile", "forwarding", ], False, False, \
-		include_dirs=["../lab02","../include"])
+		include_dirs=["../include"])
 
 # Bitstream build
 

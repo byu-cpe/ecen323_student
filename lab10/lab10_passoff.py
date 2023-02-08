@@ -34,7 +34,7 @@ sv_files = {
 	"forwarding_io"		    : "forwarding_iosystem.sv",
 	"forwarding"		    : "../lab09/riscv_forwarding_pipeline.sv",
 	"alu"           		: "../lab02/alu.sv",
-	"alu_constants"     	: "../lab02/riscv_alu_constants.sv",
+	"alu_constants"     	: "../include/riscv_alu_constants.sv",
 	"regfile"       		: "../lab03/regfile.sv",
 	"iosystem"				: "../resources/iosystem/iosystem.sv",
 	"io_clocks" 			: "../resources/iosystem/io_clocks.sv",
@@ -70,7 +70,7 @@ move_char_mem = tester_module.rars_mem_file("move_char", generate_data_mem=True)
 
 # TCL simulations
 forwarding_tcl = tester_module.tcl_simulation2( "vga_tcl", "forwarding_iosystem", \
-	sv_files, include_dirs = ["../lab02", "../lab05", "../include"], \
+	sv_files, include_dirs = ["../include"], \
 	vhdl_files=vhdl_files,use_glbl=True, \
 	generics = ["TEXT_MEMORY_FILENAME=forwarding_iosystem_text.mem", \
 		"DATA_MEMORY_FILENAME=forwarding_iosystem_data.mem"])
@@ -86,7 +86,7 @@ vhdl_keys = ["vga_timing","font_rom","charmem","charGen3","vga_ctl3"]
 #	vhdl_sources.append(vhdl_file)
 
 forwarding_bit = tester_module.build_bitstream( "forwarding_iosystem",["xdc"],hdl_files, implement_build =True, 
-	create_dcp = True, include_dirs = ["../lab02", "../include"],
+	create_dcp = True, include_dirs = ["../include"],
 	vhdl_key_list = vhdl_keys,
 	generics = ["TEXT_MEMORY_FILENAME=buttoncount_text.mem",
 	"DATA_MEMORY_FILENAME=forwarding_iosystem_data.mem"])
