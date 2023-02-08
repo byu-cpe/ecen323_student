@@ -57,14 +57,8 @@
 main:
 	# Prepare I/O base address
 	addi gp, x0, 0x7f
-	# Add x3 to itself 8 times (0x7f << 8 = 0x7f00)
-	addi t0, x0, 8
-L1:
-	add gp, gp, gp
-	addi t0, t0, -1
-	beq t0, x0, L2
-	beq x0, x0, L1
-L2:
+	# Shift left 8
+	slli gp, gp, 8
 	# 0x7f00 should be in gp (x3)
 
 	# Set constants
@@ -88,7 +82,7 @@ LOOP_START:
 	beq x0, x0, LOOP_START              # Don't process other buttons
 
 UPDATE_SEVEN_SEG:
-	lw t0, TIMER(gp)                   # Load timer
+	lw t0, TIMER(gp)                    # Load timer
 	# Write timer to seven seg
 	sw t0, SEVENSEG_OFFSET(gp)         
 
@@ -111,7 +105,7 @@ BTNU_CHK:
 	beq t0, x0, BTNR_CHK
 	# Button U pressed - write ffff to LEDs (turn them on)
 	add s2, x0, x0        # load 0 in t0
-	xori s2, s2, -1      # invert t0
+	xori s2, s2, -1       # invert t0
 	beq x0, x0, WRITE_LED
 
 BTNR_CHK:
@@ -133,10 +127,10 @@ BTNL_CHK:
 	beq x0, x0, WRITE_LED
 
 NO_BTN:
-	# load switches to LEDs
+	# Copy switches to LEDs
 	add s2, s1, x0
 
 WRITE_LED:
 	sw s2, LED_OFFSET(gp)
-	beq x0, x0, LOOP_START
+	beq x0, x0, LOOP_START   # Jump back to start
 
