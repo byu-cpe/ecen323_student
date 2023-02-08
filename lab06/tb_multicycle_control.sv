@@ -6,24 +6,19 @@
 //
 //  Author: Mike Wirthlin
 //  
-//  Description: 
-// 
-//
-//  Change Log:
-//   
-
 //////////////////////////////////////////////////////////////////////////////////
 
-module tb_multicycle_control #(
-
-	parameter USE_MEMORY = 0,
-	parameter instruction_memory_filename = "testbench_inst.txt",
-	parameter data_memory_filename = "testbench_data.txt");
+module tb_multicycle_control 
+	#(
+		parameter USE_MEMORY = 0,
+		parameter instruction_memory_filename = "testbench_inst.txt",
+		parameter data_memory_filename = "testbench_data.txt"
+	);
 
 	localparam INST_MEMORY_SIZE = 256;
 	localparam DATA_MEMORY_DEPTH = 64;
-	localparam INITIAL_PC = 32'h00400000;
-	localparam INITIAL_DATA = 32'h10010000;
+	localparam INITIAL_PC = 32'h00200000;		// Use a non-standard PC to make sure students use the parameter
+	localparam INITIAL_DATA_ADDRESS = 32'h10010000;
 	
 	localparam EBREAK_INSTRUCTION = 32'h00100073;
 
@@ -41,6 +36,38 @@ module tb_multicycle_control #(
 	integer i;
     logic initialized=0;
     logic [2:0] cycle_num;
+	logic [6:0] opcode;
+	logic [2:0] funct3;
+	logic [6:0] funct7;
+
+	localparam IMMEDIATE_ALU_OPCODE = 7'b0010011;
+	localparam REGISTER_ALU_OPCODE = 7'b0110011;
+	localparam LOAD_OPCODE = 7'b0000011;
+	localparam STORE_OPCODE = 7'b0100011;
+	localparam BRANCH_OPCODE = 7'b1100011;
+
+	localparam ALU_AND_CTRL = 4'b0000;
+	localparam ALU_OR_CTRL = 4'b0001;
+	localparam ALU_ADD_CTRL = 4'b0010;
+	localparam ALU_SUB_CTRL = 4'b0110;
+	localparam ALU_SLT_CTRL = 4'b0111;
+	localparam ALU_SRL_CTRL = 4'b1000;
+	localparam ALU_SLL_CTRL = 4'b1001;
+	localparam ALU_SRA_CTRL = 4'b1010;
+	localparam ALU_XOR_CTRL = 4'b1011;
+
+	localparam ADDSUB_FUNCT3 = 3'b000;
+	localparam SLL_FUNC3 = 3'b001;
+	localparam SLT_FUNCT3 = 3'b010;
+	localparam XOR_FUNCT3 = 3'b100;
+	localparam SRLSRA_FUNC3 = 3'b101;
+	localparam OR_FUNCT3 = 3'b110;
+	localparam AND_FUNCT3 = 3'b111;
+	localparam BEQ_FUNCT3 = 3'b000;
+
+	localparam DEFAULT_FUNCT7 = 7'b0000000;
+	localparam ALU_SUB_FUNCT7 = 7'b0100000;
+	localparam SRA_FUNCT7 = 7'b0100000;
 
     // Ends on a negative clock
     task sim_clocks(input int clocks);
@@ -72,11 +99,25 @@ module tb_multicycle_control #(
 		input [2:0] func3;
 		input [6:0] func7;
 		input [3:0] ALUCtrl;
+		input string opcode_str;
 		begin
 			logic [31:0] instruction;
-			instruction = {func7, rs2, rs1, func3, rd, 7'b0110011};
+			localparam RTYPE_ALU_OPCODE = 7'b0110011;
+			instruction = {func7, rs2, rs1, func3, rd, RTYPE_ALU_OPCODE};
+			// Print the instruction
+			$display("[%0t] %s x%0d,x%0d,x%0d", $time, opcode_str, rd, rs1, rs2);
 			execute_instruction(.instruction(instruction));
 		end
+	endtask
+
+	task execute_immediate_shift_instruction;
+		input [4:0] rd, rs1;
+		input [2:0] func3;
+		input [6:0] func7;
+		input [4:0] immediate;
+		input [3:0] ALUCtrl;
+		input string opcode_str;
+		execute_immediate_alu_instruction(rd, rs1,func3,{func7,immediate},ALUCtrl,opcode_str);
 	endtask
 
 	task execute_immediate_alu_instruction;
@@ -84,83 +125,111 @@ module tb_multicycle_control #(
 		input [2:0] func3;
 		input [11:0] immediate;
 		input [3:0] ALUCtrl;
+		input string opcode_str;
 		begin
 			logic [31:0] instruction;
-			instruction = {immediate, rs1, func3, rd, 7'b0010011};
+			instruction = {immediate, rs1, func3, rd, IMMEDIATE_ALU_OPCODE};
+			$display("[%0t] %s x%0d,x%0d,%0d", $time, opcode_str, rd, rs1, $signed({ {20{immediate[11]}}, immediate}) );
 			execute_instruction(.instruction(instruction));
 		end
 	endtask
 
 	task execute_add_instruction;
 		input [4:0] rd, rs1, rs2;
-		$display("[%0t] add x%0d,x%0d,x%0d", $time, rd, rs1, rs2);
-		execute_rtype_alu_instruction(.rd(rd),.rs1(rs1),.rs2(rs2),.func3(0),.func7(0),.ALUCtrl(4'b0010));
+		execute_rtype_alu_instruction(.rd(rd),.rs1(rs1),.rs2(rs2),.func3(ADDSUB_FUNCT3),.func7(DEFAULT_FUNCT7),.ALUCtrl(ALU_ADD_CTRL),.opcode_str("add"));
 	endtask
 
 	task execute_sub_instruction;
 		input [4:0] rd, rs1, rs2;
-		$display("[%0t] sub x%0d,x%0d,x%0d", $time, rd, rs1, rs2);
-		execute_rtype_alu_instruction(.rd(rd),.rs1(rs1),.rs2(rs2),.func3(3'b000),.func7(7'b0100000),.ALUCtrl(4'b0110));
+		execute_rtype_alu_instruction(.rd(rd),.rs1(rs1),.rs2(rs2),.func3(ADDSUB_FUNCT3),.func7(ALU_SUB_FUNCT7),.ALUCtrl(ALU_SUB_CTRL),.opcode_str("sub"));
 	endtask
 
 	task execute_and_instruction;
 		input [4:0] rd, rs1, rs2;
-		$display("[%0t] and x%0d,x%0d,x%0d", $time, rd, rs1, rs2);
-		execute_rtype_alu_instruction(.rd(rd),.rs1(rs1),.rs2(rs2),.func3(3'b111),.func7(7'b0000000),.ALUCtrl(4'b0000));
+		execute_rtype_alu_instruction(.rd(rd),.rs1(rs1),.rs2(rs2),.func3(AND_FUNCT3),.func7(DEFAULT_FUNCT7),.ALUCtrl(ALU_AND_CTRL),.opcode_str("and"));
 	endtask
 
 	task execute_or_instruction;
 		input [4:0] rd, rs1, rs2;
-		$display("[%0t] or x%0d,x%0d,x%0d", $time, rd, rs1, rs2);
-		execute_rtype_alu_instruction(.rd(rd),.rs1(rs1),.rs2(rs2),.func3(3'b110),.func7(7'b0000000),.ALUCtrl(4'b0001));
+		execute_rtype_alu_instruction(.rd(rd),.rs1(rs1),.rs2(rs2),.func3(OR_FUNCT3),.func7(DEFAULT_FUNCT7),.ALUCtrl(ALU_OR_CTRL),.opcode_str("or"));
 	endtask
 
 	task execute_xor_instruction;
 		input [4:0] rd, rs1, rs2;
-		$display("[%0t] xor x%0d,x%0d,x%0d", $time, rd, rs1, rs2);
-		execute_rtype_alu_instruction(.rd(rd),.rs1(rs1),.rs2(rs2),.func3(3'b100),.func7(7'b0000000),.ALUCtrl(4'b1011));
+		execute_rtype_alu_instruction(.rd(rd),.rs1(rs1),.rs2(rs2),.func3(XOR_FUNCT3),.func7(DEFAULT_FUNCT7),.ALUCtrl(ALU_XOR_CTRL),.opcode_str("xor"));
 	endtask
 
 	task execute_slt_instruction;
 		input [4:0] rd, rs1, rs2;
-		$display("[%0t] slt x%0d,x%0d,x%0d", $time, rd, rs1, rs2);
-		execute_rtype_alu_instruction(.rd(rd),.rs1(rs1),.rs2(rs2),.func3(3'b010),.func7(7'b0000000),.ALUCtrl(4'b0111));
+		execute_rtype_alu_instruction(.rd(rd),.rs1(rs1),.rs2(rs2),.func3(SLT_FUNCT3),.func7(DEFAULT_FUNCT7),.ALUCtrl(ALU_SLT_CTRL),.opcode_str("slt"));
 	endtask
 
+	//New shift instructions added in 2023: SLL, SRL, SRA 
+	task execute_sll_instruction;
+		input [4:0] rd, rs1, rs2;
+		execute_rtype_alu_instruction(.rd(rd),.rs1(rs1),.rs2(rs2),.func3(SLL_FUNC3),.func7(DEFAULT_FUNCT7),.ALUCtrl(ALU_SLL_CTRL),.opcode_str("sll"));
+	endtask
+
+	task execute_srl_instruction;
+		input [4:0] rd, rs1, rs2;
+		execute_rtype_alu_instruction(.rd(rd),.rs1(rs1),.rs2(rs2),.func3(SRLSRA_FUNC3),.func7(DEFAULT_FUNCT7),.ALUCtrl(ALU_SRL_CTRL),.opcode_str("srl"));
+	endtask
+
+	task execute_sra_instruction;
+		input [4:0] rd, rs1, rs2;
+		execute_rtype_alu_instruction(.rd(rd),.rs1(rs1),.rs2(rs2),.func3(SRLSRA_FUNC3),.func7(SRA_FUNCT7),.ALUCtrl(ALU_SRA_CTRL),.opcode_str("sra"));
+	endtask
+
+	// Immediate instructions
 	task execute_addi_instruction;
 		input [4:0] rd, rs1;
 		input [11:0] immediate;
-		$display("[%0t] addi x%0d,x%0d,%0d", $time, rd, rs1, $signed({ {20{immediate[11]}}, immediate}) );
-		execute_immediate_alu_instruction(.rd(rd),.rs1(rs1),.immediate(immediate),.func3(0),.ALUCtrl(4'b0010));
+		execute_immediate_alu_instruction(.rd(rd),.rs1(rs1),.immediate(immediate),.func3(ADDSUB_FUNCT3),.ALUCtrl(ALU_ADD_CTRL),.opcode_str("addi"));
 	endtask
 
 	task execute_xori_instruction;
 		input [4:0] rd, rs1;
 		input [11:0] immediate;
-		$display("[%0t] xori x%0d,x%0d,%0d", $time, rd, rs1, $signed({ {20{immediate[11]}}, immediate}) );
-		execute_immediate_alu_instruction(.rd(rd),.rs1(rs1),.immediate(immediate),.func3(3'b100),.ALUCtrl(4'b1101));
+		execute_immediate_alu_instruction(.rd(rd),.rs1(rs1),.immediate(immediate),.func3(XOR_FUNCT3),.ALUCtrl(ALU_XOR_CTRL),.opcode_str("xori"));
 	endtask
 
 	task execute_ori_instruction;
 		input [4:0] rd, rs1;
 		input [11:0] immediate;
-		$display("[%0t] ori x%0d,x%0d,%0d", $time, rd, rs1, $signed({ {20{immediate[11]}}, immediate}) );
-		execute_immediate_alu_instruction(.rd(rd),.rs1(rs1),.immediate(immediate),.func3(3'b110),.ALUCtrl(4'b0001));
+		execute_immediate_alu_instruction(.rd(rd),.rs1(rs1),.immediate(immediate),.func3(OR_FUNCT3),.ALUCtrl(ALU_OR_CTRL),.opcode_str("ori"));
 	endtask
 
 	task execute_andi_instruction;
 		input [4:0] rd, rs1;
 		input [11:0] immediate;
-		$display("[%0t] andi x%0d,x%0d,%0d", $time, rd, rs1, $signed({ {20{immediate[11]}}, immediate}) );
-		execute_immediate_alu_instruction(.rd(rd),.rs1(rs1),.immediate(immediate),.func3(3'b111),.ALUCtrl(4'b0000));
+		execute_immediate_alu_instruction(.rd(rd),.rs1(rs1),.immediate(immediate),.func3(AND_FUNCT3),.ALUCtrl(ALU_AND_CTRL),.opcode_str("andi"));
 	endtask
 
 	task execute_slti_instruction;
 		input [4:0] rd, rs1;
 		input [11:0] immediate;
-		$display("[%0t] slti x%0d,x%0d,%0d", $time, rd, rs1, $signed({ {20{immediate[11]}}, immediate}) );
-		execute_immediate_alu_instruction(.rd(rd),.rs1(rs1),.immediate(immediate),.func3(3'b010),.ALUCtrl(4'b0111));
+		execute_immediate_alu_instruction(.rd(rd),.rs1(rs1),.immediate(immediate),.func3(SLT_FUNCT3),.ALUCtrl(ALU_SLT_CTRL),.opcode_str("slti"));
 	endtask
+
+	//New shift instructions added in 2023: SLLI, SRLI, SRAI
+	task execute_slli_instruction;
+		input [4:0] rd, rs1;
+		input [4:0] immediate;
+		execute_immediate_shift_instruction(.rd(rd),.rs1(rs1),.immediate(immediate),.func3(SLL_FUNC3),.func7(DEFAULT_FUNCT7),.ALUCtrl(ALU_SLL_CTRL),.opcode_str("slli"));
+	endtask
+
+	task execute_srli_instruction;
+		input [4:0] rd, rs1;
+		input [4:0] immediate;
+		execute_immediate_shift_instruction(.rd(rd),.rs1(rs1),.immediate(immediate),.func3(SRLSRA_FUNC3),.func7(DEFAULT_FUNCT7),.ALUCtrl(ALU_SRL_CTRL),.opcode_str("srli"));
+	endtask
+
+	task execute_srai_instruction;
+		input [4:0] rd, rs1;
+		input [11:0] immediate;
+		execute_immediate_shift_instruction(.rd(rd),.rs1(rs1),.immediate(immediate),.func3(SRLSRA_FUNC3),.func7(SRA_FUNCT7),.ALUCtrl(ALU_SRA_CTRL),.opcode_str("srai"));
+	endtask
+
 
 	task execute_lw_instruction;
 		input [4:0] rd, rs1;
@@ -198,7 +267,7 @@ module tb_multicycle_control #(
 
 	task execute_random_instruction;
 		automatic int r1,r2,imm;
-		automatic int num_instructions = 13;
+		automatic int num_instructions = 19;
 
 		// Generate random instruction fields
 		automatic int rd = $urandom_range(0,31);
@@ -207,17 +276,23 @@ module tb_multicycle_control #(
 		imm = $urandom_range(0,12'hfff);
 		
 		case($urandom % num_instructions)
-			0: execute_add_instruction(rd,rs1,rs2);
-			1: execute_sub_instruction(rd,rs1,rs2);
-			3: execute_and_instruction(rd,rs1,rs2);
-			4: execute_or_instruction(rd,rs1,rs2);
-			5: execute_xor_instruction(rd,rs1,rs2);
-			6: execute_slt_instruction(rd,rs1,rs2);
-			7: execute_addi_instruction(rd,rs1,imm);
-			8: execute_andi_instruction(rd,rs1,imm);
-			10: execute_ori_instruction(rd,rs1,imm);
-			11: execute_xori_instruction(rd,rs1,imm);
-			12: execute_slti_instruction(rd,rs1,imm);
+			0: execute_add_instruction(rd, rs1, rs2);
+			1: execute_sub_instruction(rd, rs1, rs2);
+			3: execute_and_instruction(rd, rs1, rs2);
+			4: execute_or_instruction(rd, rs1, rs2);
+			5: execute_xor_instruction(rd, rs1, rs2);
+			6: execute_slt_instruction(rd, rs1, rs2);
+			7: execute_addi_instruction(rd, rs1, imm);
+			8: execute_andi_instruction(rd, rs1, imm);
+			10: execute_ori_instruction(rd, rs1, imm);
+			11: execute_xori_instruction(rd, rs1, imm);
+			12: execute_slti_instruction(rd, rs1, imm);
+			13: execute_sll_instruction(rd, rs1, rs2);
+			14: execute_srl_instruction(rd, rs1, rs2);
+			15: execute_sra_instruction(rd, rs1, rs2);
+			16: execute_slli_instruction(rd, rs1, imm[4:0]);
+			17: execute_srli_instruction(rd, rs1, imm[4:0]);
+			18: execute_srai_instruction(rd, rs1, imm[4:0]);
 		endcase
 	endtask
 
@@ -283,9 +358,11 @@ module tb_multicycle_control #(
 	task non_memory_simulation;
 		int i;
 
+		int RANDOM_INSTRUCTIONS = 100;
+
         //shall print %t with scaled in ns (-9), with 2 precision digits, and would print the " ns" string
 		$timeformat(-9, 0, " ns", 20);
-		$display("*** Start of Simulation:Non-Memory Simulation ***");
+		$display("*** Start of Simulation: Non-Memory Simulation ***");
 		
 		// A few clocks to get things going
 		//sim_clocks(3);
@@ -302,7 +379,7 @@ module tb_multicycle_control #(
 		// ends at the negative clock edge. Add a half period and raise clock (start at clock edge)
 		//#5 clk = 1;
 
-		// DO NOT CHANGE THE ISNTRUCTION ORDER - EXAM RELIES ON THIS SEQUENCE
+		// DO NOT CHANGE THE INSTRUCTION ORDER - LEARNING SUITE EXAM RELIES ON THIS SEQUENCE
 
 		$display("[%0t]Testing immediate instructions", $time);
 		execute_addi_instruction(.rd(1), .rs1(0), .immediate(1) );
@@ -406,10 +483,28 @@ module tb_multicycle_control #(
 		// BEQ taken backward
 		execute_beq_instruction(.rs1(1), .rs2(1), .immediate(-64) );
 
+		$display("[%0t]Testing Shift instructions", $time);
+		execute_addi_instruction(.rd(1), .rs1(0), .immediate(12'h0123) );  // Positive constant to be shifted
+		execute_addi_instruction(.rd(2), .rs1(0), .immediate(-4) );     // Negative constant to be shifted  
+		execute_addi_instruction(.rd(3), .rs1(0), .immediate(5) );      // Amount to shift  
+		execute_sll_instruction(.rd(4), .rs1(1), .rs2(3) );
+		execute_sll_instruction(.rd(5), .rs1(2), .rs2(3) );
+		execute_srl_instruction(.rd(6), .rs1(1), .rs2(3) );
+		execute_srl_instruction(.rd(7), .rs1(2), .rs2(3) );
+		execute_sra_instruction(.rd(8), .rs1(1), .rs2(3) );
+		execute_sra_instruction(.rd(9), .rs1(2), .rs2(3) );
+		execute_slli_instruction(.rd(10), .rs1(1), .immediate(4));
+		execute_slli_instruction(.rd(11), .rs1(2), .immediate(4));
+		execute_srli_instruction(.rd(12), .rs1(1), .immediate(4));
+		execute_srli_instruction(.rd(13), .rs1(2), .immediate(4));
+		execute_srai_instruction(.rd(14), .rs1(1), .immediate(4));
+		execute_srai_instruction(.rd(15), .rs1(2), .immediate(4));
+
+
 		//////////////////////////////////
 		//	Random testing
 		$display("[%0t]Testing Random instructions", $time);
-		for(i=0;i<100;i=i+1)
+		for(i=0;i<RANDOM_INSTRUCTIONS;i=i+1)
 			execute_random_instruction();
 
 		#100ns;
@@ -447,7 +542,8 @@ module tb_multicycle_control #(
 	endtask
 
 	// Control module
-	riscv_multicycle riscv(
+	riscv_multicycle #(.INITIAL_PC(INITIAL_PC)) 
+	riscv(
         .clk(clk), 
         .rst(tb_rst), 
         .PC(tb_PC), 
@@ -498,9 +594,9 @@ module tb_multicycle_control #(
 	// Data memory reads
 	always@(posedge clk) begin
 		if (tb_MemWrite)
-			data_memory[(tb_dAddress-INITIAL_DATA)>>2] <= tb_dWriteData;
+			data_memory[(tb_dAddress-INITIAL_DATA_ADDRESS)>>2] <= tb_dWriteData;
 		if (tb_MemRead)
-			tb_dReadData <= data_memory[(tb_dAddress-INITIAL_DATA)>>2];
+			tb_dReadData <= data_memory[(tb_dAddress-INITIAL_DATA_ADDRESS)>>2];
 		else
 			tb_dReadData <= 32'hxxxxxxxx;
 	end
@@ -509,41 +605,53 @@ module tb_multicycle_control #(
 		if (USE_MEMORY)
 			tb_instruction <= inst_memory[(tb_PC - INITIAL_PC)>>2];
 
+	// Decode instruction
+	assign opcode = tb_instruction[6:0];
+	assign funct3 = tb_instruction[14:12];
+	assign funct7 = tb_instruction[31:25];
+
     // ALU
 	always_comb begin
-		if (tb_instruction[6:0] == 7'b0000011) // load
+		if (opcode == LOAD_OPCODE) // load
 			alu = l_readA + b_operand;
-		else if (tb_instruction[6:0] == 7'b0100011) // store
+		else if (opcode == STORE_OPCODE) // store
 			alu = l_readA + b_operand;
-		else if (tb_instruction[6:0] == 7'b1100011) // branch
+		else if (opcode == BRANCH_OPCODE) // branch
 			alu = l_readA - b_operand;
 		else
-			case(tb_instruction[14:12])
-				3'b000: // add or sub
-					if (tb_instruction[30] && tb_instruction[6:0] == 7'b0110011)   // Only for register/register operations
+			case(funct3)
+				ADDSUB_FUNCT3: // add or sub
+					if (funct7 == ALU_SUB_FUNCT7 && opcode == REGISTER_ALU_OPCODE)   // Only for register/register operations
 						alu = l_readA - b_operand; // sub
 					else
 						alu = l_readA + b_operand; // add
-				3'b010: alu = (($signed(l_readA) < $signed(b_operand)) ? 32'b1 : 32'b0); // slti
-				3'b111: alu = l_readA & b_operand;
-				3'b110: alu = l_readA | b_operand;
-				3'b100: alu = l_readA ^ b_operand;
+				SLT_FUNCT3: alu = (($signed(l_readA) < $signed(b_operand)) ? 32'b1 : 32'b0); // slti
+				AND_FUNCT3: alu = l_readA & b_operand;
+				OR_FUNCT3: alu = l_readA | b_operand;
+				XOR_FUNCT3: alu = l_readA ^ b_operand;
+				SLL_FUNC3: alu = l_readA << b_operand[4:0];
+				SRLSRA_FUNC3:
+					if (funct7 == SRA_FUNCT7)
+						alu = $unsigned($signed(l_readA) >>> b_operand[4:0]); // sra
+					else
+						alu = l_readA >> b_operand[4:0]; // srl
 				default: alu = l_readA + b_operand;
 			endcase
 	end
 	assign int_Zero = (alu == 0);
-	assign int_MemRead = (cycle_num == 3 && (tb_instruction[6:0] == 7'b0000011)); // load
-	assign int_MemWrite = (cycle_num == 3 && (tb_instruction[6:0] == 7'b0100011)); // store
+	assign int_MemRead = (cycle_num == 3 && (opcode == LOAD_OPCODE)); // load
+	assign int_MemWrite = (cycle_num == 3 && (opcode == STORE_OPCODE)); // store
 
 	// load operation (memtoreg)
-	assign writeData = (tb_instruction[6:0] == 7'b0000011) ? tb_dReadData : alu;
+	assign writeData = (opcode == LOAD_OPCODE) ? tb_dReadData : alu;
 
     // PC and register file
 	assign int_RegWrite = cycle_num == 4 && 
-			((tb_instruction[6:0] == 7'b0010011)  || // alu immediate
-			 (tb_instruction[6:0] == 7'b0110011)  ||  // ALU register
-			 (tb_instruction[6:0] == 7'b0000011)     // load instruction
+			((opcode == IMMEDIATE_ALU_OPCODE)  || // alu immediate
+			 (opcode == REGISTER_ALU_OPCODE)  ||  // ALU register
+			 (opcode == LOAD_OPCODE)     // load instruction
 			);
+	// Register file
 	always@(posedge clk) begin
         l_readA <= tmpfile[tb_instruction[19:15]]; // rs1
         l_readB <= tmpfile[tb_instruction[24:20]]; // rs2
@@ -560,8 +668,8 @@ module tb_multicycle_control #(
 			int_PC <= INITIAL_PC;
 		else if (cycle_num == 4)
 			if (int_Zero && // zero 
-				(tb_instruction[6:0] == 7'b1100011) && // branch
-				(tb_instruction[14:12] == 3'b000) // BEQ
+				(opcode == BRANCH_OPCODE) && // branch
+				(funct3 == BEQ_FUNCT3) // BEQ
 			)
 				int_PC <= int_PC + 
 					$signed({{20{tb_instruction[31]}},tb_instruction[7],tb_instruction[30:25],tb_instruction[11:8],1'b0});
@@ -580,11 +688,11 @@ module tb_multicycle_control #(
 
 	assign b_operand = 
 		// Store Instruction
-		(tb_instruction[6:0] == 7'b0100011) ? //  Store instruction
+		(opcode == STORE_OPCODE) ? //  Store instruction
 			{{20{tb_instruction[31]}},tb_instruction[31:25], tb_instruction[11:7]}
 		// Load instruction or ALU immediate
-		: ((tb_instruction[6:0] == 7'b0000011) || //  Load instruction
-			(tb_instruction[6:0] == 7'b0010011)) ?    //  ALU Immediate
+		: ((opcode == LOAD_OPCODE) || //  Load instruction
+			(opcode == IMMEDIATE_ALU_OPCODE)) ?    //  ALU Immediate
 			{{20{tb_instruction[31]}},tb_instruction[31:20]}
 		// register file
 		:  l_readB;
@@ -592,7 +700,7 @@ module tb_multicycle_control #(
 
 	initial begin
 	
-		// Regfile
+		// Initialize regfile
         for (i=0;i<32;i=i+1)
            tmpfile[i] = 0;
 
