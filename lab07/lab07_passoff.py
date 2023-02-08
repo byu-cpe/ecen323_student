@@ -36,10 +36,10 @@ submission_files = {
 sv_files = {
 	"multicycle_io"		    : "multicycle_iosystem.sv",
 	"multicycle"		    : "../lab06/riscv_multicycle.sv",
-	"datapathconstants"		: "../lab05/riscv_datapath_constants.sv",
+	"datapathconstants"		: "../include/riscv_datapath_constants.sv",
 	"datapath"				: "../lab05/riscv_simple_datapath.sv",
 	"alu"           		: "../lab02/alu.sv",
-	"alu_constants"     	: "../lab02/riscv_alu_constants.sv",
+	"alu_constants"     	: "../include/riscv_alu_constants.sv",
 	"regfile"       		: "../lab03/regfile.sv",
 	"iosystem"				: "../resources/iosystem/iosystem.sv",
 	"io_clocks" 			: "../resources/iosystem/io_clocks.sv",
