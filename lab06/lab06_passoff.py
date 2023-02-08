@@ -35,10 +35,10 @@ test_files = {
 	"tb_multicycle_control"	: "tb_multicycle_control.sv",
     "testbench_inst"       	: "testbench_inst.txt",
     "testbench_data"       	: "testbench_data.txt",
-    "datapathconstants"		: "../lab05/riscv_datapath_constants.sv",
+    "datapathconstants"		: "../include/riscv_datapath_constants.sv",
     "datapath"				: "../lab05/riscv_simple_datapath.sv",
     "alu"           		: "../lab02/alu.sv",
-    "alu_constants"     	: "../lab02/riscv_alu_constants.sv",
+    "alu_constants"     	: "../include/riscv_alu_constants.sv",
     "regfile"       		: "../lab03/regfile.sv",
 }
 
@@ -48,16 +48,17 @@ test_files = {
 multicycle_nomem_tb = tester_module.testbench_simulation( "Multicycle Testbench", \
 	"tb_multicycle_control", \
 	[ "tb_multicycle_control", "multicycle", "datapath", "alu",  "regfile", "datapathconstants", "alu_constants",   ], [], \
-		 include_dirs = ["../lab02","../lab05"])
+		 include_dirs = ["../include"] )
 
 multicycle_mem_tb = tester_module.testbench_simulation( "Multicycle Testbench", \
 	"tb_multicycle_control", \
 	[ "tb_multicycle_control", "multicycle", "datapath", "alu",  "regfile", "datapathconstants", "alu_constants",   ], [], \
-		 include_dirs = ["../lab02","../lab05"], generics = ["USE_MEMORY=1"])
+		 include_dirs = ["../include"], generics = ["USE_MEMORY=1"])
 
 # Synthesis batches
 multicycle_build = tester_module.build_bitstream( "riscv_multicycle", [], 
-	[ "multicycle", "datapath", "alu",  "regfile", "datapathconstants", "alu_constants" ], False, False, include_dirs=["../lab02","../lab05"])
+	[ "multicycle", "datapath", "alu",  "regfile", "datapathconstants", "alu_constants" ], \
+		False, False, include_dirs=["../include"])
 
 # Bitstream build
 
