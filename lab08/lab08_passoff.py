@@ -35,7 +35,7 @@ test_files = {
 	"riscv_pipeline_tb"		: "riscv_pipeline_tb.sv",
 	"pipeline_nop"			: "pipeline_nop.s",
     "alu"           		: "../lab02/alu.sv",
-    "alu_constants"     	: "../lab02/riscv_alu_constants.sv",
+    "alu_constants"     	: "../include/riscv_alu_constants.sv",
     "regfile"       		: "../lab03/regfile.sv",
 }
 
@@ -48,12 +48,12 @@ pipeline_nop_mem = tester_module.rars_mem_file("pipeline_nop", generate_data_mem
 pipeline_tb = tester_module.testbench_simulation( "Pipeline Testbench", \
 	"riscv_pipeline_tb", \
 	[ "riscv_pipeline_tb", "alu_constants", "alu",  "regfile", "pipeline",   ], [], \
-		 include_dirs = ["../lab02", "../include"], )
+		 include_dirs = [ "../include"], )
 
 # Synthesis batches
 pipeline_build = tester_module.build_bitstream( "riscv_basic_pipeline", [], 
 	[ "alu_constants", "alu",  "regfile", "pipeline", ], False, False, \
-		include_dirs=["../lab02", "../include"])
+		include_dirs=["../include"])
 
 # Bitstream build
 

@@ -32,7 +32,7 @@ test_files = {
 	"riscv_final_tb"		: "riscv_final_tb.sv",
 	"final_asm"				: "final.s",
     "alu"           		: "../lab02/alu.sv",
-    "alu_constants"     	: "../lab02/riscv_alu_constants.sv",
+    "alu_constants"     	: "../include/riscv_alu_constants.sv",
     "regfile"       		: "../lab03/regfile.sv",
 }
 
@@ -44,12 +44,12 @@ fib_mem = tester_module.rars_mem_file("fib", generate_data_mem=True)
 final_tb = tester_module.testbench_simulation( "Final Testbench", \
 	"riscv_final_tb", \
 	[ "riscv_final_tb", "alu_constants", "alu",  "regfile", "final",   ], [], \
-		 include_dirs = ["../lab02", "../include"], )
+		 include_dirs = ["../include"], )
 
 fib_tb = tester_module.testbench_simulation( "Final Testbench", \
 	"riscv_final_tb", \
 	[ "riscv_final_tb", "alu_constants", "alu",  "regfile", "final",   ], [], \
-		 include_dirs = ["../lab02", "../include"],
+		 include_dirs = ["../include"],
 		 generics = ["TEXT_MEMORY_FILENAME=fib_text.mem", \
 		"DATA_MEMORY_FILENAME=fib_data.mem"])
 
