@@ -280,8 +280,9 @@ class tcl_simulation2(simulation_module):
 class testbench_simulation(simulation_module):
 	''' An object that represents a testbench simulation.
 	'''
-	def __init__(self, testbench_description, testbench_top, hdl_sim_keylist, xe_options_list, include_dirs=[], generics=[], vhdl_files=[] ):
-		super().__init__(testbench_top,hdl_sim_keylist,include_dirs,generics,vhdl_files)
+	def __init__(self, testbench_description, testbench_top, hdl_sim_keylist, xe_options_list, \
+		include_dirs=[], generics=[], vhdl_files=[], use_glbl = False ):
+		super().__init__(testbench_top,hdl_sim_keylist,include_dirs,generics,vhdl_files,use_glbl=use_glbl)
 		self.testbench_description = testbench_description
 		#self.testbench_top = testbench_top
 		#self.hdl_sim_keylist = hdl_sim_keylist
@@ -298,10 +299,9 @@ class testbench_simulation(simulation_module):
 			tcl_list: the list of items associated with a tcl simulation
 		'''
 		
-		#hdl_filename_list = lab_test.get_filenames_from_keylist(self.hdl_sim_keylist)
-		#extract_lab_path = lab_test.submission_lab_path
-
 		if not self.analyze_sv_files(lab_test,self.sim_top_module):
+			return False
+		if not self.analyze_vhdl_files(lab_test,self.sim_top_module):
 			return False
 		if not self.elaborate(lab_test):
 			return False

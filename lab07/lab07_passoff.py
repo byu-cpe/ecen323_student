@@ -26,7 +26,6 @@ SCRIPT_PATH = pathlib.Path(__file__).absolute().parent.resolve()
 # (relative to the lab directory) of the file to include in the submission.
 submission_files = {
 	"multicycle_io_tcl"		: "iosystem.tcl",
-	#"vga"		            : "vga.jpg",
 	"buttoncount_asm"		: "buttoncount.s",
 }
 
@@ -63,6 +62,7 @@ test_files = {
 	"iosystem_asm"		: "multicycle_iosystem.s",
 	"buttoncount_tcl"	: "buttoncount.tcl",
     "xdc"           	: "../resources/iosystem/iosystem.xdc",
+	"tb_multicycle_io"	: "tb_multicycle_io.sv"
 }
 test_files.update(sv_files)
 test_files.update(vhdl_files)
@@ -80,20 +80,18 @@ buttoncount_tcl = tester_module.tcl_simulation2( "buttoncount_tcl", "multicycle_
 	sv_files, include_dirs = ["../include"],vhdl_files=vhdl_files,use_glbl=True, \
 	generics = ["TEXT_MEMORY_FILENAME=buttoncount_text.mem"])
 
-# Testbench simulation
-multicycle_io_tb = tester_module.testbench_simulation( "Multicycle I/O Testbench", "tb_multicycle_io", \
-		sv_files, [], include_dirs = ["../include"],vhdl_files = vhdl_files, \
-			generics = ["TEXT_MEMORY_FILENAME=multicycle_iosystem_text.mem"] )
-
-# Bitstream build
 hdl_files = [ "alu", "datapath", "regfile", "multicycle", 
 	"bramMacro", "tx", "rx", "debounce", "SevenSegmentControl4", "riscv_mem", "io_clocks",
-	"iosystem",
-	"multicycle_io" ]
+	"iosystem", "multicycle_io" ]
 vhdl_keys = ["vga_timing","font_rom","charmem","charGen3","vga_ctl3"]
-#vhdl_sources = []
-#for vhdl_file in vhdl_files.values():
-#	vhdl_sources.append(vhdl_file)
+
+# Testbench simulation
+tb_hdl_files = hdl_files.copy()
+tb_hdl_files.extend(["tb_multicycle_io" ,"glbl"])
+multicycle_io_tb = tester_module.testbench_simulation( "Multicycle I/O Testbench", "tb_multicycle_io", \
+		tb_hdl_files, [], include_dirs = ["../include"],vhdl_files = vhdl_keys, use_glbl=True )
+
+# Bitstream build
 buttoncount_bit = tester_module.build_bitstream( "multicycle_iosystem",["xdc"],hdl_files, implement_build =True, 
 	create_dcp = False, include_dirs = ["../include"],vhdl_key_list = vhdl_keys,
 	generics = ["TEXT_MEMORY_FILENAME=buttoncount_text.mem"])

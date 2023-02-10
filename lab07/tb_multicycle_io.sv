@@ -232,7 +232,7 @@ Checks:
     riscv(.clk(tb_clk), 
         .btnc(tb_btnc), .btnd(tb_btnd), .btnl(tb_btnl), .btnr(tb_btnr), .btnu(tb_btnu), 
         .sw(tb_sw), .led(tb_led),
-        .an(tb_an), .seg(tb_seg), .dp(tb_db), 
+        .an(tb_an), .seg(tb_seg), .dp(tb_dp), 
         .RsRx(), .RsTx(tb_RsTx), 
         .vgaBlue(), .vgaGreen(), .vgaRed(), .Hsync(), .Vsync()
     );
