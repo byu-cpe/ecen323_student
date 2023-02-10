@@ -278,7 +278,7 @@ class tcl_simulation2(simulation_module):
 
 
 class testbench_simulation(simulation_module):
-	''' An object that represents a tcl_simulation test.
+	''' An object that represents a testbench simulation.
 	'''
 	def __init__(self, testbench_description, testbench_top, hdl_sim_keylist, xe_options_list, include_dirs=[], generics=[], vhdl_files=[] ):
 		super().__init__(testbench_top,hdl_sim_keylist,include_dirs,generics,vhdl_files)
