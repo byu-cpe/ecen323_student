@@ -301,8 +301,9 @@ class testbench_simulation(simulation_module):
 		
 		if not self.analyze_sv_files(lab_test,self.sim_top_module):
 			return False
-		if not self.analyze_vhdl_files(lab_test,self.sim_top_module):
-			return False
+		if len(self.vhdl_files) > 0:
+			if not self.analyze_vhdl_files(lab_test,self.sim_top_module):
+				return False
 		if not self.elaborate(lab_test):
 			return False
 		
