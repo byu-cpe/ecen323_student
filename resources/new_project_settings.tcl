@@ -1,6 +1,7 @@
 # This file contains several TCL commands for changing the default settings of your projects.
 # These settings change the severity level of certain messages to make the messages
-# more meaningful. 
+# more meaningful. Some settings will be upgraded and cause an error while others
+# will be downgraded to avoid unncessary warnings.
 
 set_msg_config -new_severity "ERROR" -id "Synth 8-87"
 #INFO: [Synth 8-155] case statement is not full and has no default
@@ -27,6 +28,12 @@ set_msg_config -new_severity "WARNING" -id "Timing 38-313"
 set_msg_config -new_severity "INFO" -id "Constraints 18-5210"
 # Downgrade the 'WARNING: [DRC RTSTAT-10] No routable loads: 35 net(s) have no routable loads.' to INFO
 set_msg_config -new_severity "INFO" -id "DRC RTSTAT-10"
+# Downgrade the 'WARNING: [DRC RTSTAT-10] No routable loads: 35 net(s) have no routable loads.' to INFO
+set_msg_config -new_severity "INFO" -id "DRC RTSTAT-10"
+# Downgrade the waraning 'WARNING: [Synth 8-3331] design riscv_simple_datapath has unconnected port instruction[14]' to INFO
+#  These start in lab 5
+set_msg_config -new_severity "INFO" -id "Synth 8-3331"
+
 # Set incremental simulation to False (force all files to be re-analyzed)
 set_property INCREMENTAL false [get_filesets sim_1]
 # Set the initial simulation runtime when you open the simulator to zero
