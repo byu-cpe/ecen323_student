@@ -8,7 +8,7 @@
 //  
 //////////////////////////////////////////////////////////////////////////////////
 
-module tb_multicycle_control 
+module tb_multicycle_io 
 	#(
 		parameter instruction_memory_filename = "multicycle_iosystem_text.mem",
 		parameter data_memory_filename = ""

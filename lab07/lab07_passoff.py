@@ -82,7 +82,7 @@ buttoncount_tcl = tester_module.tcl_simulation2( "buttoncount_tcl", "multicycle_
 
 # Testbench simulation
 multicycle_io_tb = tester_module.testbench_simulation( "Multicycle I/O Testbench", "tb_multicycle_io", \
-		sv_files, include_dirs = ["../include"],vhdl_key_list = vhdl_files, \
+		sv_files, [], include_dirs = ["../include"],vhdl_files = vhdl_files, \
 			generics = ["TEXT_MEMORY_FILENAME=multicycle_iosystem_text.mem"] )
 
 # Bitstream build
@@ -112,8 +112,8 @@ def main():
 	lab_test.add_test_module(iosystem_mem)
 	lab_test.add_test_module(buttoncount_mem)
 	lab_test.add_test_module(iosystem_tcl)
-	lab_test.add_test_module(buttoncount_tcl)
 	lab_test.add_test_module(multicycle_io_tb)
+	lab_test.add_test_module(buttoncount_tcl)
 	lab_test.add_test_module(buttoncount_bit)
 
 	# Add ending message to remind students to test their bitfiles
