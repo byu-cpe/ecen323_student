@@ -297,7 +297,7 @@ module tb_multicycle_control
 	endtask
 
     // Check all signals on negative clock cycle
-    always_ff@(negedge clk) begin
+    always @(negedge clk) begin
         if (initialized) begin
             if (int_PC != tb_PC) begin
                 $display("*** Error: PC=%h but expect %h at time %0t", tb_PC, int_PC, $time);
