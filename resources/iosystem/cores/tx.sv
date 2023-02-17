@@ -135,7 +135,9 @@ module tx(clk, din, send, odd, tx_out, busy);
 			WAIT:
 				if (send == 1'b0)
 					next_state = IDLE;
-            //default:
+            default: begin
+				next_state = IDLE;
+			end
 		endcase
 	end
 

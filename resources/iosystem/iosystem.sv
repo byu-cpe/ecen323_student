@@ -147,6 +147,14 @@ module iosystem (clk, clkvga, rst, address, MemWrite, MemRead,
 				SEG_ADDR_CTRL : seven_seg_ctrl_write = 1;
 				TIMER_ADDR : timer_value_write = 1;
 				CHAR_DEFAULT_COLOR : char_default_color_write = 1;
+				default: begin
+					LEDWrite = 0;
+					seven_seg_write = 0;
+					seven_seg_ctrl_write = 0;
+					tx_write = 0;
+					timer_value_write = 0;
+					char_default_color_write = 0;
+				end
 			endcase
     end
 
@@ -167,6 +175,7 @@ module iosystem (clk, clkvga, rst, address, MemWrite, MemRead,
 				SEG_ADDR_CTRL : io_memory_read_i <= seven_seg_ctrl_read;
 				TIMER_ADDR : io_memory_read_i <= ms_timer_cnt;
 				CHAR_DEFAULT_COLOR : io_memory_read_i <= default_color_read;
+				default: ;
 			endcase
 	end
 

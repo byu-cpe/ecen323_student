@@ -159,6 +159,9 @@ module rx(clk, rst, rx_in, odd, dout, error, data_strobe, busy);
 			     next_state = IDLE;
 			     data_strobe = 1'b1;
 			end
+			default: begin
+				next_state = IDLE;
+			end
 		endcase
 	end
 
