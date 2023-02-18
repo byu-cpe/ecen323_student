@@ -5,10 +5,6 @@
 //  Filename: riscv_pipeline_tb.v
 //
 //  Author: Mike Wirthlin
-//  
-//  Version 1.2 (2/14/2020)
-//   - Change the text below to reflect the version in the testbench output
-//     search for "RISCV PIPELINE TESTBENCH V"
 //   
 //////////////////////////////////////////////////////////////////////////////////
 
@@ -33,11 +29,13 @@ module riscv_pipeline_tb();
 	localparam DATA_SEGMENT_START_ADDRESSS = 32'h00002000;
 	localparam DATA_SEGMENT_END_ADDRESSS = DATA_SEGMENT_START_ADDRESSS + DATA_MEMORY_WORDS*4-1;
 
+	// Instance student pipeline processor
 	riscv_basic_pipeline #(.INITIAL_PC(TEXT_SEGMENT_START_ADDRESSS))  
 						riscv(.clk(clk), .rst(rst), .instruction(tb_instruction), .PC(tb_PC), 
 							.ALUResult(tb_ALUResult), .dAddress(tb_Address), .dWriteData(tb_dWriteData), .dReadData(tb_dReadData),
 							.MemRead(tb_MemRead), .MemWrite(tb_MemWrite), .WriteBackData(tb_WriteBackData) );
 							
+	// Instance simulation model
 	riscv_sim_model #(.INITIAL_PC(TEXT_SEGMENT_START_ADDRESSS), .DATA_MEMORY_START_ADDRESSS(DATA_SEGMENT_START_ADDRESSS) ) 
 						riscv_model(.tb_clk(clk), .tb_rst(rst), .tb_PC(tb_PC), .tb_Instruction(tb_instruction), .tb_ALUResult(tb_ALUResult),
 							.tb_dAddress(tb_Address), .tb_dWriteData(tb_dWriteData), .tb_dReadData(tb_dReadData), 
@@ -53,7 +51,7 @@ module riscv_pipeline_tb();
 		if (^instruction_memory[0] === 1'bX) begin
 			$display("**** Warning: Testbench failed to load the instruction memory. Make sure the %s file",TEXT_MEMORY_FILENAME);
 			$display("**** is added to the project.");
-			$error;
+			$fatal;
 		end
 		else
 			$display("**** Testbench: Loaded instruction memory ****");
@@ -79,7 +77,7 @@ module riscv_pipeline_tb();
 		if (^data_memory[0] === 1'bX) begin
 			$display("**** Warning: Testbench failed to load the data memory. Make sure the %s file",DATA_MEMORY_FILENAME);
 			$display("**** is added to the project.");
-			$error;
+			$fatal;
 		end
 		else
 			$display("**** Testbench: Loaded data memory ****");
@@ -113,14 +111,14 @@ module riscv_pipeline_tb();
 	//	Main
 	//////////////////////////////////////////////////////////////////////////////////
 	localparam MAX_INSTRUCTIONS = 2000;
+
+	// Initialize the simulation with reset
 	initial begin
-		$display("===== RISCV PIPELINE TESTBENCH V1.20 =====");
+		$display("===== RISCV PIPELINE TESTBENCH =====");
 		$display(" use run -all");
 
 		//////////////////////////////////
 		//	Reset
-		//$display("[%0tns]Reset", $time/1000.0);
-		//dReadData = 0;
 		rst <= 0;
 		clk <= 0;
 		#10;
@@ -133,27 +131,24 @@ module riscv_pipeline_tb();
         		
 		#10;
 
-		for(i=0;i<MAX_INSTRUCTIONS && !(tb_instruction === EBREAK_INSTRUCTION) ; i = i+1) begin
+		// Execute up to the maximum number of instructions, the ebreak instructions, or an error
+		for(i=0; i<MAX_INSTRUCTIONS && !(tb_instruction === EBREAK_INSTRUCTION) && error_count == 0 ; i = i+1) begin
 			clk <=1; #5;
 			clk <=0; #5;
 		end
 
+		// Check for errors
+		if (error_count > 0) begin
+			$fatal("ERROR: %1d error(s) found",error_count);
+		end
 		if (i == MAX_INSTRUCTIONS) begin
 			// Didn't reach EBREAK_INSTRUCTION
-			$display("ERROR: Did not reach the EBREAK Instruction");
-			if(error_count > 0)
-				$display("ERROR: %1d instruction error(s) found!",error_count);
-			else
-				$display("No Instruction Errors");
+			$fatal("ERROR: Did not reach the EBREAK Instruction");
 		end
-		else
-			if(error_count > 0)
-				$display("ERROR: %1d instruction error(s) found!",error_count);
-			else 
-				$display("You Passed!");
-			
-		
+		// If no errors, all is well	
+		$display("You Passed!");
 		$finish;
+
 	end
 
 
@@ -173,7 +168,6 @@ module riscv_sim_model #(parameter INITIAL_PC = 32'h00400000, DATA_MEMORY_START_
 	input tb_MemRead, tb_MemWrite;
 	input string inst_mem_filename, data_mem_filename;
 	output [31:0] error_count;
-	//input [31:0] pc_halt_address;
 		
 	// Internal shadow state
 	logic [31:0] int_reg [31:0];
@@ -194,25 +188,80 @@ module riscv_sim_model #(parameter INITIAL_PC = 32'h00400000, DATA_MEMORY_START_
 	
 	assign error_count = errors;
 	
-	localparam sim_model_version = "Version 1.2";
-
 	localparam [6:0] S_OPCODE = 7'b0100011;
 	localparam [6:0] L_OPCODE = 7'b0000011;
 	localparam [6:0] BR_OPCODE = 7'b1100011;
 	localparam [6:0] R_OPCODE = 7'b0110011;
 	localparam [6:0] I_OPCODE = 7'b0010011;
+	localparam [6:0] SYS_OPCODE = 7'b1110011;
 
-	localparam [2:0] ADD_FUNCT3 = 3'b000;
+	localparam [2:0] ADDSUB_FUNCT3 = 3'b000;
+	localparam [2:0] SLL_FUNCT3 = 3'b001;
 	localparam [2:0] SLT_FUNCT3 = 3'b010;
-	localparam [2:0] AND_FUNCT3 = 3'b111;
-	localparam [2:0] OR_FUNCT3 = 3'b110;
+	localparam [2:0] SLTU_FUNCT3 = 3'b011;
 	localparam [2:0] XOR_FUNCT3 = 3'b100;
+	localparam [2:0] SRLSRA_FUNCT3 = 3'b101;
+	localparam [2:0] OR_FUNCT3 = 3'b110;
+	localparam [2:0] AND_FUNCT3 = 3'b111;
 
+
+	localparam [2:0] LW_FUNCT3 = 3'b010;
+	localparam [2:0] SW_FUNCT3 = 3'b010;
+	localparam [2:0] BEQ_FUNCT3 = 3'b000;
+	localparam [2:0] EBREAK_ECALL_FUNCT3 = 3'b000;
+
+	localparam [31:0] NOP_INSTRUCTION = 32'h00000013; // addi x0, x0, 0
+
+	// Determine if the instruction is valid or not (i.e., an instruction that the lab should execute.)
+	function automatic int valid_inst(input [31:0] i);
+		logic[6:0] opcode = i[6:0]; 
+		logic[2:0] funct3 = i[14:12]; 
+		logic[6:0] funct7 = i[31:25];
+		logic[11:0] immed = i[31:20];
+
+		case(i[6:0])
+			L_OPCODE: // LW
+				// Make sure lw
+				if (funct3 == LW_FUNCT3)
+					valid_inst = 1;
+				else
+					valid_inst = 0;
+			S_OPCODE: // SW
+				// Make sure sw
+				if (funct3 == SW_FUNCT3)
+					valid_inst = 1;
+				else
+					valid_inst = 0;
+			BR_OPCODE: // BEQ
+				// Make sure supported branch
+				if (funct3 == BEQ_FUNCT3)
+					valid_inst = 1;
+				else
+					valid_inst = 0;
+			// R-type
+			R_OPCODE:
+				// All R type instructions should be supported
+				valid_inst = 1;
+			I_OPCODE:
+				// All I type instructions should be supported
+				valid_inst = 1;
+			SYS_OPCODE: // ebreak
+				if (funct3 == EBREAK_ECALL_FUNCT3 && immed[0] == 1)
+					valid_inst = 1;
+				else
+					valid_inst = 0;
+			default:
+				valid_inst = 0;
+		endcase
+	endfunction
+
+	// Decode the current instruction and return a string describing the instruction.
 	function string dec_inst(input [31:0] i);
 		logic [4:0] rd, rs1, rs2;
 		logic [2:0] funct3;
 		logic [31:0] i_imm, s_imm, b_imm;
 		logic [6:0] funct7;
+		int i_offset, s_offset;
 		rd = i[11:7];
 		rs1 = i[19:15];
 		rs2 = i[24:20];
@@ -221,41 +270,56 @@ module riscv_sim_model #(parameter INITIAL_PC = 32'h00400000, DATA_MEMORY_START_
 		b_imm = {{19{i[31]}},i[31],i[7],i[30:25],i[11:8],1'b0};
 		funct3 = i[14:12];
 		funct7 = i[31:25];
-		if (i==32'h00000013)
+		i_offset = i_imm;
+		s_offset = s_imm;
+
+		if (i==NOP_INSTRUCTION)
 			dec_inst = $sformatf("nop");
 		else
 			case(i[6:0])
 				L_OPCODE: // LW
-					dec_inst = $sformatf("lw x%1d,0x%1h(x%1d)", rd, i_imm, rs1);
-				//typePack::L: dec_inst = $sformatf("lw x%1d,0x%1h(x%1d)", i.itype.rd, {{20{i.itype.imm[11]}},i.itype.imm}, i.itype.rs1);
+					//dec_inst = $sformatf("lw x%1d,0x%1h(x%1d)", rd, i_imm, rs1);
+					dec_inst = $sformatf("lw x%1d,%1d(x%1d)", rd, i_offset, rs1);
 				S_OPCODE: // SW
-					dec_inst = $sformatf("sw x%1d,0x%1h(x%1d)", rs2, s_imm, rs1);
-				// typePack::S: dec_inst = $sformatf("sw x%1d,0x%1h(x%1d)", i.stype.rs2, {{20{i.stype.imm11_5[11]}}, i.stype.imm11_5, i.stype.imm4_0}, i.itype.rs1);
+					//dec_inst = $sformatf("sw x%1d,0x%1h(x%1d)", rs2, s_imm, rs1);
+					dec_inst = $sformatf("sw x%1d,%1d(x%1d)", rs2, s_offset, rs1);
 				BR_OPCODE: // BEQ
 					dec_inst = $sformatf("beq x%1d,x%1d,0x%1h", rs1, rs2, b_imm);
-				//typePack::BRANCH: dec_inst = $sformatf("beq x%1d,x%1d,0x%1h", i.btype.rs1, i.btype.rs2, 
-				//	{{20{i.btype.imm12}},i.btype.imm12,i.btype.imm11,i.btype.imm10_5,i.btype.imm4_1,1'b0});
 				// R-type
 				R_OPCODE:
-					unique case(funct3)
-						3'b110 : dec_inst = $sformatf("or x%1d,x%1d,x%1d", rd, rs1, rs2);
-						3'b111 : dec_inst = $sformatf("and x%1d,x%1d,x%1d", rd, rs1, rs2);
-						3'b100 : dec_inst = $sformatf("xor x%1d,x%1d,x%1d", rd, rs1, rs2);
-						3'b010 : dec_inst = $sformatf("slt x%1d,x%1d,x%1d", rd, rs1, rs2);
-						3'b000 :
+					case(funct3)
+						ADDSUB_FUNCT3 :
 							if (funct7[5] == 1) dec_inst = $sformatf("sub x%1d,x%1d,x%1d", rd, rs1, rs2);
 							else dec_inst = $sformatf("add x%1d,x%1d,x%1d",  rd, rs1, rs2);
-						default: dec_inst = $sformatf("Register/Register Instruction with unknown funct3 0x%1h",funct3);
+						SLL_FUNCT3 : dec_inst = $sformatf("sll x%1d,x%1d,x%1d", rd, rs1, rs2);
+						SLT_FUNCT3 : dec_inst = $sformatf("slt x%1d,x%1d,x%1d", rd, rs1, rs2);
+						SLTU_FUNCT3 : dec_inst = $sformatf("sltu x%1d,x%1d,x%1d", rd, rs1, rs2);
+						XOR_FUNCT3 : dec_inst = $sformatf("xor x%1d,x%1d,x%1d", rd, rs1, rs2);
+						SRLSRA_FUNCT3 :
+							if (funct7[5] == 1) dec_inst = $sformatf("sra x%1d,x%1d,x%1d", rd, rs1, rs2);
+							else dec_inst = $sformatf("srl x%1d,x%1d,x%1d",  rd, rs1, rs2);
+						OR_FUNCT3 : dec_inst = $sformatf("or x%1d,x%1d,x%1d", rd, rs1, rs2);
+						AND_FUNCT3 : dec_inst = $sformatf("and x%1d,x%1d,x%1d", rd, rs1, rs2);
+						default: begin
+							dec_inst = $sformatf("Register/Register Instruction with UNKNOWN funct3 0x%1h",funct3);
+						end
 					endcase
 				// Immediate (double)
 				I_OPCODE:
 					case(funct3)
-						3'b110 : dec_inst = $sformatf("ori x%1d,x%1d,0x%1h", rd, rs1, i_imm);
-						3'b111 : dec_inst = $sformatf("andi x%1d,x%1d,0x%1h", rd, rs1, i_imm);
-						3'b100 : dec_inst = $sformatf("xori x%1d,x%1d,0x%1h", rd, rs1, i_imm);
-						3'b010 : dec_inst = $sformatf("slti x%1d,x%1d,0x%1h", rd, rs1, i_imm);
-						3'b000 : dec_inst = $sformatf("addi x%1d,x%1d,0x%1h", rd, rs1, i_imm);
-						default: dec_inst = $sformatf("IMMEDIATE with unknown funct3 0x%1h",funct3);
+						ADDSUB_FUNCT3 : dec_inst = $sformatf("addi x%1d,x%1d,0x%1h", rd, rs1, i_imm);
+						SLL_FUNCT3 : dec_inst = $sformatf("slli x%1d,x%1d,0x%1h", rd, rs1, i_imm);
+						SLT_FUNCT3 : dec_inst = $sformatf("slti x%1d,x%1d,0x%1h", rd, rs1, i_imm);
+						SLTU_FUNCT3 : dec_inst = $sformatf("sltiu x%1d,x%1d,0x%1h", rd, rs1, i_imm);
+						XOR_FUNCT3 : dec_inst = $sformatf("xori x%1d,x%1d,0x%1h", rd, rs1, i_imm);
+						SRLSRA_FUNCT3 : 
+							if (funct7[5] == 1) dec_inst = $sformatf("srai x%1d,x%1d,0x%1h", rd, rs1, i_imm[4:0]);
+							else dec_inst = $sformatf("srli x%1d,x%1d,0x%1h", rd, rs1, i_imm);
+						OR_FUNCT3 : dec_inst = $sformatf("ori x%1d,x%1d,0x%1h", rd, rs1, i_imm);
+						AND_FUNCT3 : dec_inst = $sformatf("andi x%1d,x%1d,0x%1h", rd, rs1, i_imm);
+						default: begin
+							dec_inst = $sformatf("IMMEDIATE with UNKNOWN funct3 0x%1h",funct3);
+						end
 					endcase
 				default dec_inst = "N/A";
 			endcase
@@ -282,7 +346,7 @@ dword[8*sel +: 8] // variable part-select with fixed width
 
 https://forums.xilinx.com/t5/Simulation-and-Verification/readmemh-doesn-t-support-string-as-the-filename/td-p/833603
 	*/
-	function reg [256*8-1:0] copy_string(string str);
+	function reg [256*8-1:0] copy_string(input string str);
 		automatic int i;
 		//$display("String:%s len=%1d",str,str.len());
 		for (i=0;i<str.len();i=i+1) begin
@@ -297,7 +361,7 @@ https://forums.xilinx.com/t5/Simulation-and-Verification/readmemh-doesn-t-suppor
 		//$display();
 	endfunction
 	
-	function  print_string(reg [256*8-1:0] str);
+	function  print_string(input reg [256*8-1:0] str);
 		automatic int i;
 		for (i=0;i<256;i=i+1) begin
 			$write("0x%h-%1d ",str[(i+1)*8-1-:8],i);
@@ -309,82 +373,99 @@ https://forums.xilinx.com/t5/Simulation-and-Verification/readmemh-doesn-t-suppor
 
 	initial begin
 		$timeformat(-9, 0, " ns", 20);
-		$display("===== RISC-V Pipeline Simulation Model %s =====", sim_model_version);
+		$display("===== RISC-V Pipeline Simulation Model =====");
 	end
-	
-	//////////////////////////////////////////////////////////////////////////////////
-	//	Exit condition
-	//////////////////////////////////////////////////////////////////////////////////
-	/*
-	always@(negedge tb_clk) begin
-		if (tb_instruction_wb == EBREAK_INSTRUCTION) begin
-			$display($sformatf("*** Finished by reaching EBREAK at time %0t ***",$time));
-			if (errors)
-				$display("*** Failed test with %1d errors ***",errors);
-			else
-				$display("*** Passed with no errors ***");
-			$finish;
-		end
-	end
-	*/
 		
-	// checking
+	// Need to allow students to have x's in their WB stage as the processor fills the pipeline
+	// This signal is a shift register that keeps track of the valid stages to allow x's until
+	// the pipeline fills up. 
+	logic [4:0] valid_wb = 0; 
+	always_ff@(posedge tb_clk) begin
+		if (tb_rst)
+			valid_wb = 0;
+		else
+			valid_wb <= { valid_wb[3:0] , 1'b1 };
+	end
+
+	// Create a debug message at each negative edge of the clock
 	always@(negedge tb_clk) begin
 		
 		if ($time != 0) begin
-			$write("%0t:",$time);
+
+			// Print time message
+			$display("%0t:",$time);
+			/*
 			if (errors > 0)
 				$display(" (%0d errors)",errors);
 			else
 				$display("OK");
-			
+			*/
+
+			// Print IF stage debug
 			$write("  IF: PC=0x%8h",tb_PC);
-			if (if_PC != tb_PC) begin
+			if (if_PC != tb_PC || ^tb_PC[0] === 1'bX) begin
 				$display(" ** ERR** expecting PC=%h", if_PC);
 				errors = errors + 1;
 			end
 			else $display();
 				
+			// Print ID stage debug
 			$write("  ID: PC=0x%8h I=0x%8h [%s]",pc_id,tb_Instruction, dec_inst(tb_Instruction));
-			if (tb_Instruction != instruction_id) begin
+			if (tb_Instruction != instruction_id || ^tb_Instruction[0] === 1'bX) begin
 				$display(" ** ERR** expecting Instruction=%h", instruction_id);
+				errors = errors + 1;
+			end
+			else if (!valid_inst(tb_Instruction)) begin
+				$display(" Unknown Instruction=%h", tb_Instruction);
 				errors = errors + 1;
 			end
 			else $display();
 			
 			$write("  EX: PC=0x%8h I=0x%8h [%s] alu result=0x%h ",pc_ex,tb_instruction_ex,dec_inst(tb_instruction_ex),tb_ALUResult);
-			if (tb_ALUResult != ex_alu_result) begin
+			if (tb_ALUResult != ex_alu_result || ^tb_ALUResult[0] === 1'bX) begin
 				$display(" ** ERR** expecting alu result=%h", ex_alu_result);
 				errors = errors + 1;
 			end
 			else $display();
 
 			$write("  MEM:PC=0x%8h I=0x%8h [%s] ",pc_mem,tb_instruction_mem, dec_inst(tb_instruction_mem));
-			if (tb_MemRead == 1'b0 && tb_MemWrite == 1'b0)
-				if (mem_MemRead) begin 
-					$write("*** ERR: No memory read ");
+			// Check for undefined memory control signals
+			if ($isunknown(tb_MemRead)) begin
+					$write("*** ERR: MemRead undefined ");
+					errors = errors + 1;				
+			end
+			else if ($isunknown(tb_MemWrite))begin
+					$write("*** ERR: MemWrite undefined ");
+					errors = errors + 1;								
+			end
+			// Print debug message for memory stage
+			if (mem_MemRead == 1'b0 && mem_MemWrite == 1'b0) // No reads or writes going on in simulation model
+				if (tb_MemRead) begin 
+					$write("*** ERR: MemRead should be low ");
 					errors = errors + 1;
-				end else if (mem_MemWrite) begin
-					$write("*** ERR: No memory write ");
+				end else if (tb_MemWrite) begin
+					$write("*** ERR: MemWrite should be low ");
 					errors = errors + 1;
-				end else $write("No memory read/write ");
-			else if (tb_MemRead == 1'b1 && tb_MemWrite == 1'b0)
-				if (!mem_MemRead) begin
-					$write("*** ERR: No Memory read ***");
+				end else $write("No memory read/write ");  // debug message (all is well)
+
+			else if (mem_MemRead == 1'b1 && mem_MemWrite == 1'b0)  // Memory read in simulation model
+				if (!tb_MemRead) begin
+					$write("*** ERR: MemRead should be high ");
 					errors = errors + 1;
-				end else if (mem_MemWrite) begin
-					$write("*** ERR: Need Memory Write ***");
+				end else if (tb_MemWrite) begin
+					$write("*** ERR: MemWrite should be low ");
 					errors = errors + 1;
 				end else if (tb_dAddress != mem_dAddress) begin
 					$write("*** Err: Memory Read to address 0x%1h but expecting address 0x%1h",tb_dAddress,mem_dAddress);
 					errors = errors + 1;
 				end else $write("Memory Read from address 0x%1h ",tb_dAddress);  // Note: data not ready until next cycle
-			else if (tb_MemRead == 1'b0 && tb_MemWrite == 1'b1)
-				if (!mem_MemWrite) begin
-					$write("*** ERR: No Memory write ***");
+
+			else if (mem_MemRead == 1'b0 && mem_MemWrite == 1'b1)  // Memory write in simulation model
+				if (tb_MemRead) begin
+					$write("*** ERR: MemRead should be low ");
 					errors = errors + 1;
-				end else if (mem_MemRead) begin
-					$write("*** ERR: Need Memory Read ***");
+				end else if (!tb_MemWrite) begin
+					$write("*** ERR: MemWrite should be high ***");
 					errors = errors + 1;
 				end else if (tb_dAddress != mem_dAddress) begin
 					$write("*** Err: Memory Write to address 0x%1h but expecting address 0x%1h",tb_dAddress,mem_dAddress);
@@ -393,28 +474,26 @@ https://forums.xilinx.com/t5/Simulation-and-Verification/readmemh-doesn-t-suppor
 					$write("*** Err: Memory Write value 0x%1h but expecting value 0x%1h",tb_dWriteData,mem_dWriteData);
 					errors = errors + 1;
 				end else $write("Memory Write 0x%1h to address 0x%1h ",tb_dWriteData,tb_dAddress);
-			else begin
+			else begin  // Should never get here (simulation model will not do simulataneous read/write)
 				$write("*** ERROR: simultaneous read and write ");
 				errors = errors + 1;				
 			end
 			$display();
 
+			// Write back debug messages
 			$write("  WB: PC=0x%8h I=0x%8h [%s] ",pc_wb,tb_instruction_wb,dec_inst(tb_instruction_wb));
 			$write("WriteBackData=0x%h ",tb_WriteBackData);
 			if (!(tb_WriteBackData === wb_writedata)) begin
 				$display(" ** ERR** expecting write back data=%h", wb_writedata);
 				errors = errors + 1;
-			end else if (^tb_WriteBackData === 1'bX || ^wb_writedata === 1'bX) begin
+			end else if ( (^tb_WriteBackData === 1'bX || ^wb_writedata === 1'bX) && valid_wb[4] == 1'b1) begin
 				$display(" ** ERR** Write back data is undefined=%h", wb_writedata);
 				errors = errors + 1;
 			end else $display();
-			if (errors)
-				$error;
+
 		end
 	end
 
-	localparam NOP_INSTRUCTION = 32'h00000013; // addi x0, x0, 0
-	
 	//////////////////////////////////////////////////////////////////////////////////
 	// pipeline
 	//////////////////////////////////////////////////////////////////////////////////
@@ -564,16 +643,22 @@ https://forums.xilinx.com/t5/Simulation-and-Verification/readmemh-doesn-t-suppor
 				BR_OPCODE: ex_alu_result = ex_read1 - ex_operand2;
 				default: // R or Immediate instructions
 					case(instruction_ex_funct3)
-						ADD_FUNCT3: 
+						ADDSUB_FUNCT3: 
 							if (instruction_ex_op == R_OPCODE && 
 								instruction_ex_funct7 ==  7'b0100000)
 								ex_alu_result = ex_read1 - ex_operand2;
 							else
 								ex_alu_result = ex_read1 + ex_operand2;
+						SLL_FUNCT3: ex_alu_result = ex_read1 << ex_operand2[4:0];
 						SLT_FUNCT3: ex_alu_result = ($signed(ex_read1) < $signed(ex_operand2)) ? 32'd1 : 32'd0;
 						AND_FUNCT3: ex_alu_result = ex_read1 & ex_operand2;
 						OR_FUNCT3: ex_alu_result = ex_read1 | ex_operand2;
 						XOR_FUNCT3: ex_alu_result = ex_read1 ^ ex_operand2;
+						SRLSRA_FUNCT3: 
+							if (instruction_ex_funct7 ==  7'b0100000)
+								ex_alu_result = $unsigned($signed(ex_read1) >>> ex_operand2[4:0]);
+							else
+								ex_alu_result =  ex_read1 >> ex_operand2[4:0];
 						default: ex_alu_result = ex_read1 + ex_operand2;
 					endcase
 			endcase
