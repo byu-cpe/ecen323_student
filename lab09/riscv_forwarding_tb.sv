@@ -4,12 +4,6 @@
 //
 //  Filename: riscv_forwarding_tb.v
 //
-//  Author: Mike Wirthlin
-//  
-//  Version 1.3 (2/25/2020)
-//   - Change the text below to reflect the version in the testbench output
-//     search for "RISCV PIPELINE TESTBENCH V"
-//   
 //////////////////////////////////////////////////////////////////////////////////
 
 module riscv_forwarding_tb();
@@ -28,7 +22,7 @@ module riscv_forwarding_tb();
 	localparam DATA_MEMORY_FILENAME = "forwarding_data.mem";
 	localparam EBREAK_INSTRUCTION = 32'h00100073;
 	localparam TEXT_SEGMENT_START_ADDRESSS = 32'h00000000; // 32'h00400000;
-	localparam INSTRUCTION_MEMORY_WORDS = 128;
+	localparam INSTRUCTION_MEMORY_WORDS = 256;
 	// Data memory
 	localparam DATA_MEMORY_WORDS = 64;
 	localparam DATA_SEGMENT_START_ADDRESSS = 32'h00002000;
@@ -138,24 +132,25 @@ module riscv_forwarding_tb();
         		
 		#10;
 
-		for(i=0;i<MAX_INSTRUCTIONS ; i = i+1) begin
+		// Execute up to the maximum number of instructions, the ebreak instructions, or an error
+		for(i=0; i<MAX_INSTRUCTIONS && !(tb_instruction === EBREAK_INSTRUCTION) && error_count == 0 ; i = i+1) begin
 			clk <=1; #5;
 			clk <=0; #5;
 		end
 
+		// Check for errors
+		if (error_count > 0) begin
+			$display("ERROR: %1d error(s) found",error_count)
+			$fatal(1);
+		end
 		if (i == MAX_INSTRUCTIONS) begin
 			// Didn't reach EBREAK_INSTRUCTION
-			$display("ERROR: Did not reach the EBREAK Instruction");
-			if(error_count > 0)
-				$display("ERROR: %1d instruction error(s) found!",error_count);
-			else
-				$display("No Instruction Errors");
+			$display("ERROR: Reached maximum number of instructions without executing EBREAK Instruction");
+			$fatal(1)
 		end
-		else
-			if(error_count > 0)
-				$display("ERROR: %1d instruction error(s) found!",error_count);
-			else 
-				$display("You Passed!");
+		// If no errors, all is well	
+		$display("You Passed!");
+		$finish;
 			
 		
 		$finish;
@@ -186,12 +181,11 @@ module riscv_forward_sim_model #(parameter INITIAL_PC = 32'h00400000, DATA_MEMOR
 		
 	// Internal shadow state
 	logic [31:0] int_reg [31:0];
-	//typePack::instruction_t instruction_id, instruction_ex, instruction_mem, instruction_wb;
 	logic [31:0] instruction_id, instruction_ex, instruction_mem, instruction_wb;
 	logic iMemRead;
 	logic [31:0] if_PC, id_PC, ex_PC, mem_PC, wb_PC;	// PC from the simulation model
 	logic [31:0] ex_read1, ex_read2, ex_operand1, ex_operand2;
-	//logic [31:0] ex_immediate, ex_s_immediate;
+	logic [31:0] ex_operand2_forward;
 	logic [31:0] ex_branch_target, ex_alu_result;
 	logic [31:0] mem_dAddress, mem_dWriteData, mem_branch_target, mem_alu_result;
 	logic mem_branch_taken, wb_branch_taken;
@@ -205,104 +199,16 @@ module riscv_forward_sim_model #(parameter INITIAL_PC = 32'h00400000, DATA_MEMOR
 	
 	assign error_count = errors;
 
-	localparam sim_model_version = "Version 1.3";
-	localparam NOP_INSTRUCTION = 32'h00000013; // addi x0, x0, 0
+	//localparam sim_model_version = "Version 1.3";
+	//localparam NOP_INSTRUCTION = 32'h00000013; // addi x0, x0, 0
 	localparam EBREAK_INSTRUCTION = 32'h00100073;
 	localparam EBREAK_OPCODE = 7'b1110011;
 
-	localparam [6:0] S_OPCODE = 7'b0100011;
-	localparam [6:0] L_OPCODE = 7'b0000011;
-	localparam [6:0] BR_OPCODE = 7'b1100011;
-	localparam [6:0] R_OPCODE = 7'b0110011;
-	localparam [6:0] I_OPCODE = 7'b0010011;
-
-	localparam [2:0] ADD_FUNCT3 = 3'b000;
-	localparam [2:0] SLT_FUNCT3 = 3'b010;
-	localparam [2:0] AND_FUNCT3 = 3'b111;
-	localparam [2:0] OR_FUNCT3 = 3'b110;
-	localparam [2:0] XOR_FUNCT3 = 3'b100;
-
-	function string dec_inst(input [31:0] i);
-		logic [4:0] rd, rs1, rs2;
-		logic [2:0] funct3;
-		logic [31:0] i_imm, s_imm, b_imm;
-		logic [6:0] funct7;
-		rd = i[11:7];
-		rs1 = i[19:15];
-		rs2 = i[24:20];
-		i_imm = {{20{i[31]}},i[31:20]};
-		s_imm = {{20{i[31]}},i[31:25],i[11:7]};
-		b_imm = {{19{i[31]}},i[31],i[7],i[30:25],i[11:8],1'b0};
-		funct3 = i[14:12];
-		funct7 = i[31:25];
-		if (i==32'h00000013)
-			dec_inst = $sformatf("nop");
-		else
-			case(i[6:0])
-				L_OPCODE: // LW
-					dec_inst = $sformatf("lw x%1d,0x%1h(x%1d)", rd, i_imm, rs1);
-				//typePack::L: dec_inst = $sformatf("lw x%1d,0x%1h(x%1d)", i.itype.rd, {{20{i.itype.imm[11]}},i.itype.imm}, i.itype.rs1);
-				S_OPCODE: // SW
-					dec_inst = $sformatf("sw x%1d,0x%1h(x%1d)", rs2, s_imm, rs1);
-				// typePack::S: dec_inst = $sformatf("sw x%1d,0x%1h(x%1d)", i.stype.rs2, {{20{i.stype.imm11_5[11]}}, i.stype.imm11_5, i.stype.imm4_0}, i.itype.rs1);
-				BR_OPCODE: // BEQ
-					dec_inst = $sformatf("beq x%1d,x%1d,0x%1h", rs1, rs2, b_imm);
-				//typePack::BRANCH: dec_inst = $sformatf("beq x%1d,x%1d,0x%1h", i.btype.rs1, i.btype.rs2, 
-				//	{{20{i.btype.imm12}},i.btype.imm12,i.btype.imm11,i.btype.imm10_5,i.btype.imm4_1,1'b0});
-				// R-type
-				R_OPCODE:
-					unique case(funct3)
-						3'b110 : dec_inst = $sformatf("or x%1d,x%1d,x%1d", rd, rs1, rs2);
-						3'b111 : dec_inst = $sformatf("and x%1d,x%1d,x%1d", rd, rs1, rs2);
-						3'b100 : dec_inst = $sformatf("xor x%1d,x%1d,x%1d", rd, rs1, rs2);
-						3'b010 :dec_inst = $sformatf("slt x%1d,x%1d,x%1d", rd, rs1, rs2);
-						3'b000 :
-							if (funct7[5] == 1) dec_inst = $sformatf("sub x%1d,x%1d,x%1d", rd, rs1, rs2);
-							else dec_inst = $sformatf("add x%1d,x%1d,x%1d",  rd, rs1, rs2);
-					endcase
-				// Immediate (double)
-				I_OPCODE:
-					case(funct3)
-						3'b110 : dec_inst = $sformatf("ori x%1d,x%1d,0x%1h", rd, rs1, i_imm);
-						3'b111 : dec_inst = $sformatf("andi x%1d,x%1d,0x%1h", rd, rs1, i_imm);
-						3'b100 : dec_inst = $sformatf("xori x%1d,x%1d,0x%1h", rd, rs1, i_imm);
-						3'b010 : dec_inst = $sformatf("slti x%1d,x%1d,0x%1h", rd, rs1, i_imm);
-						3'b000 : dec_inst = $sformatf("addi x%1d,x%1d,0x%1h", rd, rs1, i_imm);
-						default: dec_inst = $sformatf("IMMEDIATE with unknown funct3 0x%1h",funct3);
-					endcase
-				default dec_inst = "N/A";
-			endcase
-	endfunction
-	
-
-	function reg [256*8-1:0] copy_string(string str);
-		automatic int i;
-		//$display("String:%s len=%1d",str,str.len());
-		for (i=0;i<str.len();i=i+1) begin
-			// Copy characters from the end of the string to the start
-			copy_string[(i+1)*8-1 -: 8] = str.getc(str.len()-i-1);
-			//$write("%c-0x%h-%1d ",str.getc(str.len()-i-1),copy_string[(i+1)*8-1 -: 8],i);
-		end
-		//$display();
-		//$write("%d ",i);
-		copy_string[(i+1)*8-1 -: 8] = 0;
-		//$write(" %c-0x%h-%1d ",str.getc(i),copy_string[(i+1)*8-1 -: 8],i);
-		//$display();
-	endfunction
-	
-	function  print_string(reg [256*8-1:0] str);
-		automatic int i;
-		for (i=0;i<256;i=i+1) begin
-			$write("0x%h-%1d ",str[(i+1)*8-1-:8],i);
-			if (i%16 == 0)
-				$display();
-		end
-		$display();
-	endfunction
+	`include "../lab08/tb_pipeline_inc.sv"
 
 	initial begin
 		$timeformat(-9, 0, " ns", 20);
-		$display("===== RISC-V Forwarding Simulation Model %s =====", sim_model_version);
+		$display("===== RISC-V Forwarding Simulation Model =====");
 	end
 	
 	logic [4:0] instruction_id_rs1;
@@ -337,45 +243,51 @@ module riscv_forward_sim_model #(parameter INITIAL_PC = 32'h00400000, DATA_MEMOR
 		
 			// Print the time and accumulated errors (so they can identify error #1)
 			$write("%0t:",$time);
-			//if (errors > 0)
-			//	$display(" (%0d errors)",errors);
-			//else
-			//	$display("No Errors");
 			$display();
 			
+			////////////////////////////////////////////////////////////
 			// Print the status of the IF stage
+			////////////////////////////////////////////////////////////
 			$write("  IF: PC=0x%8h",if_PC);
 			if (!iMemRead) begin
 				$write(" Load Use Stall (iMemRead=0)");				
 			end
-			if (if_PC != rtl_PC) begin
-				$write(" ** ERR** incorrect PC=%h", rtl_PC);
+			if (if_PC != rtl_PC || ^rtl_PC[0] === 1'bX) begin
+				$write(" ** ERR ** incorrect PC=%h expecting %h", rtl_PC, if_PC);
 				errors = errors + 1;
 			end
 			if (iMemRead != rtl_iMemRead) begin
-				$write(" ** ERR** incorrect iMemRead=%1h", rtl_iMemRead);
+				$write(" ** ERR ** incorrect iMemRead=%1h", rtl_iMemRead);
 				errors = errors + 1;
 			end
 			$display();
 				
+			////////////////////////////////////////////////////////////
 			// Print the status of the ID stage
+			////////////////////////////////////////////////////////////
 			$write("  ID: PC=0x%8h I=0x%8h [%s]",id_PC, instruction_id, dec_inst(instruction_id));
 			if (!iMemRead)
 				$write(" Load Use Stall");
 			if (insert_ex_bubble)
 				$write(" Insert Bubble");			
 			if (rtl_Instruction != instruction_id) begin
-				$display(" ** ERR** I=%h but expecting:%h", rtl_Instruction, instruction_id);
+				$write(" ** ERR ** I=%h but expecting:%h", rtl_Instruction, instruction_id);
 				errors = errors + 1;
 			end
 			// See if there is a bad instruction memory read
 			if ( /*!(^id_PC[0] === 1'bX) && */ ^instruction_id[0] === 1'bx) begin
-				$display(" ** ERR** Bad instruction read");
-				//errors = errors + 1;				
+				$write(" ** ERR ** Bad instruction read");
+				errors = errors + 1;				
+			end
+			if (!valid_inst(rtl_Instruction) && !(^rtl_Instruction[0] === 1'bx)) begin
+				$display(" Unknown Instruction=%h", rtl_Instruction);
+				errors = errors + 1;
 			end
 			else $display();
 			
+			////////////////////////////////////////////////////////////
 			// Print the status of the EX stage
+			////////////////////////////////////////////////////////////
 			$write("  EX: PC=0x%8h I=0x%8h [%s]", ex_PC,instruction_ex,dec_inst(instruction_ex));
 			// See if this is an instruction that uses the ALU result
 			if (instruction_ex_op == S_OPCODE ||
@@ -396,7 +308,7 @@ module riscv_forward_sim_model #(parameter INITIAL_PC = 32'h00400000, DATA_MEMOR
 				else if (forwardB == 2)
 					$write(" [FWD WB(0x%1h) to r2]",wb_writedata);
 				if (rtl_ALUResult != ex_alu_result) begin
-					$write(" ** ERR** incorrect alu result=%1h but expecting %1h", rtl_ALUResult, ex_alu_result);
+					$write(" ** ERR ** incorrect alu result=%1h but expecting %1h", rtl_ALUResult, ex_alu_result);
 					errors = errors + 1;
 				end
 					
@@ -406,7 +318,9 @@ module riscv_forward_sim_model #(parameter INITIAL_PC = 32'h00400000, DATA_MEMOR
 				$write(" Insert Bubble");			
 			$display();
 
+			////////////////////////////////////////////////////////////
 			// Print the status of the MEM stage
+			////////////////////////////////////////////////////////////
 			$write("  MEM:PC=0x%8h I=0x%8h [%s]",mem_PC,instruction_mem, dec_inst(instruction_mem));
 			// See if this is an instruction that uses memory
 			if (instruction_mem_op == S_OPCODE) begin
@@ -466,10 +380,11 @@ module riscv_forward_sim_model #(parameter INITIAL_PC = 32'h00400000, DATA_MEMOR
 				else
 					$write(" Branch NOT Taken");
 			end
-
 			$display();
 
+			////////////////////////////////////////////////////////////
 			// Print the status of the WB stage
+			////////////////////////////////////////////////////////////
 			$write("  WB: PC=0x%8h I=0x%8h [%s] ",wb_PC,instruction_wb,dec_inst(instruction_wb));
 			if (wb_RegWrite) begin
 				// Check to see if this instruction writes back to the register file
@@ -486,13 +401,16 @@ module riscv_forward_sim_model #(parameter INITIAL_PC = 32'h00400000, DATA_MEMOR
 			$display();
 			
 		end
-		if (errors > 0) begin
-			$display("*** Error: Simulation Stopped due to errors ***");
-			$fatal;
-		end
+		//if (errors > 0) begin
+		//	$display("*** Error: Simulation Stopped due to errors ***");
+		//	$fatal;
+		//end
 	end
 
 	
+	//////////////////////////////////////////////////////////////////////////////////
+	// pipeline
+	//////////////////////////////////////////////////////////////////////////////////
 
 
 	///////
@@ -523,6 +441,7 @@ module riscv_forward_sim_model #(parameter INITIAL_PC = 32'h00400000, DATA_MEMOR
 		$readmemh(i_filename, instruction_memory);
 		if (^instruction_memory[0] === 1'bX) begin
 			$display($sformatf("**** Error: RISC-V Forwarding model instruction memory '%s' failed to load****",inst_mem_filename));
+			$fatal(1);
 		end
 		else
 			$display($sformatf("**** RISC_V Forwarding model: Loaded instruction memory '%s' ****",inst_mem_filename));
@@ -600,63 +519,42 @@ module riscv_forward_sim_model #(parameter INITIAL_PC = 32'h00400000, DATA_MEMOR
 	assign  instruction_ex_sImm= {{20{instruction_ex[31]}}, instruction_ex[31:25], instruction_ex[11:7]};
 
 	always@(*) begin
-			ex_branch_target = ex_PC + 
-				instruction_ex_brImm;
-				//{{20{instruction_ex.btype.imm12}}, instruction_ex.btype.imm11, 
-				//	instruction_ex.btype.imm10_5, instruction_ex.btype.imm4_1,1'b0};
-			// Immediate
-			//ex_immediate = {{20{instruction_ex.itype.imm[11]}},instruction_ex.itype.imm};
-			//ex_s_immediate = {{20{instruction_ex.stype.imm11_5[11]}},instruction_ex.stype.imm11_5,instruction_ex.stype.imm4_0};
-			
-			// Operand 1 (forwarding logic)
-			forwardA = 0;
-			if (mem_RegWrite && instruction_mem_rd != 0 && instruction_mem_rd == instruction_ex_rs1) begin
-				ex_operand1 = mem_alu_result;
-				forwardA = 1;
-			end else if (wb_RegWrite && instruction_wb_rd != 0 && instruction_wb_rd == instruction_ex_rs1) begin
-				ex_operand1 = wb_writedata;
-				forwardA = 2;
-			end else
-				ex_operand1 = ex_read1;
+		ex_branch_target = ex_PC + instruction_ex_brImm;
+		
+		// Operand 1 (forwarding logic)
+		forwardA = 0;
+		if (mem_RegWrite && instruction_mem_rd != 0 && instruction_mem_rd == instruction_ex_rs1) begin
+			ex_operand1 = mem_alu_result;
+			forwardA = 1;
+		end else if (wb_RegWrite && instruction_wb_rd != 0 && instruction_wb_rd == instruction_ex_rs1) begin
+			ex_operand1 = wb_writedata;
+			forwardA = 2;
+		end else
+			ex_operand1 = ex_read1;
 
+		// Operand 2 (forwarding logic)
+		forwardB = 0;
+		if (mem_RegWrite && instruction_mem_rd != 0 && instruction_mem_rd == instruction_ex_rs2) begin
+			ex_operand2_forward = mem_alu_result;
+			forwardB = 1;
+		end else if (wb_RegWrite && instruction_wb_rd != 0 && instruction_wb_rd == instruction_ex_rs2) begin
+			ex_operand2_forward = wb_writedata;
+			forwardB = 2;
+		end else
+			ex_operand2_forward = ex_read2;
 
-			// Operand 2 (forwarding logic)
-			forwardB = 0;
-			if (instruction_ex_op == S_OPCODE)
-				//ex_operand2 = ex_s_immediate;
-				ex_operand2 = instruction_ex_sImm;
-			else if (instruction_ex_op == I_OPCODE ||
-						 instruction_ex_op == L_OPCODE)
-				//ex_operand2 = ex_immediate;
-				ex_operand2 = instruction_ex_Imm;
-			else if (mem_RegWrite && instruction_mem_rd != 0 && instruction_mem_rd == instruction_ex_rs2) begin
-				ex_operand2 = mem_alu_result;
-				forwardB = 1;
-			end else if (wb_RegWrite && instruction_wb_rd != 0 && instruction_wb_rd == instruction_ex_rs2) begin
-				ex_operand2 = wb_writedata;
-				forwardB = 2;
-			end else
-				ex_operand2 = ex_read2;
+		// Handle special case with immediates for rs2
+		if (instruction_ex_op == S_OPCODE)
+			ex_operand2 = instruction_ex_sImm;
+		else if (instruction_ex_op == I_OPCODE ||
+						instruction_ex_op == L_OPCODE)
+			ex_operand2 = instruction_ex_Imm;
+		else
+			ex_operand2 = ex_operand2_forward;
 
-			// ALU
-			case(instruction_ex_op)
-				L_OPCODE: ex_alu_result = ex_operand1 + ex_operand2;
-				S_OPCODE: ex_alu_result = ex_operand1 + ex_operand2;
-				BR_OPCODE: ex_alu_result = ex_operand1 - ex_operand2;
-				default: // R or Immediate instructions
-					case(instruction_ex_funct3)
-						ADD_FUNCT3: 
-							if (instruction_ex_op == R_OPCODE && instruction_ex_funct7 ==  7'b0100000)
-								ex_alu_result = ex_operand1 - ex_operand2;
-							else
-								ex_alu_result = ex_operand1 + ex_operand2;
-						SLT_FUNCT3: ex_alu_result = ($signed(ex_operand1) < $signed(ex_operand2)) ? 32'd1 : 32'd0;
-						AND_FUNCT3: ex_alu_result = ex_operand1 & ex_operand2;
-						OR_FUNCT3: ex_alu_result = ex_operand1 | ex_operand2;
-						XOR_FUNCT3: ex_alu_result = ex_operand1 ^ ex_operand2;
-						default: ex_alu_result = ex_operand1 + ex_operand2;
-					endcase
-			endcase
+		// ALU
+		ex_alu_result = alu_result (instruction_ex, ex_operand1, ex_operand2);
+
 	end
 	
 	assign load_use_condition =	(instruction_ex_op == L_OPCODE) &&  // EX is a load
@@ -682,7 +580,7 @@ module riscv_forward_sim_model #(parameter INITIAL_PC = 32'h00400000, DATA_MEMOR
 			instruction_mem <= instruction_ex;
 			mem_branch_target <= ex_branch_target;
 			mem_alu_result <= ex_alu_result;
-			mem_dWriteData <= ex_read2;
+			mem_dWriteData <= ex_operand2_forward;
 			mem_PC <= ex_PC;
 		end
 	end
@@ -713,7 +611,7 @@ module riscv_forward_sim_model #(parameter INITIAL_PC = 32'h00400000, DATA_MEMOR
 		//$readmemh("pipe_data_memory.txt", data_memory);
 		if (^data_memory[0] === 1'bX) begin
 			$display($sformatf("**** Error: RISC-V Simulation model data memory '%s' failed to load****",data_mem_filename));
-			$error;
+			$fatal(1);
 		end
 		else 
 			$display($sformatf("**** RISC-V Simulation model: Loaded data memory '%s' ****",data_mem_filename));

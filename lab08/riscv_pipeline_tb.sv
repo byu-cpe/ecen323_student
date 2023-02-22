@@ -394,12 +394,6 @@ https://forums.xilinx.com/t5/Simulation-and-Verification/readmemh-doesn-t-suppor
 
 			// Print time message
 			$display("%0t:",$time);
-			/*
-			if (errors > 0)
-				$display(" (%0d errors)",errors);
-			else
-				$display("OK");
-			*/
 
 			// Print IF stage debug
 			$write("  IF: PC=0x%8h",tb_PC);
