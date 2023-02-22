@@ -18,8 +18,8 @@ module riscv_forwarding_tb();
 	integer i;
 	wire [31:0] error_count;
 	
-	localparam TEXT_MEMORY_FILENAME = "forwarding_text.mem";
-	localparam DATA_MEMORY_FILENAME = "forwarding_data.mem";
+	parameter TEXT_MEMORY_FILENAME = "forwarding_text.mem";
+	parameter DATA_MEMORY_FILENAME = "forwarding_data.mem";
 	localparam EBREAK_INSTRUCTION = 32'h00100073;
 	localparam TEXT_SEGMENT_START_ADDRESSS = 32'h00000000; // 32'h00400000;
 	localparam INSTRUCTION_MEMORY_WORDS = 256;
