@@ -98,18 +98,21 @@
     # Prepare the data base pointer for load/store tests
     ##############################################################
     
-    # setup a pointer (x31)
-    # Data segment is at 0x2000
-    # Intitialize to 0x400 (largest immediate)
+    # setup a pointer (x31) for data segment at 0x2000
+    # Intitialize x31 to 0x400 (largest immediate)
     addi x31, x0, 0x400		# Setup x31 with pointer to 0x2000 (start at 0x400)
     slli x31, x31, 3        # Shift x31 by 3 (multiply by 8) to get 0x2000
-    # test forwarding of the base pointer (forward from MEM)
+    # test lw forwarding of the base pointer (forward from MEM)
     lw x13, 0(x31)
-    # test forwarding of the base pointer (forward from WB)
+    # test lw forwarding of the base pointer (forward from WB)
     lw x14, 4(x31)
+	# test generic store (no special case)
+	sw x1, 64(x31)
+	# read value just written
+	lw x15, 64(x31)
 
     ##############################################################
-    # Load Use hazard (insert bubble)
+    # Load Use hazards
     ##############################################################
     
     # load use into r1
@@ -120,12 +123,12 @@
     lw x17, 4(x31)	
     and x17, x1, x17
 
-    # load use with instruction in between (should forward to r1)
+    # load use with instruction in between (should still forward to r1 but no stall)
     lw x18, 8(x31)
     add x19, x17, x16
     sub x20, x18, x19
     
-    # load use with instruction in between (should forward to r2)
+    # load use with instruction in between (should forward to r2 but no stall)
     lw x17, 8(x31)
     sub x18, x16, x15
     xor x19, x18, x17
@@ -136,10 +139,6 @@
     # NOPs to flush out pipline before next test
     nop
     nop
-
-    ##############################################################
-    # Load use hazard with stores
-    ##############################################################
 
     # Load use hazard with the store value as the "use"
     lw x13, 0(x31)
@@ -158,7 +157,7 @@
     # Load use followed by a store use (student bug example)
     lw x13, 0(x31)
     and x13, x13, x12
-    sw x13, 12(x31)
+    sw x13, 12(x31)         # Forwarding for store
     # NOPs to flush out pipline before next test
     nop
     nop
@@ -286,7 +285,7 @@ SKIP10:
     # Load use followed by branch not taken, branch not taken
     lw x22, 0(x31)          # SKIP9
     beq x0, x22, ERROR      # Branch not taken
-    beq x23, x22, ERROR     # Branch not taken
+    beq x22, x0, ERROR     # Branch not taken
     lw x24, 12(x31)         # Executed!
 
 END:
@@ -298,7 +297,7 @@ END:
     
     
 ERROR:
-    mul x0, x0, x0
+    ecall  			# Should generate an illegal instruction exception
     beq x0, x0, ERROR
     nop
     nop
@@ -309,7 +308,8 @@ ERROR:
 ##################################################################################
 
 .data
-Data:
+
+Data:	# 16 words initialized to a known value
     .word 0x01234567	# 0x2000
     .word 0xfedcba98 	# 0x2004
     .word 0x89abcdef   	# 0x2008
@@ -320,5 +320,16 @@ Data:
     .word 0x00000007  	# 0x201c
     .word 0x00000008   	# 0x2020
     .word 0x00000009   	# 0x2024
-    .word 0x00002000   	# 0x2028 (offset decimal 40)
+    .word 0x00002000   	# 0x2028 (initialized to base of data segment - offset decimal 40)
+    .word 0x00000000   	# 0x202c
+    .word 0x00000000   	# 0x2030
+    .word 0x00000000   	# 0x2034
+    .word 0x00000000   	# 0x2038
+    .word 0x00000000   	# 0x203c
 
+	# This is the location where stores will occur (starting at 0x2040 or 0x2000 + 40 or 64)
+stores:					
+	.word 0
+	.word 0
+	.word 0
+	.word 0
