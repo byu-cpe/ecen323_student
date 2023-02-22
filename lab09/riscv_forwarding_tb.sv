@@ -140,13 +140,13 @@ module riscv_forwarding_tb();
 
 		// Check for errors
 		if (error_count > 0) begin
-			$display("ERROR: %1d error(s) found",error_count)
+			$display("ERROR: %1d error(s) found",error_count);
 			$fatal(1);
 		end
 		if (i == MAX_INSTRUCTIONS) begin
 			// Didn't reach EBREAK_INSTRUCTION
 			$display("ERROR: Reached maximum number of instructions without executing EBREAK Instruction");
-			$fatal(1)
+			$fatal(1);
 		end
 		// If no errors, all is well	
 		$display("You Passed!");
