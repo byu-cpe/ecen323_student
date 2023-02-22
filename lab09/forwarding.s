@@ -266,7 +266,7 @@ SKIP8:
     beq x0, x22, ERROR
     # load-use where the use is a branch taken
     lw x23, 0(x31)
-    beq x23, x22, SKIP9:
+    beq x23, x22, SKIP9
     # These instructions should not be executed
     addi x18, x18, -1
     xori x18, x18, 0x3ff
