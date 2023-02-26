@@ -140,10 +140,12 @@ module riscv_pipeline_tb();
 		// Check for errors
 		if (error_count > 0) begin
 			$fatal("ERROR: %1d error(s) found",error_count);
+			$finish;
 		end
 		if (i == MAX_INSTRUCTIONS) begin
 			// Didn't reach EBREAK_INSTRUCTION
 			$fatal("ERROR: Did not reach the EBREAK Instruction");
+			$finish;
 		end
 		// If no errors, all is well	
 		$display("You Passed!");
