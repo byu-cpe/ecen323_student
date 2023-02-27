@@ -9,9 +9,10 @@
 # This code assumes the data segment is at 0x2000 and text at 0x0000
 # (CompactTextAtZero)
 #
-# Version V1.1
+# Version V1.2
 #  (Note: reflect the version number in the first two instructions)
 #
+###################################################################################
 
 .eqv MAJOR_VERSION 1
 .eqv MINOR_VERSION 2
@@ -83,6 +84,8 @@
     beq x15, x3, SKIP		# This branch should be taken (x15 = x3 = 0xff)
     nop
     nop
+    nop
+
     add x15, x14, x13  		# should not be executed
     sub x14, x12, x10  		# should not be executed
     and x13, x11, x12  		# should not be executed
@@ -121,7 +124,10 @@ SKIP:
     lw x13, 16(x19)			# Load word (0x55555555)
     lw x14, 20(x19)			# Load word (0x66666666)
     beq x31, x9, SKIP2		# x31 (11111111) == x9 (11111111). Should be taken
-    
+    nop
+    nop
+    nop
+
     # instructions should not be executed (skipped over)
     # Invert x11
     xor x11, x0, x11		# Should not be executed
@@ -142,6 +148,9 @@ SKIP2:
     nop
     
     beq x0, x0, ERROR		# Shouldn't get here. Will branch to error holding point
+    nop
+    nop
+    nop
 
     # test stores
     # (need both positive and negative stores)
