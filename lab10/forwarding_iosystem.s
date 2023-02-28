@@ -1,9 +1,10 @@
-####################################################################################3#
+####################################################################################
 #
 # forwarding_iosystem.s
 #
 # This program is written using the primitive instruction set
-# for the forwarding RISC-V processor.
+# for the forwarding RISC-V processor. This program will draw a
+# characters on the screen (see code for details).
 #
 # This program does not use the data segment.
 #
@@ -20,7 +21,7 @@
 # x9(s1):   Current column index
 # x18(s2):  Current row index
 #
-####################################################################################3#
+####################################################################################
 .globl  main
 
 .data
@@ -53,51 +54,32 @@
 main:
     # Prepare I/O base address
     addi gp, x0, 0x7f
-    # Add to itself 8 times (shift 8)
-    addi t0, x0, 8
-L1:
-    add gp, gp, gp
-    addi t0, t0, -1
-    beq t0, x0, L2
-    beq x0, x0, L1
-
-L2:
+    # Shift left 8 (0x7f00)
+    slli gp, gp, 8
     # 0x7f00 should be in gp
 
     # Prepare VGA base address
     addi tp, x0, 0x40
-    # Add to itself 9 times (shift 9)
-    addi t0, x0, 9
-L3:
-    add tp, tp, tp
-    addi t0, t0, -1
-    beq t0, x0, L4
-    beq x0, x0, L3
-
-L4:
+    # Shift left 9 (0x8000)
+    slli tp, tp, 9
     # 0x8000 should be in tp
 
 CLEAR_VGA:
 
     # Set the foreground based on switches (t2). 
     lw t2, SWITCH_OFFSET(gp)
-    # Mask the bottom 12 bits of what is read from switches
+    # Create mask for masking the bottom 12 bits from the switches (0xfff)
     addi t0, x0, 0x7ff
     add t0, t0, t0     # ffe
     addi t0, t0, 1     # fff
+    # Mask value loaded from switches with 0xfff
     and t2, t2, t0
     # invert foreground to generate the background (t3)
     xori t3, t2, -1
     # Mask the new background
     and t3, t3, t0
     # Shift the background color (t3) 12 to the left
-    addi t0, x0, 12
-L4_1:
-    add t3, t3, t3
-    addi t0, t0, -1
-    beq t0, x0, L4_2
-    beq x0, x0, L4_1
-L4_2:
+    slli t3, t3, 12
     # Merge the foreground and the background
     or t2, t2, t3
     sw t2, CHAR_COLOR_OFFSET(gp)  # Write the new color values
@@ -107,11 +89,11 @@ L4_2:
     add t1, x0, tp                # Pointer to VGA space that will change
     # Create constant 0x1000
     addi t2, x0, 0x400            # 0x400
-    add t2, t2, t2                # 0x800
-    add t2, t2, t2                # 0x1000
+    # should get 0x1000
+    slli t2, t2, 2
 
 L5:
-    sw t0, 0(t1)
+    sw t0, 0(t1)                # Write 'space' character to pointer in VGA space
     addi t2, t2, -1             # Decrement counter
     beq t2, x0, L6              # Exit loop when done
     addi t1, t1, 4              # Increment memory pointer by 4 to next character address
@@ -125,6 +107,7 @@ L6:
     # Clear Seven segment display and LEDs
     sw x0, SEVENSEG_OFFSET(gp)
     sw x0, LED_OFFSET(gp)
+
     # Display the first character at location 0,0
     beq x0, x0, DISPLAY_LOCATION
 
@@ -203,14 +186,7 @@ DISPLAY_LOCATION:
     # Display col,row on LEDs
     add t0, s1, x0                              # Load s1 (column) to t0
     # Shift by 8
-    add t0, t0, t0
-    add t0, t0, t0
-    add t0, t0, t0
-    add t0, t0, t0
-    add t0, t0, t0
-    add t0, t0, t0
-    add t0, t0, t0
-    add t0, t0, t0
+    slli t0, t0, 8
     # Or s2 (row)
     or t0, t0, s2
     # Write to LEDs
