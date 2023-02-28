@@ -28,11 +28,12 @@ set_msg_config -new_severity "WARNING" -id "Timing 38-313"
 set_msg_config -new_severity "INFO" -id "Constraints 18-5210"
 # Downgrade the 'WARNING: [DRC RTSTAT-10] No routable loads: 35 net(s) have no routable loads.' to INFO
 set_msg_config -new_severity "INFO" -id "DRC RTSTAT-10"
-# Downgrade the 'WARNING: [DRC RTSTAT-10] No routable loads: 35 net(s) have no routable loads.' to INFO
-set_msg_config -new_severity "INFO" -id "DRC RTSTAT-10"
 # Downgrade the waraning 'WARNING: [Synth 8-3331] design riscv_simple_datapath has unconnected port instruction[14]' to INFO
 #  These start in lab 5
 set_msg_config -new_severity "INFO" -id "Synth 8-3331"
+# Other possible downgrade options: (lab 9 warnings in synthesis)
+# WARNING: [Synth 8-6014] Unused sequential element mem_ALUSrc_reg was removed.  [/tmp/ecen323_wirthlin/lab09/riscv_forwarding_pipeline.sv:320]
+# WARNING: [Synth 8-7023] instance 'my_alu' of module 'alu' has 5 connections declared, but only 4 given [/tmp/ecen323_wirthlin/lab09/riscv_forwarding_pipeline.sv:303]
 
 # Set incremental simulation to False (force all files to be re-analyzed)
 set_property INCREMENTAL false [get_filesets sim_1]
