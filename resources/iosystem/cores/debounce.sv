@@ -17,13 +17,10 @@ module debounce
     input wire logic debounce_in;
     output logic debounce_out;
 
-	//parameter CLK_FREQUECY = 100000000;		// 100 MHz
-    //parameter DEBOUNCE_DELAY_US = 1_000;    // 1 ms
     localparam DEBOUNCE_BITS = $clog2(CLK_FREQUECY / 1_000_000 * DEBOUNCE_DELAY_US) + 1;
 
     logic [DEBOUNCE_BITS-1:0] debounce_counter = 0;
     logic db_state;
-    logic debounce_out_d;
 
     assign debounce_out = db_state;
     
