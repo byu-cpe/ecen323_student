@@ -145,8 +145,12 @@ module riscv_pipeline_tb();
 			// Didn't reach EBREAK_INSTRUCTION
 			$fatal("ERROR: Did not reach the EBREAK Instruction");
 		end
-		// If no errors, all is well	
-		$display("You Passed!");
+		// If no errors, all is well
+		if (error_count == 0)	
+			$display("You Passed!");
+		else
+			$display("Testbench failed");
+		// End simulation
 		$finish;
 
 	end
