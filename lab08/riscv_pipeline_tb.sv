@@ -139,16 +139,20 @@ module riscv_pipeline_tb();
 
 		// Check for errors
 		if (error_count > 0) begin
-			$fatal("ERROR: %1d error(s) found",error_count);
+			$display("ERROR: %1d error(s) found",error_count);
+			$fatal(1);
 		end
 		if (i == MAX_INSTRUCTIONS) begin
 			// Didn't reach EBREAK_INSTRUCTION
-			$fatal("ERROR: Did not reach the EBREAK Instruction");
+			$display("ERROR: Did not reach the EBREAK Instruction");
+			$fatal(1);
 		end
+
 		// If no errors, all is well
 		if (error_count == 0)	
 			$display("You Passed!");
 		else
+			// shouldn't get here
 			$display("Testbench failed");
 		// End simulation
 		$finish;
