@@ -298,7 +298,7 @@ module riscv_forward_sim_model #(parameter INITIAL_PC = 32'h00400000, DATA_MEMOR
 				  instruction_ex_rd != 0)
 				) begin
 
-				$write(" alu result=0x%1h ",ex_alu_result);
+				$write(" alu result=0x%1h ",rtl_ALUResult);
 				if (forwardA == 1)
 					$write(" [FWD MEM(0x%1h) to r1]",mem_alu_result);
 				else if (forwardA == 2)
