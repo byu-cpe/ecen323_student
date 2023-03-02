@@ -148,10 +148,13 @@ module riscv_forwarding_tb();
 			$display("ERROR: Reached maximum number of instructions without executing EBREAK Instruction");
 			$fatal(1);
 		end
-		// If no errors, all is well	
-		$display("You Passed!");
-		$finish;
-			
+		
+		// If no errors, all is well
+		if (error_count == 0)	
+			$display("You Passed!");
+		else
+			// shouldn't get here
+			$display("Testbench failed");
 		
 		$finish;
 	end
