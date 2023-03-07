@@ -26,11 +26,11 @@ add_force btnl 0
 add_force btnr 0
 add_force btnu 0
 add_force btnd 0
-add_force sw 0
+add_force sw 0 -radix hex
 add_force RsTx 1
 
 # Run the simulator until the screen has been cleared
-run 990670 ns
+run 984970 ns
     
 # Add your test stimulus here
 
