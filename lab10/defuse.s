@@ -1,9 +1,9 @@
-#
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # defuse.s
 #
-# This code simulates a time bomb that you need to defuse. Most of the code has no
+# This code simulates a 'bomb' that you need to defuse. Most of the code has no
 # comments and you will need to read through the code and figure out what buttons
-# and switches to press to defuse the bomb.
+# and switches to press to defuse the 'bomb'.
 #
 #
 #
@@ -17,6 +17,7 @@
 #  x3(gp):  I/O base address
 #  x4(tp):  VGA Base address
 #
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 .globl  main
 
@@ -45,46 +46,27 @@
 main:
     # Prepare I/O base address
     addi gp, x0, 0x7f
-    # Add to itself 8 times (shift 8)
-    addi t0, x0, 8
-L1_1:
-    add gp, gp, gp
-    addi t0, t0, -1
-    beq t0, x0, L1_2
-    beq x0, x0, L1_1
-L1_2:
+    # Shift gp left 8 to generate 0x7f00
+    slli gp, gp, 8
     # 0x7f00 should be in gp
+
     # Prepare VGA base address
     addi tp, x0, 0x40
-    # Add to itself 9 times (shift 9)
-    addi t0, x0, 9
-L1_3:
-    add tp, tp, tp
-    addi t0, t0, -1
-    beq t0, x0, L1_4
-    beq x0, x0, L1_3
+    # Shift tp left 9 (0x8000 in tp)
+    slli tp, tp, 9
+
+    # Comments and proper coding style are intentionally removed for the code below
+    # for this exercise.
 L1_4:
-    # 0x8000 should be in tp
     addi s0, x0, 0x400
-    add s0, s0, s0
-    add s0, s0, s0
+    slli s0, s0, 2
     addi s3, x0, 0x7ff
-    add s3, s3, s3
-    add s3, s3, s3
-    add s3, s3, s3
-    add s3, s3, s3
-    add s3, s3, s3
+    slli s3, s3, 5
     ori s3, s3, 0xff
 
 FUSE_LIT:
     addi t1, x0, 0xff
-    addi t0, x0, 16
-L2_1:
-    add t1, t1, t1
-    addi t0, t0, -1
-    beq t0, x0, L2_2
-    beq x0, x0, L2_1
-L2_2:
+    slli t1, t1, 16
     sw t1, 0x34(gp)
     addi t0, x0, 0x20
     add t1, x0, tp
@@ -102,7 +84,7 @@ L3_1:
 L3_2:
     lw t0, 0x24(gp)
     beq x0, t0, L3_2
-    addi t1, x0, 0x02
+    addi t1, x0, 0x10
     beq t0, t1, L4_1
     beq x0, x0, EXPLODE
 L4_1:
@@ -113,11 +95,17 @@ L4_1_4:
     beq t0, x0, L4_1_5
     beq x0, x0, L4_1_4
 L4_1_5:
+    lw t2, 0x4(gp)
+    sw t2, 0x0(gp)
     lw t0, 0x24(gp)
     beq x0, t0, L4_1_5
     addi t1, x0, 0x04
-    beq t0, t1, L4_2
+    beq t0, t1, L4_1_6
     beq x0, x0, EXPLODE
+L4_1_6:
+    beq t2, s3, L4_2
+    beq x0, x0, EXPLODE
+
 L4_2:
     addi t0, x0, 2
     sw t0, 0x18(gp)
@@ -126,11 +114,19 @@ L4_2_4:
     beq t0, x0, L4_2_5
     beq x0, x0, L4_2_4
 L4_2_5:
+    addi t1, x0, 0x02
+    ori t1, t1, 0x01
+    ori t1, t1, 0x08
+L4_2_6:
     lw t0, 0x24(gp)
-    beq x0, t0, L4_2_5
-    addi t1, x0, 0x10
-    beq t0, t1, L4_3
+    beq x0, t0, L4_2_6
+    or t2, t1, t0
+    beq t2, t1, L4_2_7
     beq x0, x0, EXPLODE
+L4_2_7:
+    beq t0, t1, L4_3
+    beq x0, x0, L4_2_6
+
 L4_3:
     addi t0, x0, 3
     sw t0, 0x18(gp)
@@ -160,7 +156,6 @@ L9_1_4:
     beq t0, x0, L9_1_5
     beq x0, x0, L9_1_4
 L9_1_5:
-    #xori t2, s2, -1
     add t2, s2, s2
     #add t2, s2, t2
     and t2, t2, s3
@@ -172,9 +167,9 @@ L10:
     beq x0, x0, EXPLODE
 L11:
     lw t0, 0x4(gp)
-    beq t0, t2, L12
+    beq t0, t2, DISARM
     beq x0, x0, EXPLODE
-L12:
+DISARM:
     addi t0, x0, 5
     sw t0, 0x18(gp)
     addi t1, x0, 0xf0
@@ -224,18 +219,10 @@ L13_3:
     beq x0, t0, FUSE_LIT
     beq x0, x0, L13_3
 
-
 EXPLODE:
     sw s3, SEVENSEG_OFFSET(gp)
-
     addi t1, x0, 0xf0
-    addi t0, x0, 16
-L14_1:
-    add t1, t1, t1
-    addi t0, t0, -1
-    beq t0, x0, L14_2
-    beq x0, x0, L14_1
-L14_2:
+    slli t1, t1, 16
     sw t1, CHAR_COLOR_OFFSET(gp)
     addi t0, x0, SPACE_CHAR
     add t1, x0, tp
@@ -257,3 +244,4 @@ L20_2:
     lw t0, BUTTON_OFFSET(gp)
     beq x0, t0, FUSE_LIT
     beq x0, x0, L20_2
+

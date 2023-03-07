@@ -46,6 +46,7 @@
 
 # ASCI SPACE
     .eqv SPACE_CHAR 0x20
+    .eqv HASH_CHAR 0x23
     .eqv LAST_COLUMN 77                 # 79 - last two columns don't show on screen
     .eqv LAST_ROW 29                    # 31 - last two rows down't show on screen
     .eqv ADDRESSES_PER_ROW 512
@@ -66,7 +67,7 @@ main:
 
 CLEAR_VGA:
 
-    # Set the foreground based on switches (t2). 
+    # Set the foreground based on switches (t2)
     lw t2, SWITCH_OFFSET(gp)
     # Create mask for masking the bottom 12 bits from the switches (0xfff)
     addi t0, x0, 0x7ff
@@ -108,9 +109,6 @@ L6:
     sw x0, SEVENSEG_OFFSET(gp)
     sw x0, LED_OFFSET(gp)
 
-    # Display the first character at location 0,0
-    beq x0, x0, DISPLAY_LOCATION
-
     # Wait until all the buttons are released before proceeding to check for status of buttons
     # (this is a one shot functionality to prevent one button press from causing more than one
     #  response)
@@ -146,19 +144,21 @@ UPDATE_DISPLAY_POINTER:
     # Shouldn't get here
     beq x0, x0, BTN_RELEASE
 
+    # These code segments update the data to print on the SSD as well
+    # as determine the new next location for printing characters
 PROCESS_BTNR:
     # Move pointer right
     addi t0, x0, LAST_COLUMN
     beq s1, t0, BTN_RELEASE                     # Ignore if on last column
     addi s1, s1, 1                              # Increment column
-    addi s0, s0, 4                              # Increment pointer
+    addi s0, s0, 4                              # Increment pointer for next display location
     beq x0, x0, DISPLAY_LOCATION
 
 PROCESS_BTNL:
     # Move pointer left
     beq s1, x0, BTN_RELEASE                     # Ignore if on first column
     addi s1, s1, -1                             # Decrement column
-    addi s0, s0, -4                             # Decrement pointer
+    addi s0, s0, -4                             # Decrement pointer for next display location
     beq x0, x0, DISPLAY_LOCATION
 
 PROCESS_BTNU:
@@ -179,6 +179,8 @@ PROCESS_BTND:
 DISPLAY_LOCATION:
     # Display the character at the current location
     lw t1, SWITCH_OFFSET(gp)                    # Read the switches
+    addi t2, x0, 0x7f                           # Create mask for switches (only look at bottom 7)
+    and t1, t1, t2                              # Keep only lower 7 bits of switches
     sw t1, 0(s0)                                # Write the character to the VGA
 
     # Display pointer on LCD
