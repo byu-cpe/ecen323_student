@@ -1,147 +1,11 @@
 `timescale 1ns / 100ps
-//
 //////////////////////////////////////////////////////////////////////////////////
 //
 //  Filename: riscv_final_tb.v
 //
-//  Author: Mike Wirthlin
-//  
-//  Version 1.2 (3/4/2020)
-//   - Change the text below to reflect the version in the testbench output
-//     search for "Version"
-//   
 //////////////////////////////////////////////////////////////////////////////////
 
-package typePack;
-
-typedef enum logic[6:0]{
-	LUI = 7'b0110111,
-	JAL = 7'b1101111,
-	JALR = 7'b1100111,
-	AUIPC = 7'b0010111,
-	IMM = 7'b0010011,
-	BRANCH = 7'b1100011,
-	OP = 7'b0110011,
-	S = 7'b0100011,
-	L = 7'b0000011
-}
-opcodes /* verilator public */;
-
-typedef enum logic[2:0]{
-	ADD = 3'b000,
-	SLT = 3'b010,
-	SLTU = 3'b011,
-	SLL = 3'b001,
-	SR = 3'b101,
-	XOR = 3'b100,
-	OR = 3'b110,
-	AND = 3'b111
-} FIMM  /* verilator public */;
-
-typedef enum logic[2:0]{
-	BEQ = 3'b000,
-	BNE = 3'b001,
-	BGE = 3'b101,
-	BGEU = 3'b111,
-	BLTU = 3'b110,
-	BLT = 3'b100
-} BIMM  /* verilator public */;
-
-typedef enum logic[2:0]{
-	SBYTE = 3'b000,
-	SSHORT = 3'b001,
-	SWORD = 3'b010
-} SIMM  /* verilator public */;
-
-typedef enum logic[2:0]{
-	LBYTE = 3'b000,
-	LSHORT = 3'b001,
-	LWORD = 3'b010,
-	LUBYTE = 3'b100,
-	LUSHORT = 3'b101
-} LIMM  /* verilator public */;
-
-localparam ASUB = 7'b0100000;
-
-
-
-typedef struct packed
-{
-	logic[11:5] imm11_5;
-	logic [4:0] rs2;
-	logic [4:0] rs1;
-	logic [2:0] funct3;
-	logic [4:0] imm4_0;
-	opcodes opcode;
-
-
-} STYPE_T  /* verilator public */;
-typedef struct packed
-{
-	logic[11:0] imm;
-	logic [4:0] rs1;
-	logic [2:0] funct3;
-	logic [4:0] rd;
-	opcodes opcode;
-
-
-} ITYPE_T  /* verilator public */;
-typedef struct packed
-{
-	logic [6:0] funct7;
-	logic [4:0] rs2;
-	logic [4:0] rs1;
-	logic [2:0] funct3;
-	logic [4:0] rd;
-	opcodes opcode;
-
-
-} RTYPE_T  /* verilator public */;
-typedef struct packed
-{
-	logic[19:0] imm;
-	logic [4:0] rd;
-	opcodes opcode;
-
-
-} UTYPE_T  /* verilator public */;
-typedef struct packed
-{
-	logic imm20;
-	logic [10:1] imm10_1;
-	logic imm11;
-	logic [19:12] imm19_12;
-	logic [4:0] rd;
-	opcodes opcode;
-
-
-} JTYPE_T  /* verilator public */;
-typedef struct packed
-{
-	logic imm12;
-	logic [10:5] imm10_5;
-	logic [4:0] rs2;
-	logic [4:0] rs1;
-	logic [2:0] funct3;
-	logic [4:1] imm4_1;
-	logic imm11;
-	opcodes opcode;
-
-
-} BTYPE_T  /* verilator public */;
-
-typedef union packed
-{
-  ITYPE_T itype;
-  STYPE_T stype;
-  RTYPE_T rtype;
-  UTYPE_T utype;
-  JTYPE_T jtype;
-  BTYPE_T btype;
-} instruction_t /* verilator public */;
-
-
-endpackage : typePack
+`include "../lab08/tb_pipeline_inc.sv"
 
 module riscv_final_tb ();
 
@@ -167,6 +31,7 @@ module riscv_final_tb ();
 	localparam EBREAK_INSTRUCTION = 32'h00100073;
 	// Data memory
 
+	// Instance student processor module
 	riscv_final #(.INITIAL_PC(TEXT_SEGMENT_START_ADDRESSS))
 						riscv(.clk(clk), .rst(rst), .instruction(tb_instruction), .iMemRead(tb_iMemRead), .PC(tb_PC),	
 							.ALUResult(tb_ALUResult), .dAddress(tb_Address), .dWriteData(tb_dWriteData), .dReadData(tb_dReadData),
@@ -186,69 +51,18 @@ module riscv_final_tb ();
 							.error_count(error_count));
 
 	// Instruction Memory
-	reg [31:0] instruction_memory[INSTRUCTION_MEMORY_WORDS-1:0];
-	localparam NOP_INSTRUCTION = 32'h00000013; // addi x0, x0, 0
-	initial begin
-		$readmemh(TEXT_MEMORY_FILENAME, instruction_memory);
-		if (^instruction_memory[0] === 1'bX) begin
-			$display("**** Warning: Testbench failed to load the instruction memory. Make sure the %s file",TEXT_MEMORY_FILENAME);
-			$display("**** is added to the project.");
-			$finish;
-		end
-		else
-			$display("**** Testbench: Loaded instruction memory ****");
-	end
+	instruction_memory #(.INSTRUCTION_MEMORY_WORDS(INSTRUCTION_MEMORY_WORDS),
+		.TEXT_MEMORY_FILENAME(TEXT_MEMORY_FILENAME),
+		.PC_OFFSET(TEXT_SEGMENT_START_ADDRESSS)) 
+		imem(.clk(clk),.rst(rst),.imem_read(tb_iMemRead),.pc(tb_PC),.instruction(tb_instruction));
 
-	// Instruction memory read (synchronous read). No writes
-	// Read every clock cycle (even if we will end up ignoring NOP instructions that are read)
-	always@(posedge clk or posedge rst) begin
-		if (rst) begin
-		  tb_instruction <= NOP_INSTRUCTION;  // Initialize instruction with "NOP"
-		end
-	    else begin
-			// Only read instruction if iMemRead is high
-			if (tb_iMemRead)
-				tb_instruction <= instruction_memory[(tb_PC-TEXT_SEGMENT_START_ADDRESSS) >> 2];
-		end
-	end
-	
+	// Data Memory	
+	data_memory #(.INSTRUCTION_MEMORY_WORDS(INSTRUCTION_MEMORY_WORDS),
+		.TEXT_MEMORY_FILENAME(TEXT_MEMORY_FILENAME),
+		.PC_OFFSET(TEXT_SEGMENT_START_ADDRESSS)) 
+		imem(.clk(clk),.rst(rst),.read(tb_MemRead),.write(tb_MemWrite),.address(tb_Address),.data(tb_dReadData));
 
-	// Data Memory
-	reg [31:0] data_memory[DATA_MEMORY_WORDS-1:0];
 
-	initial begin
-		$readmemh(DATA_MEMORY_FILENAME, data_memory);
-		if (^data_memory[0] === 1'bX) begin
-			$display("**** Warning: Testbench failed to load the data memory. Make sure the %s file",DATA_MEMORY_FILENAME);
-			$display("**** is added to the project.");
-			$finish;
-		end
-		else
-			$display("**** Testbench: Loaded data memory ****");
-	end
-
-	//////////////////////////////////////////////////////////////////////////////////
-	// Data memory access
-	//////////////////////////////////////////////////////////////////////////////////
-	wire [31:0] local_dMem_Address;
-	wire valid_dMem_Address;
-	assign local_dMem_Address = (tb_Address-DATA_SEGMENT_START_ADDRESSS) >> 2;
-	assign valid_dMem_Address = (tb_Address >= DATA_SEGMENT_START_ADDRESSS) && (tb_Address < DATA_SEGMENT_END_ADDRESSS);
-	always@(posedge clk or posedge rst) begin
-	   if (rst)
-	       tb_dReadData <= 0; 
-	   else
-		if (tb_MemRead) begin
-			if (valid_dMem_Address)
-				tb_dReadData <= data_memory[local_dMem_Address];
-			else
-				tb_dReadData <= 32'hX;
-		end else if (tb_MemWrite) begin
-			if (valid_dMem_Address)
-				data_memory[local_dMem_Address] <= tb_dWriteData;
-			// If invalid just ignore write
-		end
-	end
 	
 	
 	//////////////////////////////////////////////////////////////////////////////////
@@ -323,6 +137,8 @@ module riscv_final_tb ();
 		output [31:0] error_count;
 		//input [31:0] pc_halt_address;
 			
+		`include "tb_pipeline_inc.sv"
+
 		// Internal shadow state
 		logic [31:0] int_reg [31:0];
 		typePack::instruction_t instruction_id, instruction_ex, instruction_mem, instruction_wb;
@@ -348,122 +164,6 @@ module riscv_final_tb ();
 		localparam ECALL_INSTRUCTION = 32'h00000073;
 		localparam UNKNOWN_INST = "ERROR: Unknown Instruction";
 
-		function string dec_inst(input typePack::instruction_t i);
-			string inst_name;
-			if (i == NOP_INSTRUCTION) 
-				dec_inst = $sformatf("nop");
-			else begin
-				
-			case(i.itype.opcode)
-			
-				typePack::L: dec_inst = $sformatf("lw x%1d,0x%1h(x%1d)", i.itype.rd, {{20{i.itype.imm[11]}},i.itype.imm}, i.itype.rs1);
-				typePack::S: dec_inst = $sformatf("sw x%1d,0x%1h(x%1d)", i.stype.rs2, {{20{i.stype.imm11_5[11]}}, i.stype.imm11_5, i.stype.imm4_0}, i.itype.rs1);
-				typePack::JAL: dec_inst = $sformatf("jal x%1d,0x%1h", i.jtype.rd, 
-					{{12{i[31]}},i[31],i[19:12],i[20],i[30:21]/*,1'b0*/}); // just the immediate, not the offset
-				typePack::JALR: dec_inst = $sformatf("jalr x%1d,x%1d,0x%1h", i.itype.rd,  i.itype.rs1, {{20{i.itype.imm[11]}},i.itype.imm});
-				typePack::BRANCH: begin
-					case (i.btype.funct3)
-						typePack::BEQ: inst_name = "beq";
-						typePack::BNE: inst_name = "bne";
-						typePack::BGE: inst_name = "bge";
-						typePack::BLT: inst_name = "blt";
-					endcase
-					dec_inst = $sformatf("%s x%1d,x%1d,0x%1h", inst_name, i.btype.rs1, i.btype.rs2, 
-							{{20{i.btype.imm12}},i.btype.imm12,i.btype.imm11,i.btype.imm10_5,i.btype.imm4_1,1'b0});	
-					end 
-				typePack::OP: 
-					case(i.rtype.funct3)
-						typePack::OR : dec_inst = $sformatf("or x%1d,x%1d,x%1d", i.rtype.rd, i.rtype.rs1, i.rtype.rs2);
-						typePack::AND : dec_inst = $sformatf("and x%1d,x%1d,x%1d", i.rtype.rd, i.rtype.rs1, i.rtype.rs2);
-						typePack::XOR : dec_inst = $sformatf("xor x%1d,x%1d,x%1d", i.rtype.rd, i.rtype.rs1, i.rtype.rs2);
-						typePack::SLT :dec_inst = $sformatf("slt x%1d,x%1d,x%1d", i.rtype.rd, i.rtype.rs1, i.rtype.rs2);
-						typePack::ADD :
-							if (i.rtype.funct7[5] == 1) dec_inst = $sformatf("sub x%1d,x%1d,x%1d", i.rtype.rd, i.rtype.rs1, i.rtype.rs2);
-							else dec_inst = $sformatf("add x%1d,x%1d,x%1d", i.rtype.rd, i.rtype.rs1, i.rtype.rs2);
-						typePack::SLL : dec_inst = $sformatf("sll x%1d,x%1d,x%1d", i.itype.rd, i.itype.rs1, i.rtype.rs2);
-						typePack::SR : 
-							if (i.rtype.funct7[5] == 1) dec_inst = $sformatf("sra x%1d,x%1d,x%1d", i.rtype.rd, i.rtype.rs1, i.rtype.rs2);
-							else dec_inst = $sformatf("srl x%1d,x%1d,x%1d", i.rtype.rd, i.rtype.rs1,  i.rtype.rs2);
-						default begin dec_inst = UNKNOWN_INST; errors = errors + 1; end
-					endcase
-				typePack::IMM: 
-					case(i.itype.funct3)
-						typePack::OR : dec_inst = $sformatf("ori x%1d,x%1d,0x%1h", i.itype.rd, i.itype.rs1,{{20{i.itype.imm[11]}},i.itype.imm});
-						typePack::AND : dec_inst = $sformatf("andi x%1d,x%1d,0x%1h", i.itype.rd, i.itype.rs1,{{20{i.itype.imm[11]}},i.itype.imm});
-						typePack::XOR : dec_inst = $sformatf("xori x%1d,x%1d,0x%1h", i.itype.rd, i.itype.rs1,{{20{i.itype.imm[11]}},i.itype.imm});
-						typePack::SLT : dec_inst = $sformatf("slti x%1d,x%1d,0x%1h", i.itype.rd, i.itype.rs1,{{20{i.itype.imm[11]}},i.itype.imm});
-						typePack::ADD : dec_inst = $sformatf("addi x%1d,x%1d,0x%1h", i.itype.rd, i.itype.rs1,{{20{i.itype.imm[11]}},i.itype.imm});
-						typePack::SLL : dec_inst = $sformatf("slli x%1d,x%1d,%1d", i.itype.rd, i.itype.rs1, i.itype.imm[4:0]);
-						typePack::SR : 
-							if (i.rtype.funct7[5] == 1) dec_inst = $sformatf("srai x%1d,x%1d,%1d", i.rtype.rd, i.rtype.rs1, i.itype.imm[4:0]);
-							else dec_inst = $sformatf("srli x%1d,x%1d,%1d", i.rtype.rd, i.rtype.rs1,  i.itype.imm[4:0]);
-						default begin dec_inst = UNKNOWN_INST; errors = errors + 1; end
-						endcase
-				EBREAK_OPCODE: 
-					dec_inst = "ebreak";
-				typePack::LUI:
-					dec_inst = $sformatf("lui x%1d,0x%1h", i.utype.rd, i.utype.imm);
-					
-				default begin
-					// Received an instruction that is not known
-					dec_inst = UNKNOWN_INST;
-					errors = errors + 1;
-				end 
-			endcase
-			end
-		endfunction
-
-		function string stage_state(input [31:0] inst);
-			automatic typePack::instruction_t i = inst;
-			stage_state = $sformatf("%s",dec_inst(i));
-		endfunction
-		
-		/* This function will copy each character of a string into a single array of bits
-		for use by readmemh for the Vivado simulator. The format of bit array must be as
-		follows:
-		- The last character of the string  must be located at [7:0] of the 
-		- The second to last character of the string must be located at [15:8] and so on
-		- The first character of the string must be located at [l*8-1:(l-1)*8]
-			where l is the number of characters in the array
-		- The location at [(l+1)*8-1:l*8] must be 0 (null terminated string)
-
-		logic [31: 0] a_vect;
-	logic [0 :31] b_vect;
-	logic [63: 0] dword;
-	integer sel;
-	a_vect[ 0 +: 8] // == a_vect[ 7 : 0]
-	a_vect[15 -: 8] // == a_vect[15 : 8]
-	b_vect[ 0 +: 8] // == b_vect[0 : 7]
-	b_vect[15 -: 8] // == b_vect[8 :15]
-	dword[8*sel +: 8] // variable part-select with fixed width
-
-	https://forums.xilinx.com/t5/Simulation-and-Verification/readmemh-doesn-t-support-string-as-the-filename/td-p/833603
-		*/
-		function reg [256*8-1:0] copy_string(string str);
-			automatic int i;
-			//$display("String:%s len=%1d",str,str.len());
-			for (i=0;i<str.len();i=i+1) begin
-				// Copy characters from the end of the string to the start
-				copy_string[(i+1)*8-1 -: 8] = str.getc(str.len()-i-1);
-				//$write("%c-0x%h-%1d ",str.getc(str.len()-i-1),copy_string[(i+1)*8-1 -: 8],i);
-			end
-			//$display();
-			//$write("%d ",i);
-			copy_string[(i+1)*8-1 -: 8] = 0;
-			//$write(" %c-0x%h-%1d ",str.getc(i),copy_string[(i+1)*8-1 -: 8],i);
-			//$display();
-		endfunction
-		
-		function  print_string(reg [256*8-1:0] str);
-			automatic int i;
-			for (i=0;i<256;i=i+1) begin
-				$write("0x%h-%1d ",str[(i+1)*8-1-:8],i);
-				if (i%16 == 0)
-					$display();
-			end
-			$display();
-		endfunction
-
 		initial begin
 			$timeformat(-9, 0, " ns", 20);
 			$display("===== RISC-V Final Simulation Model %s =====", sim_model_version);
@@ -483,161 +183,22 @@ module riscv_final_tb ();
 				//	$display("No Errors");
 				$display();
 				
-				/////////////////////////////////////////
 				// IF Stage Printing
-				/////////////////////////////////////////
-				$write("  IF: PC=0x%8h",if_PC);
-				if (!iMemRead) begin
-					$write(" Load Use Stall (iMemRead=0)");				
-				end
-							if (if_PC != rtl_PC) begin
-					$write(" ** ERR** incorrect PC=%h", rtl_PC);
-					errors = errors + 1;
-				end
-				if (iMemRead != rtl_iMemRead) begin
-					$write(" ** ERR** incorrect iMemRead=%1h", rtl_iMemRead);
-					errors = errors + 1;
-				end
-				$display();
+				errors += if_stage_check(if_PC, rtl_PC, iMemRead, rtl_iMemRead);
 					
-				/////////////////////////////////////////
 				// ID Stage Printing
-				/////////////////////////////////////////
-				$write("  ID: PC=0x%8h I=0x%8h [%s]",id_PC, instruction_id, stage_state(instruction_id));
-				if (!iMemRead)
-					$write(" Load Use Stall");
-				if (insert_ex_bubble)
-					$write(" Insert Bubble into EX");	
-				// If there is a bubble in the id_PC, ignore the compare
-				if (!(id_PC[0] === 1'bX) && rtl_Instruction != instruction_id) begin
-					$display(" ** ERR** incorrect I=%h", rtl_Instruction);
-					errors = errors + 1;
-				end
-				else $display();
+				errors += id_stage_check(id_PC,instruction_id,rtl_Instruction,iMemRead,insert_ex_bubble);
 				
-				/////////////////////////////////////////
 				// EX Stage Printing
-				/////////////////////////////////////////
-				$write("  EX: PC=0x%8h I=0x%8h [%s]", ex_PC,instruction_ex,stage_state(instruction_ex));
-				// See if this is an instruction that uses the ALU result
-				if (instruction_ex.itype.opcode == typePack::S ||
-					instruction_ex.itype.opcode == typePack::L ||
-					instruction_ex.itype.opcode == typePack::BRANCH ||
-					instruction_ex.itype.opcode == typePack::LUI ||
-					/* instruction_ex.itype.opcode == typePack::JAL || */
-					/* instruction_ex.itype.opcode == typePack::JALR || */
-					((instruction_ex.itype.opcode == typePack::IMM ||    // ALU Op that doesn't write to r0
-					instruction_ex.itype.opcode == typePack::OP) &&
-					instruction_ex.itype.rd != 0)
-					) begin
-					$write(" alu result=0x%1h ",ex_alu_result);
-					if (forwardA == 1)
-						$write(" [FWD MEM(0x%1h) to r1]",mem_alu_result);
-					else if (forwardA == 2)
-						$write(" [FWD WB(0x%1h) to r1]",wb_writedata);
-					if (forwardB == 1)
-						$write(" [FWD MEM(0x%1h) to r2]",mem_alu_result);
-					else if (forwardB == 2)
-						$write(" [FWD WB(0x%1h) to r2]",wb_writedata);
-					if (!(rtl_ALUResult === ex_alu_result)) begin   // Don't allow 'x' matching
-						$write(" ** ERR** incorrect alu result=%1h", rtl_ALUResult);
-						errors = errors + 1;
-					end
-						
-				end  // Don't care about the else case
-				// Print MEM bubble insertion
-				if (insert_mem_bubble)
-					$write(" Insert Bubble into MEM");			
-				$display();
+				errors += ex_stage_check(ex_PC,instruction_ex,ex_alu_result,rtl_ALUResult,mem_alu_result,
+					wb_writedata, forwardA, forwardB, insert_mem_bubble);
 
-				/////////////////////////////////////////
 				// MEM Stage Printing
-				/////////////////////////////////////////
-				$write("  MEM:PC=0x%8h I=0x%8h [%s]",mem_PC,instruction_mem, stage_state(instruction_mem));
-				// See if this is an instruction that uses memory
-				if (instruction_mem.itype.opcode == typePack::S) begin
-					// Is this a store instruction? Check to see that memory is used properly
-					if (rtl_MemRead) begin
-						$write(" ERR: MemRead should be 0");
-						errors = errors + 1;
-					end
-					if (!rtl_MemWrite) begin
-						$write(" ERR: MemWrite should be 1");
-						errors = errors + 1;
-					end
-					if (rtl_dWriteData != mem_dWriteData) begin
-						$write(" Err: Memory Write value 0x%1h but expecting value 0x%1h",rtl_dWriteData,mem_dWriteData);
-						errors = errors + 1;
-					end else begin
-						$write("  Memory Write Data=0x%1h ",rtl_dWriteData);
-					end
-					if (rtl_dAddress != mem_dAddress) begin
-						$write(" Err: Memory Write to address 0x%1h but expecting address 0x%1h",rtl_dAddress,mem_dAddress);
-						errors = errors + 1;
-					end else
-						$write("  Memory write to address 0x%1h",rtl_dAddress);					
-				end else if (instruction_mem.itype.opcode == typePack::L) begin
-					// Is this a load instruction? Check to see that memory is used properly
-					if (!rtl_MemRead) begin
-						$write(" ERR: MemRead should be 1");
-						errors = errors + 1;
-					end
-					if (rtl_MemWrite) begin
-						$write(" ERR: MemWrite should be 0");
-						errors = errors + 1;
-					end
-					if (!(rtl_dAddress === mem_dAddress)) begin
-						$write(" Err: Memory Read from address 0x%1h but expecting address 0x%1h",rtl_dAddress,mem_dAddress);
-						errors = errors + 1;
-					end
-					else begin
-						// Only print the memory read address: the data is not available until the next cycle
-						// (if there is a memory read mismatch, it won't happen until the next cycle)
-						$write(" Memory Read from address 0x%1h",rtl_dAddress);
-					end
-				end else begin
-					// If it is not an instruction that uses memory, make sure the memory is not being used
-					// (No debug necessary if no read operations are occuring)
-					if (rtl_MemRead) begin
-						$write(" ERR: MemRead should be 0");
-						errors = errors + 1;
-					end
-					if (rtl_MemWrite) begin
-						$write(" ERR: MemWrite should be 0");
-						errors = errors + 1;
-					end
-				end
-				// See if we have a branch instruction and indicate whether it is taken or not
-				if (instruction_mem.itype.opcode == typePack::BRANCH) begin
-					if (mem_branch_taken == 0)
-						$write(" Branch NOT Taken");
-					else
-						$write(" Branch Taken");
-				end
-				// See if there is a jump in the stage
-				if (instruction_mem.itype.opcode == typePack::JAL || 
-					instruction_mem.itype.opcode == typePack::JALR)
-					$write(" Jump Taken");
+				errors += mem_stage_check(mem_PC,instruction_mem,mem_dAddress,mem_dWriteData,rtl_dAddress,rtl_dWriteData,
+					rtl_MemRead, rtl_MemWrite, mem_branch_taken);
 
-				$display();
-
-				/////////////////////////////////////////
 				// WB Stage Printing
-				/////////////////////////////////////////
-				$write("  WB: PC=0x%8h I=0x%8h [%s] ",wb_PC,instruction_wb,stage_state(instruction_wb));
-				if (wb_RegWrite) begin
-					// Check to see if this instruction writes back to the register file
-					$write("WriteBackData=0x%1h ",rtl_WriteBackData);
-					if (!(rtl_WriteBackData === wb_writedata)) begin
-						$write(" ** ERR** expecting to write back data=0x%1h", wb_writedata);
-						errors = errors + 1;
-					end else if (^rtl_WriteBackData === 1'bX || ^wb_writedata === 1'bX) begin
-						$write(" ** ERR** Write back data is undefined=0x%1h", wb_writedata);
-						errors = errors + 1;
-					end
-				end
-				// no else: We don't know if the rtl is trying to write to the register file
-				$display();
+				errors += wb_stage_check(wb_PC,instruction_wb,wb_writedata,rtl_WriteBackData,wb_RegWrite);
 				
 			end
 			if (errors > 0) begin
@@ -645,9 +206,6 @@ module riscv_final_tb ();
 				$finish;
 			end
 		end
-
-		
-
 
 		///////
 		// IF

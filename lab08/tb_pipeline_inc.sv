@@ -6,12 +6,14 @@
 //
 //////////////////////////////////////////////////////////////////////////////////
 
-localparam [6:0] S_OPCODE = 7'b0100011;
-localparam [6:0] L_OPCODE = 7'b0000011;
-localparam [6:0] BR_OPCODE = 7'b1100011;
-localparam [6:0] R_OPCODE = 7'b0110011;
-localparam [6:0] I_OPCODE = 7'b0010011;
-localparam [6:0] SYS_OPCODE = 7'b1110011;
+localparam [6:0] S_OPCODE =    7'b0100011;
+localparam [6:0] L_OPCODE =    7'b0000011;
+localparam [6:0] BR_OPCODE =   7'b1100011;
+localparam [6:0] R_OPCODE =    7'b0110011;
+localparam [6:0] I_OPCODE =    7'b0010011;
+localparam [6:0] JAL_OPCODE =  7'b1101111;
+localparam [6:0] JALR_OPCODE = 7'b1100111;
+localparam [6:0] SYS_OPCODE =  7'b1110011;
 
 localparam [2:0] ADDSUB_FUNCT3 = 3'b000;
 localparam [2:0] SLL_FUNCT3 = 3'b001;
@@ -223,5 +225,244 @@ function automatic int alu_result(input [31:0] instruction, input[31:0] op1, inp
     endcase
 
     //$display("i=%h op1=%h op2=%h r=%h",instruction,op1,op2,alu_result);
+
+endfunction
+
+// Print IF stage information and check validity
+function automatic int if_stage_check(
+    input wire [31:0] tb_pc, 
+    input wire [31:0] rtl_pc,
+    input wire tb_imemread = 1, 
+    input wire rtl_imemread = 1);
+
+    int errors = 0;
+
+    $write("  IF: PC=0x%8h",tb_pc);
+    if (!tb_imemread) begin
+        $write(" Load Use Stall (iMemRead=0)");				
+    end
+    if (tb_pc != rtl_pc) begin
+        $write(" ** ERR** incorrect PC=%h", rtl_PC);
+        errors = errors + 1;
+    end
+    if (tb_imemread != rtl_imemread) begin
+        $write(" ** ERR** incorrect iMemRead=%1h", rtl_imemread);
+        errors = errors + 1;
+    end
+    $display();
+
+    if_stage_check = errors;
+
+endfunction
+
+function automatic int id_stage_check(
+    input wire [31:0] tb_id_pc, 
+    input wire [31:0] tb_id_instruction,
+    input wire [31:0] rtl_id_instruction,
+    input wire tb_imemread = 1, 
+    input wire insert_ex_bubble = 0);
+
+    int errors = 0;
+
+    $write("  ID: PC=0x%8h I=0x%8h [%s]",tb_id_pc, tb_id_instruction, dec_inst(tb_id_instruction));
+    if (!tb_imemread)
+        $write(" Load Use Stall");
+    if (insert_ex_bubble)
+        $write(" Insert Bubble into EX");	
+    // If there is a bubble in the id_PC, ignore the compare
+    if (!(tb_id_pc[0] === 1'bX) && rtl_id_instruction != tb_id_instruction) begin
+        $write(" ** ERR ** I=%h but expecting:%h", rtl_id_instruction, tb_id_instruction);
+        errors = errors + 1;
+    end
+    else if(^instruction_id[0] === 1'bx) begin
+        $write(" ** ERR ** Bad instruction read");
+        errors = errors + 1;
+    end
+    if (!valid_inst(rtl_id_instruction) && !(^rtl_id_instruction[0] === 1'bx)) begin
+        $display(" Unknown Instruction=%h", rtl_id_instruction);
+        errors = errors + 1;
+    end
+    $display();
+
+    id_stage_check = errors;
+
+endfunction
+
+function automatic int uses_alu(logic [31:0] instruction)
+
+	logic [6:0] instruction_ex_op;
+	assign  instruction_ex_op = instruction[6:0];
+	if (instruction_ex_op == S_OPCODE ||
+				instruction_ex_op == L_OPCODE ||
+				instruction_ex_op == BR_OPCODE ||
+				((instruction_ex_op == I_OPCODE ||    // ALU Op that doesn't write to r0
+				  instruction_ex_op == R_OPCODE) &&
+				  instruction_ex_rd != 0)
+				)
+        uses_alu = 1;
+    else
+        uses_alu = 0;
+
+endfunction
+
+
+function automatic int ex_stage_check(
+    input wire [31:0] tb_ex_PC, 
+    input wire [31:0] tb_ex_instruction,
+    input wire [31:0] tb_ex_aluresult,
+    input wire [31:0] rtl_ALUResult,
+    input wire [31:0] tb_mem_aluresult,
+    input wire [31:0] tb_wb_writedata,
+    input int forwardA = 0,
+    input int forwardB = 0,
+    input wire insert_mem_buble = 0
+    )
+
+    int errors = 0;
+
+    $write("  EX: PC=0x%8h I=0x%8h [%s]", tb_ex_PC,tb_ex_instruction,dec_inst(tb_ex_instruction));
+    if uses_alu(tb_ex_instruction) begin
+        $write(" alu result=0x%1h ",tb_ex_aluresult);
+        if (forwardA == 1)
+            $write(" [FWD MEM(0x%1h) to r1]",tb_mem_aluresult);
+        else if (forwardA == 2)
+            $write(" [FWD WB(0x%1h) to r1]",tb_wb_writedata);
+        if (forwardB == 1)
+            $write(" [FWD MEM(0x%1h) to r2]",tb_mem_aluresult);
+        else if (forwardB == 2)
+            $write(" [FWD WB(0x%1h) to r2]",tb_wb_writedata);
+        if (rtl_ALUResult != tb_ex_aluresult) begin
+            $write(" ** ERR ** incorrect alu result=%1h but expecting %1h", rtl_ALUResult, tb_ex_aluresult);
+            errors = errors + 1;
+        end
+    end
+    if (insert_mem_bubble)
+        $write(" Insert Bubble");			
+    $display();
+
+    ex_stage_check = errors;
+
+endfunction
+
+function automatic int mem_stage_check(
+    input wire [31:0] tb_mem_PC, 
+    input wire [31:0] tb_mem_instruction,
+    input wire [31:0] tb_mem_dAddress,
+    input wire [31:0] tb_mem_dWriteData,
+    input wire [31:0] rtl_mem_dAddress,
+    input wire [31:0] rtl_mem_dWriteData,
+    input wire rtl_MemRead,
+    input wire rtl_MemWrite,
+    input wire tb_branch_taken,
+    )
+
+    logic [7:0] tb_mem_insruction_op = tb_mem_instruction[6:0];
+
+    int errors = 0;
+
+    $write("  MEM:PC=0x%8h I=0x%8h [%s]",tb_mem_PC,tb_mem_instruction, dec_inst(tb_mem_instruction));
+
+    // Make sure settings for memory interface are correct based on the current instruciton
+    if (tb_mem_insruction_op == S_OPCODE || tb_mem_insruction_op == L_OPCODE) begin
+        // This is a load or a store. Check the address
+        if (rtl_mem_dAddress != tb_mem_dAddress) begin
+            $write(" Err: Memory address=0x%1h but expecting address 0x%1h",rtl_mem_dAddress,tb_mem_dAddress);
+            errors = errors + 1;
+        end
+
+        // Is this a store instruction? Check to see that memory is used properly
+        if (tb_mem_insruction_op == S_OPCODE) begin
+            if (rtl_MemRead) begin
+                $write(" ERROR: MemRead should be 0 (store instruction)");
+                errors = errors + 1;
+            end
+            if (!rtl_MemWrite) begin
+                $write(" ERROR: MemWrite should be 1 (store instruction)");
+                errors = errors + 1;
+            end
+            if (rtl_mem_dWriteData != tb_mem_dWriteData) begin
+                $write(" Err: Memory Write value 0x%1h but expecting value 0x%1h",rtl_mem_dWriteData,tb_mem_dWriteData);
+                errors = errors + 1;
+            end
+            if (rtl_mem_dAddress == tb_mem_dAddress && rtl_mem_dWriteData == tb_mem_dWriteData) begin
+                // Valid write debug message
+                $write(" Memory Write 0x%1h to address 0x%1h ",rtl_dWriteData,rtl_dAddress);
+            end
+        // Is this a load instruction? Check to see that memory is used properly
+        end else if (tb_mem_insruction_op == L_OPCODE) begin
+            if (!rtl_MemRead) begin
+                $write(" ERR: MemRead should be 1");
+                errors = errors + 1;
+            end
+            if (rtl_MemWrite) begin
+                $write(" ERR: MemWrite should be 0");
+                errors = errors + 1;
+            end
+            if (rtl_mem_dAddress == tb_mem_dAddress && rtl_mem_dWriteData == tb_mem_dWriteData) begin
+                $write(" Memory Read from address 0x%1h ",tb_mem_dAddress);  // Note: data not ready until next cycle
+            end
+        end 
+
+    end
+
+    else begin
+        // If it is not an instruction that uses memory, make sure the memory is not being used
+        // (No debug necessary if no read operations are occuring)
+        if (rtl_MemRead) begin
+            $write(" ERROR: MemRead should be 0");
+            errors = errors + 1;
+        end
+        if (rtl_MemWrite) begin
+            $write(" ERROR: MemWrite should be 0");
+            errors = errors + 1;
+        end
+    end
+
+    // See if we have a branch instruction and indicate whether it is taken or not
+    if (tb_mem_insruction_op == BR_OPCODE) begin
+        if (tb_branch_taken == 1)
+            $write(" Branch Taken");
+        else
+            $write(" Branch NOT Taken");
+    end
+
+    // See if there is a jump in the stage
+    if (tb_mem_insruction_op == JAL_OPCODE || 
+        tb_mem_insruction_op == JALR_OPCODE)
+        $write(" Jump Taken");
+
+    $display();
+
+    mem_stage_check = errors;
+
+endfunction
+
+
+function automatic int wb_stage_check(
+    input wire [31:0] tb_wb_PC, 
+    input wire [31:0] tb_wb_instruction,
+    input wire [31:0] tb_wb_WriteBackData,
+    input wire [31:0] rtl_wb_WriteBackData,
+    input wire tb_wb_RegWrite,
+    )
+
+    int errors = 0;
+
+    $write("  WB: PC=0x%8h I=0x%8h [%s] ",tb_wb_PC,tb_wb_instruction,dec_inst(tb_wb_instruction));
+    // Check to see if this instruction writes back to the register file
+    if (tb_wb_RegWrite) begin
+        if (!(rtl_wb_WriteBackData === tb_wb_WriteBackData)) begin
+            $write(" ** ERR** expecting to write back data=0x%1h but received 0x%1h", tb_wb_WriteBackData, rtl_wb_WriteBackData);
+            errors = errors + 1;
+        end else if (^rtl_wb_WriteBackData === 1'bX || ^tb_wb_WriteBackData === 1'bX) begin
+            $write(" ** ERR** Write back data is undefined=0x%1h", tb_wb_WriteBackData);
+            errors = errors + 1;
+        end
+        else begin
+            $write("WriteBackData=0x%1h ",rtl_wb_WriteBackData);
+        end
+    end
+
+    wb_stage_check = errors;
 
 endfunction
