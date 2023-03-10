@@ -61,8 +61,6 @@ module riscv_final_tb ();
 		.TEXT_MEMORY_FILENAME(TEXT_MEMORY_FILENAME),
 		.PC_OFFSET(TEXT_SEGMENT_START_ADDRESSS)) 
 		imem(.clk(clk),.rst(rst),.read(tb_MemRead),.write(tb_MemWrite),.address(tb_Address),.data(tb_dReadData));
-
-
 	
 	
 	//////////////////////////////////////////////////////////////////////////////////
@@ -112,8 +110,6 @@ module riscv_final_tb ();
 	end
 
 
-
-
 	module riscv_final_sim_model
 		(tb_clk, tb_rst, rtl_PC, rtl_Instruction, rtl_iMemRead, rtl_ALUResult, rtl_dAddress, rtl_dWriteData, 
 		rtl_dReadData, rtl_MemRead, rtl_MemWrite, rtl_WriteBackData, inst_mem_filename, data_mem_filename, error_count);
@@ -141,7 +137,7 @@ module riscv_final_tb ();
 
 		// Internal shadow state
 		logic [31:0] int_reg [31:0];
-		typePack::instruction_t instruction_id, instruction_ex, instruction_mem, instruction_wb;
+		instruction_t instruction_id, instruction_ex, instruction_mem, instruction_wb;
 		logic iMemRead;
 		logic [31:0] if_PC, id_PC, ex_PC, mem_PC, wb_PC;	// PC from the simulation model
 		logic [31:0] ex_read1, ex_read2, ex_operand1, ex_operand2, ex_immediate, ex_s_immediate, ex_u_immediate;
@@ -227,38 +223,16 @@ module riscv_final_tb ();
 		end
 			
 		// Instruction Memory
-		logic [31:0] instruction_memory[INSTRUCTION_MEMORY_WORDS-1:0];
-		reg [256*8-1:0] i_filename;
-		initial begin
-			i_filename = copy_string(inst_mem_filename);
-			$readmemh(i_filename, instruction_memory);
-			if (^instruction_memory[0] === 1'bX) begin
-				$display($sformatf("**** Error: RISC-V Simulation model instruction memory '%s' failed to load****",inst_mem_filename));
-			end
-			else
-				$display($sformatf("**** RISC-V Simulation model: Loaded instruction memory '%s' ****",inst_mem_filename));
-		end
-
-		// Instruction memory read (synchronous read). No writes
-		// Read every clock cycle (even if we will end up ignoring NOP instructions that are read)
-		wire [31:0] local_PC = (if_PC - INITIAL_PC) >> 2;
-		always@(posedge tb_clk) begin
-			if (tb_rst) begin
-			instruction_id <= NOP_INSTRUCTION;  // Initialize instruction with "NOP"
-			end
-			else begin
-				if (iMemRead) begin
-					instruction_id <= instruction_memory[local_PC];
-				end
-			end
-		end
-
+		instruction_memory #(.INSTRUCTION_MEMORY_WORDS(INSTRUCTION_MEMORY_WORDS),
+			.TEXT_MEMORY_FILENAME(TEXT_MEMORY_FILENAME),
+			.PC_OFFSET(TEXT_SEGMENT_START_ADDRESSS)) 
+			imem(.clk(tb_clk),.rst(tb_rst),.imem_read(iMemRead),.pc(if_PC),.instruction(instruction_id));
 		
 		///////
 		// ID
 		///////
 		logic [4:0] id_rs1;
-		assign id_rs1 = (instruction_id.itype.opcode == typePack::LUI) ? 0 :  instruction_id.rtype.rs1;	
+		assign id_rs1 = (instruction_id.itype.opcode == opcodes.LUI) ? 0 :  instruction_id.rtype.rs1;	
 		
 		always@(posedge tb_clk) begin
 			if (tb_rst) begin
@@ -273,7 +247,7 @@ module riscv_final_tb ();
 				ex_read1 <= int_reg[id_rs1];
 				ex_read2 <= int_reg[instruction_id.rtype.rs2];
 				// register writes
-				if (wb_RegWrite) 
+				if (wb_RegWrite)
 				begin				
 					int_reg[instruction_wb.rtype.rd] = wb_writedata;
 					if (instruction_id.rtype.rs1 == instruction_wb.rtype.rd)
@@ -348,34 +322,7 @@ module riscv_final_tb ();
 			end
 			
 			// ALU
-			if (instruction_ex.itype.opcode == typePack::L || instruction_ex.itype.opcode == typePack::S)
-				ex_alu_result = ex_operand1 + ex_operand2;
-			else if (instruction_ex.itype.opcode == typePack::BRANCH)
-				ex_alu_result = ex_operand1 - ex_operand2;
-			else if (instruction_ex.itype.opcode == typePack::LUI)
-				ex_alu_result = ex_operand1 + ex_operand2;
-			else if (instruction_ex.itype.opcode == typePack::OP || instruction_ex.itype.opcode == typePack::IMM)
-					case(instruction_ex.itype.funct3)
-						typePack::ADD: 
-							if (instruction_ex.rtype.opcode == typePack::OP && instruction_ex.rtype.funct7 ==  7'b0100000)
-								ex_alu_result = ex_operand1 - ex_operand2;
-							else
-								ex_alu_result = ex_operand1 + ex_operand2;
-						typePack::SLT: ex_alu_result = ($signed(ex_operand1) < $signed(ex_operand2)) ? 32'd1 : 32'd0;
-						typePack::AND: ex_alu_result = ex_operand1 & ex_operand2;
-						typePack::OR: ex_alu_result = ex_operand1 | ex_operand2;
-						typePack::XOR: ex_alu_result = ex_operand1 ^ ex_operand2;
-						typePack::SLL: ex_alu_result = ex_operand1 << ex_operand2[4:0];
-						typePack::SR: 
-							if (instruction_ex.rtype.funct7 ==  7'b0100000)
-								ex_alu_result =  $signed(ex_operand1) >>> ex_operand2[4:0];   // SRA
-							else
-								ex_alu_result =  ex_operand1 >> ex_operand2[4:0];   // SRL
-						default: ex_alu_result = 32'hxxxxxxxx;
-					endcase
-			else
-				ex_alu_result = 32'hxxxxxxxx;
-				
+			ex_alu_result = alu_result(instruction_ex,ex_operand1,ex_operand2);
 				
 			// PC target (branches and jumps)(
 			//   Branch and JAL: immediate + PC  (unique immediate computed in ID stage)
@@ -390,10 +337,8 @@ module riscv_final_tb ();
 					{{12{instruction_ex[31]}},instruction_ex[31],instruction_ex[19:12],instruction_ex[20],instruction_ex[30:21],1'b0};
 			else if (instruction_ex.itype.opcode == typePack::JALR) 
 				ex_branchjump_target = {ex_operand1[31:1],1'b0} + ex_immediate;
-					
 			else
 				ex_branchjump_target = 32'hxxxxxxxx;
-											
 		end
 		
 		assign load_use_condition =	(instruction_ex.itype.opcode == typePack::L) &&  // EX is a load
@@ -452,7 +397,13 @@ module riscv_final_tb ();
 						instruction_mem.itype.opcode == typePack::L)) && 
 						(instruction_mem.itype.rd != 0);
 
-		
+
+		data_memory #(.DATA_MEMORY_WORDS(DATA_MEMORY_WORDS),
+			.DATA_MEMORY_FILENAME(d_filename),
+			.DATA_SEGMENT_START_ADDRESSS(TEXT_SEGMENT_START_ADDRESSS)) 
+			imem(.clk(tb_clk),.rst(tb_rst),.imem_read(iMemRead),.pc(if_PC),.instruction(instruction_id));
+
+
 		// Data Memory
 		logic [31:0] data_memory[DATA_MEMORY_WORDS-1:0];
 
