@@ -230,10 +230,10 @@ endfunction
 
 // Print IF stage information and check validity
 function automatic int if_stage_check(
-    input wire [31:0] tb_pc, 
-    input wire [31:0] rtl_pc,
-    input wire tb_imemread = 1, 
-    input wire rtl_imemread = 1);
+    input logic[31:0] tb_pc, 
+    input logic[31:0]  rtl_pc,
+    input logic tb_imemread = 1, 
+    input logic rtl_imemread = 1);
 
     int errors = 0;
 
@@ -256,11 +256,11 @@ function automatic int if_stage_check(
 endfunction
 
 function automatic int id_stage_check(
-    input wire [31:0] tb_id_pc, 
-    input wire [31:0] tb_id_instruction,
-    input wire [31:0] rtl_id_instruction,
-    input wire tb_imemread = 1, 
-    input wire insert_ex_bubble = 0);
+    input logic [31:0] tb_id_pc, 
+    input logic [31:0] tb_id_instruction,
+    input logic [31:0] rtl_id_instruction,
+    input logic tb_imemread = 1, 
+    input logic insert_ex_bubble = 0);
 
     int errors = 0;
 
@@ -274,7 +274,7 @@ function automatic int id_stage_check(
         $write(" ** ERR ** I=%h but expecting:%h", rtl_id_instruction, tb_id_instruction);
         errors = errors + 1;
     end
-    else if(^instruction_id[0] === 1'bx) begin
+    else if(^tb_id_instruction[0] === 1'bx) begin
         $write(" ** ERR ** Bad instruction read");
         errors = errors + 1;
     end
@@ -288,10 +288,14 @@ function automatic int id_stage_check(
 
 endfunction
 
-function automatic int uses_alu(logic [31:0] instruction)
+function int uses_alu(input logic [31:0] instruction);
 
 	logic [6:0] instruction_ex_op;
+    logic [2:0] instruction_ex_rd;
+
 	assign  instruction_ex_op = instruction[6:0];
+	assign  instruction_ex_rd = instruction[11:7];
+
 	if (instruction_ex_op == S_OPCODE ||
 				instruction_ex_op == L_OPCODE ||
 				instruction_ex_op == BR_OPCODE ||
@@ -307,21 +311,21 @@ endfunction
 
 
 function automatic int ex_stage_check(
-    input wire [31:0] tb_ex_PC, 
-    input wire [31:0] tb_ex_instruction,
-    input wire [31:0] tb_ex_aluresult,
-    input wire [31:0] rtl_ALUResult,
-    input wire [31:0] tb_mem_aluresult,
-    input wire [31:0] tb_wb_writedata,
+    input logic [31:0] tb_ex_PC, 
+    input logic [31:0] tb_ex_instruction,
+    input logic [31:0] tb_ex_aluresult,
+    input logic [31:0] rtl_ALUResult,
+    input logic [31:0] tb_mem_aluresult,
+    input logic [31:0] tb_wb_writedata,
     input int forwardA = 0,
     input int forwardB = 0,
-    input wire insert_mem_buble = 0
-    )
+    input logic insert_mem_bubble = 0
+    );
 
     int errors = 0;
 
     $write("  EX: PC=0x%8h I=0x%8h [%s]", tb_ex_PC,tb_ex_instruction,dec_inst(tb_ex_instruction));
-    if uses_alu(tb_ex_instruction) begin
+    if (uses_alu(tb_ex_instruction)) begin
         $write(" alu result=0x%1h ",tb_ex_aluresult);
         if (forwardA == 1)
             $write(" [FWD MEM(0x%1h) to r1]",tb_mem_aluresult);
@@ -345,16 +349,16 @@ function automatic int ex_stage_check(
 endfunction
 
 function automatic int mem_stage_check(
-    input wire [31:0] tb_mem_PC, 
-    input wire [31:0] tb_mem_instruction,
-    input wire [31:0] tb_mem_dAddress,
-    input wire [31:0] tb_mem_dWriteData,
-    input wire [31:0] rtl_mem_dAddress,
-    input wire [31:0] rtl_mem_dWriteData,
-    input wire rtl_MemRead,
-    input wire rtl_MemWrite,
-    input wire tb_branch_taken,
-    )
+    input logic [31:0] tb_mem_PC, 
+    input logic [31:0] tb_mem_instruction,
+    input logic [31:0] tb_mem_dAddress,
+    input logic [31:0] tb_mem_dWriteData,
+    input logic [31:0] rtl_mem_dAddress,
+    input logic [31:0] rtl_mem_dWriteData,
+    input logic rtl_MemRead,
+    input logic rtl_MemWrite,
+    input logic tb_branch_taken
+    );
 
     logic [7:0] tb_mem_insruction_op = tb_mem_instruction[6:0];
 
@@ -439,12 +443,12 @@ endfunction
 
 
 function automatic int wb_stage_check(
-    input wire [31:0] tb_wb_PC, 
-    input wire [31:0] tb_wb_instruction,
-    input wire [31:0] tb_wb_WriteBackData,
-    input wire [31:0] rtl_wb_WriteBackData,
-    input wire tb_wb_RegWrite,
-    )
+    input logic [31:0] tb_wb_PC, 
+    input logic [31:0] tb_wb_instruction,
+    input logic [31:0] tb_wb_WriteBackData,
+    input logic [31:0] rtl_wb_WriteBackData,
+    input logic tb_wb_RegWrite
+    );
 
     int errors = 0;
 
