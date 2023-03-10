@@ -13,7 +13,7 @@ module instruction_memory(clk, rst, imem_read, pc, instruction);
     output logic [31:0] instruction;
 
     parameter INSTRUCTION_MEMORY_WORDS = 1024;
-    parameter TEXT_MEMORY_FILENAME = ""
+    parameter TEXT_MEMORY_FILENAME = "";
 	parameter PC_OFFSET = 32'h00000000;
 
     `include "tb_pipeline_inc.sv"
@@ -50,14 +50,14 @@ endmodule
 
 // Data memory simulation model
 // - Issues a $finish if the memory contents cannot be loaded
-module data_memory(clk, rst, read, write, address, data);
+module data_memory(clk, rst, read, write, address, read_data, write_data);
 
     input logic clk, rst, read, write;
-    input logic [31:0] address;
-    output logic [31:0] data;
+    input logic [31:0] address, write_data;
+    output logic [31:0] read_data;
 
     parameter DATA_MEMORY_WORDS = 256;
-    parameter DATA_MEMORY_FILENAME = ""
+    parameter DATA_MEMORY_FILENAME = "";
 	parameter DATA_SEGMENT_START_ADDRESSS = 32'h10010000;
 	localparam DATA_SEGMENT_END_ADDRESSS = DATA_SEGMENT_START_ADDRESSS + DATA_MEMORY_WORDS*4-1;
 
@@ -84,16 +84,16 @@ module data_memory(clk, rst, read, write, address, data);
 	assign valid_dMem_Address = (address >= DATA_SEGMENT_START_ADDRESSS) && (address < DATA_SEGMENT_END_ADDRESSS);
 	always@(posedge clk or posedge rst) begin
 	   if (rst)
-	       data <= 0; 
+	       read_data <= 0; 
 	   else
 		if (read) begin
 			if (valid_dMem_Address)
-				data <= data_memory[local_dMem_Address];
+				read_data <= data_memory[local_dMem_Address];
 			else
-				data <= 32'hX;
+				read_data <= 32'hX;
 		end else if (write) begin
 			if (valid_dMem_Address)
-				data_memory[local_dMem_Address] <= tb_dWriteData;
+				data_memory[local_dMem_Address] <= write_data;
 			// If invalid just ignore write
 		end
 	end
