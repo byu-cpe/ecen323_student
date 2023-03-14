@@ -1,3 +1,4 @@
+`timescale 1ns / 100ps
 //////////////////////////////////////////////////////////////////////////////////
 //
 //  Filename: tb_riscv.sv
@@ -32,7 +33,7 @@ module instruction_memory(clk, rst, imem_read, pc, instruction);
 		else
 			$display("**** Testbench: Loaded instruction memory ****");
 	end
-
+	
 	// Instruction memory read (synchronous read). No writes
 	// Read every clock cycle (even if we will end up ignoring NOP instructions that are read)
 	always@(posedge clk or posedge rst) begin
