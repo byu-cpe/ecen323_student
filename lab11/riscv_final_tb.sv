@@ -405,8 +405,9 @@ module riscv_final_tb ();
 
 		data_memory #(.DATA_MEMORY_WORDS(DATA_MEMORY_WORDS),
 			.DATA_MEMORY_FILENAME(DATA_MEMORY_FILENAME),
-			.DATA_SEGMENT_START_ADDRESSS(TEXT_SEGMENT_START_ADDRESSS)) 
-			dmem(.clk(tb_clk),.rst(tb_rst),.read(mem_MemRead),.write(mem_MemWrite),.address(mem_dAddress),.read_data(wb_dReadData),.write_data(mem_dWriteData));
+			.DATA_SEGMENT_START_ADDRESSS(DATA_SEGMENT_START_ADDRESSS)) 
+			dmem(.clk(tb_clk),.rst(tb_rst),.read(mem_MemRead),.write(mem_MemWrite),
+				.address(mem_dAddress),.read_data(wb_dReadData),.write_data(mem_dWriteData));
 
 		/*
 		// Data Memory

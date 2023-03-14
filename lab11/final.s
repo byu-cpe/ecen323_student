@@ -25,24 +25,24 @@
     addi x2, x0, 0xfffff8f0
 
     # Branch tests (BEQ, BNE, BLT, BGE) 
-    addi x6, x0, -1
-    addi x7, x0, -8
-    addi x8, x0, 1
-    addi x9, x0, 81
-    addi x10, x9, 0
+    addi x6, x0, -1         # x6 = -1
+    addi x7, x0, -8         # x7 = -8
+    addi x8, x0, 1          # x8 = 1
+    addi x9, x0, 81         # x9 = 81
+    addi x10, x9, 0         # x10 = 0
     
 BEQ_TEST:
     beq x8, x9, ERROR       # beq not taken 
     beq x9, x10, BNE_TEST   # beq taken
-    beq x0, x0, ERROR
+    beq x0, x0, ERROR       # Shouldn't execute
 BNE_TEST:
     bne x9, x9, ERROR       # BNE_TEST: bne not taken
     bne x9, x8, BLT_TEST1   # bne taken
-    beq x0, x0, ERROR
+    beq x0, x0, ERROR       # Shouldn't execute
 BLT_TEST1:
     blt x9, x6, ERROR       # BLT_TEST1: BLT not taken (81 !< -1)
     blt x6, x9, BLT_TEST2   # BLT taken (-1 < 81)
-    beq x0, x0, ERROR
+    beq x0, x0, ERROR       # Shouldn't execute
 BLT_TEST2:
     blt x9, x8, ERROR       # BLT_TEST2: BLT not taken (81 !< 1)
     blt x8, x9, BGE_TEST1   # BLT taken (1 < 81)
@@ -50,25 +50,30 @@ BLT_TEST2:
 BGE_TEST1:
     bge x6, x9, ERROR		# BGE_TEST1: BGE not taken (-1 !> 81)
     bge x9, x10 BGE_TEST2	# BGE taken (81 == 81)
-    beq x0, x0, ERROR
+    beq x0, x0, ERROR       # Shouldn't execute
 BGE_TEST2:
     bge x7, x6, ERROR		# BGE_TEST2: BGE not taken (-8 !> -1)
-    bge x6, x7, SHIFT_TESTS # BGE taken (-1 > -8)
+    bge x6, x7, JUMP_TESTS  # BGE taken (-1 > -8)
+    beq x0, x0, ERROR       # Shouldn't execute
+    nop
+    nop
+    nop
 
     # Jump Tests
-    
+
+JUMP_TESTS:    
     # perform a raw jump with no link (return is the same)
     jal x0, JUMP_TEST1
     # perform a raw jump *with* a link to x1 (return is jalr with no offset)
 JUMP_TEST2:
-    jal x31, JUMP_TEST3	# JUMP_TEST2
+    jal x31, JUMP_TEST3	    # JUMP_TEST2
     # Perform a jump followed by a load-use to make sure the load-use stall is ignored.
     jal x0, JUMP_TEST4
     lw x2, 0(x1)
     addi x3, x2, 1
 JUMP_TEST5:
     # Perform a jalr that requires forwarding to test forwarding out
-    jal x31, JUMP_TEST6	# JUMP_TEST5
+    jal x31, JUMP_TEST6	    # JUMP_TEST5
     # This instruction should be skipped because we added 4 to x1
     xor x3, x3, x0
     # This is the instruction we should return to
@@ -172,16 +177,16 @@ SAME_VALUE:
     # At this point, the sum of the registers in x18 should be: 
     
     # Now add up the first 10 data memory locations. Use Jumps instead.
-    addi x23, x0, 0   # x23 will be the memory contents sum
-    addi x19, x0, 0   # loop index
-    addi x20, x0, 9   # terminal count
-    add x21, x0, x1  # pointer that changes in loop
+    addi x23, x0, 0         # x23 will be the memory contents sum
+    addi x19, x0, 0         # loop index
+    addi x20, x0, 9         # terminal count
+    add x21, x0, x1         # pointer that changes in loop
 
 SIMPLE_LOOP:
-    jal x31, ADD_PROC        # jump to the ADD_PROC to do the adds
+    jal x31, ADD_PROC           # jump to the ADD_PROC to do the adds
     
-    beq x19, x20, FINAL_SUM  # see if my loop index is the same as the terminal count. If so, exit
-    addi x21,x21,4           # otherwise increment loop counter and pointer and jump back
+    beq x19, x20, FINAL_SUM     # see if my loop index is the same as the terminal count. If so, exit
+    addi x21,x21,4              # otherwise increment loop counter and pointer and jump back
     addi x19,x19,1
     jal x0, SIMPLE_LOOP
     
@@ -197,7 +202,7 @@ FINAL_SUM:
     # Drop through to an infinite loop
 END:	# Jump to myself test
     addi a7, x0, 10   # Exit system call
-    ecall
+    ebreak
     jal x0, END
     # Should never get here
 

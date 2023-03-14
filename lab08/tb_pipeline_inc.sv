@@ -522,7 +522,7 @@ function automatic int mem_stage_check(
     input logic tb_branch_taken
     );
 
-    logic [7:0] tb_mem_insruction_op = tb_mem_instruction[6:0];
+    logic [6:0] tb_mem_insruction_op = tb_mem_instruction[6:0];
 
     int errors = 0;
 
@@ -564,7 +564,7 @@ function automatic int mem_stage_check(
                 $write(" ERR: MemWrite should be 0");
                 errors = errors + 1;
             end
-            if (rtl_mem_dAddress == tb_mem_dAddress && rtl_mem_dWriteData == tb_mem_dWriteData) begin
+            if (rtl_mem_dAddress == tb_mem_dAddress) begin
                 $write(" Memory Read from address 0x%1h ",tb_mem_dAddress);  // Note: data not ready until next cycle
             end
         end 
