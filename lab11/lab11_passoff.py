@@ -7,7 +7,6 @@ import sys
 # Add lab passoff files
 resources_path = pathlib.Path(__file__).resolve().parent.parent  / 'resources'
 sys.path.append( str(resources_path) )
-#sys.path.append('../resources')
 import lab_passoff
 import tester_module
 
@@ -34,6 +33,7 @@ test_files = {
     "alu"           		: "../lab02/alu.sv",
     "alu_constants"     	: "../include/riscv_alu_constants.sv",
     "regfile"       		: "../lab03/regfile.sv",
+    "riscv_tb"       		: "../lab08/tb_riscv.sv",
 }
 
 # Assembly
@@ -43,13 +43,13 @@ fib_mem = tester_module.rars_mem_file("fib", generate_data_mem=True)
 # Testbench simulations
 final_tb = tester_module.testbench_simulation( "Final Testbench", \
 	"riscv_final_tb", \
-	[ "riscv_final_tb", "alu_constants", "alu",  "regfile", "final",   ], [], \
-		 include_dirs = ["../include"], )
+	[ "riscv_final_tb", "alu_constants", "alu",  "regfile", "riscv_tb", "final",   ], [], \
+		 include_dirs = ["../include","../lab08"], )
 
 fib_tb = tester_module.testbench_simulation( "Final Testbench", \
 	"riscv_final_tb", \
-	[ "riscv_final_tb", "alu_constants", "alu",  "regfile", "final",   ], [], \
-		 include_dirs = ["../include"],
+	[ "riscv_final_tb", "alu_constants", "alu",  "regfile", "riscv_tb", "final",   ], [], \
+		 include_dirs = ["../include","../lab08"],
 		 generics = ["TEXT_MEMORY_FILENAME=fib_text.mem", \
 		"DATA_MEMORY_FILENAME=fib_data.mem"])
 
