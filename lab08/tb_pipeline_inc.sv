@@ -293,8 +293,12 @@ function string dec_inst(input [31:0] i);
                     end
                 endcase
             SYS_OPCODE:
-                if (funct3==EBREAK_ECALL_FUNCT3)
-                    dec_inst = $sformatf("ebreak");
+                if (funct3==EBREAK_ECALL_FUNCT3) begin
+                    if(i_imm[0] == 1)
+                        dec_inst = $sformatf("ebreak");
+                    else
+                        dec_inst = $sformatf("ecall");
+                end
                 else
                     dec_inst = $sformatf("unknown_sys");
             LUI_OPCODE: dec_inst = $sformatf("lui x%1d,0x%1h", inst.utype.rd, inst.utype.imm);
@@ -445,7 +449,7 @@ function automatic int id_stage_check(
         errors = errors + 1;
     end
     if (!valid_inst(rtl_id_instruction,use_enhanced_instructions) && !(^rtl_id_instruction[0] === 1'bx)) begin
-        $write(" ** ERR** Unknown Instruction=0x,%h", rtl_id_instruction);
+        $write(" ** ERR** Unknown Instruction=0x%h", rtl_id_instruction);
         errors = errors + 1;
     end
     $display();

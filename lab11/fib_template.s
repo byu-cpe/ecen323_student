@@ -110,7 +110,7 @@ final_add:
     # Done here!
 END:
     addi a7, x0, 10   # Exit system call
-    ecall
+    ebreak
     # Should never get here
     jal x0, END
     nop
