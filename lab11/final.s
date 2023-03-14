@@ -45,6 +45,10 @@ BLT_TEST1:
     beq x0, x0, ERROR       # Shouldn't execute
 BLT_TEST2:
     blt x9, x8, ERROR       # BLT_TEST2: BLT not taken (81 !< 1)
+    blt x8, x9, BLT_TEST3   # BLT taken (1 < 81)
+    beq x0, x0, ERROR
+BLT_TEST3:
+    blt x9, x9, ERROR       # BLT_TEST3: BLT not taken when registers equal (81==81)
     blt x8, x9, BGE_TEST1   # BLT taken (1 < 81)
     beq x0, x0, ERROR
 BGE_TEST1:
