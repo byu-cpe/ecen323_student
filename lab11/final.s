@@ -3,8 +3,8 @@
 # final.s
 #
 #  Tests new instructions:
-#    - branches
 #    - lui
+#    - branches
 #    - Jumps
 # 
 #  This relies on the "compact, text at 0" memory configuration
@@ -62,7 +62,7 @@ BGE_TEST2:
     # Jump Tests
 
 JUMP_TESTS:    
-    # perform a raw jump with no link (return is the same)
+    # perform a raw jump with no link
     jal x0, JUMP_TEST1
     # perform a raw jump *with* a link to x1 (return is jalr with no offset)
 JUMP_TEST2:
@@ -222,7 +222,10 @@ JUMP_TEST6:
     addi x31, x31, 4			# JUMP_TEST6
     # Dummy instruction (space)
     addi x0, x0, 0
-    jalr x0, x31, 0			
+    jalr x0, x31, 0
+    # Include a bogus load-use here (this should be skipped)
+    lw x3, 0(x1)
+    addi x2, x3, 4
     nop
     nop
     nop

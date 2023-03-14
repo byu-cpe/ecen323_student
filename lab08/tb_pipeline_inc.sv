@@ -292,6 +292,11 @@ function string dec_inst(input [31:0] i);
                         dec_inst = $sformatf("IMMEDIATE with UNKNOWN funct3 0x%1h",funct3);
                     end
                 endcase
+            SYS_OPCODE:
+                if (funct3==EBREAK_ECALL_FUNCT3)
+                    dec_inst = $sformatf("ebreak");
+                else
+                    dec_inst = $sformatf("unknown_sys");
             LUI_OPCODE: dec_inst = $sformatf("lui x%1d,0x%1h", inst.utype.rd, inst.utype.imm);
             JAL_OPCODE: dec_inst = $sformatf("jal x%1d,0x%1h", inst.jtype.rd, 
 					{{12{i[31]}},i[31],i[19:12],i[20],i[30:21]}); // don't add an ending 0 on instruction (just immediate)
