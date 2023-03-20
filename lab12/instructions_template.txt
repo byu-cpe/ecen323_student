@@ -1,0 +1,20 @@
+ECEN 323 Lab #12 Project Instructions
+
+Name:<Full Name> (<Net ID>)
+[Partner: <Full Name> (Net ID)]
+
+Title: <Project Title>
+
+Instructions:
+
+[Provide clear instructions on how to play your game including how to restart the game when it is over.
+You will lose points if the TA is unclear how to play or restart your game.]
+
+Custom characters: [Describe your new characters for your project]
+Custom background: [Describe your custom background]
+Procedures: [List the four procedures you created]
+Buttons: [Describe what the buttons do]
+LEDs and 7 Segment Display: [Describe how the seven segment display and LEDs are used]
+
+Partner:
+[If you worked on this project with a partner, describe the extra efforts you employed to complete the project. Also discuss how you broke up the project between you and your partner. If you did not have a partner, indicate so here.]
