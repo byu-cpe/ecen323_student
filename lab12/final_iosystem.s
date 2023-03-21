@@ -190,13 +190,17 @@ MCG_PROC_BUTTONS:
 
     # Continue playing game
 MCG_CONTINUE:
-    # Wait for button release
-    li a0, 0
-    jal WAIT_FOR_BUTTONS
+    # Wait for button release while updating timer
+    jal UPDATE_TIMER
+    lw t0, BUTTON_OFFSET(tp)
+    bne x0, t0, MCG_CONTINUE
 
-    # Wait for new button
-    li a0, 1
-    jal WAIT_FOR_BUTTONS
+    # Now that the button has been released, wait for a new button while updating timer
+MCG_CONTINUE_BTN:
+    jal UPDATE_TIMER
+    lw t0, BUTTON_OFFSET(tp)
+    beq x0, t0, MCG_CONTINUE_BTN
+    mv a0, t0               # copy button value to a0
     j MCG_PROC_BUTTONS
 
 MCG_GAME_ENDED:
@@ -257,7 +261,7 @@ MCG_EXIT:   # exit game procedure
 UPDATE_CHAR_ADDR:
 
     # load current character address in t2
-    lw t2, %lo(DISPLACED_CHARACTER)(gp)   # Load address of current character
+    lw t2, %lo(DISPLACED_CHARACTER_LOC)(gp)   # Load address of current character
 
 UCA_CHECK_BTNC:
     li t0, BUTTON_C_MASK
@@ -296,7 +300,7 @@ UCA_CHECK_BTND:
     bne t0, a0, UCA_CHECK_BTNU
     # Code for BTND - Move pointer down
     li t0, LAST_ROW
-    bge t0, t4, UCA_DONE            # Too far down, skip
+    bge t0, t3, UCA_DONE            # Too far down, skip
     addi t2, t2, ADDRESSES_PER_ROW  # Increment pointer
     j UCA_DONE
 
@@ -304,7 +308,7 @@ UCA_CHECK_BTNU:
     li t0, BUTTON_U_MASK
     bne t0, a0, UCA_DONE            # Exit - no buttons matched
     # Code for BTNU - Move pointer up
-    beq x0, t4, UCA_DONE                             # Too far up, skip
+    beq x0, t3, UCA_DONE                             # Too far up, skip
     addi t2, t2, NEG_ADDRESSES_PER_ROW               # Increment pointer
 
 UCA_DONE:
@@ -343,52 +347,6 @@ UT_DONE:
     # Read the seven segment value and place it in a0 (return value)
     lw a0, SEVENSEG_OFFSET(tp)
     ret             # jalr x0, ra, 0
-
-################################################################################
-#
-# WAIT_FOR_BUTTONS
-#
-#  Based on the value of the parameter, this procedure will wait until a button
-#  is pressed (a0 != 1) or when no buttons are pressed (a0 == 0). The procedure
-#  will return the value of the buttons when the given condition is reached.
-#  This procedure will call the "UPDATE_TIMER" procedure for each reading of the
-#  buttons to keep the timer counting while waiting for button presses. 
-#  Because this is not a leaf procedure, a stack frame is needed.
-#
-#  t0 is used for the button value
-#
-################################################################################
-
-WAIT_FOR_BUTTONS:
-
-    # setup stack frame and save return address
-    addi sp, sp, -4	    # Make room to save values on the stack
-    sw ra, 0(sp)		# Copy return address to stack
-
-WFB_READ_BUTTONS:
-    # Update the timer
-    jal UPDATE_TIMER
-    # Read buttons
-    lw t0, BUTTON_OFFSET(tp)
-    # For a==0, see if no buttons are being pressed
-    beq x0, a0, WFB_CHECK_NO_BUTTONS
-    # Fall through if a!=0. Exit if a button is being pressed
-    bne x0, t0, WFB_DONE
-    # If button not pressed, read again
-    beq x0, x0, WFB_READ_BUTTONS
-
-WFB_CHECK_NO_BUTTONS:
-    # Read buttons again if a button is being pressed (otherwise fall through to exit)
-    bne x0, t0, WFB_READ_BUTTONS
-
-WFB_DONE:
-    # Return last button value read (t0)
-    mv a0, t0
-    # Restore stack
-    lw ra, 0(sp)		# Restore return address
-    addi sp, sp, 4		# Update stack pointer
-    ret                 # jalr x0, ra, 0
-
 
 ################################################################################
 #
