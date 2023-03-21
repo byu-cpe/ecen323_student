@@ -8,7 +8,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-module riscv_mem (clk, rst, PC, iMemRead, instruction, dAddress, MemWrite, dWriteData, dReadData);
+module riscv_mem (clk, rst, PC, iMemRead, instruction, dAddress, MemRead, MemWrite, dWriteData, dReadData);
 
     input logic clk, rst;
     input logic [31:0] PC;
@@ -26,6 +26,7 @@ module riscv_mem (clk, rst, PC, iMemRead, instruction, dAddress, MemWrite, dWrit
     parameter DATA_MEMORY_FILENAME = "";
     parameter TEXT_START_ADDRESS = 32'h00400000;
     parameter DATA_START_ADDRESS = 32'h00800000;
+	parameter PRINT_DATA_MEMORY_TRANSACTIONS = 1; // Flag to determine whether to print memory reads and writes during simulation
     
     // Local constants
 	localparam INSTRUCTION_WORDS = INSTRUCTION_BRAMS*1024;
@@ -96,8 +97,6 @@ module riscv_mem (clk, rst, PC, iMemRead, instruction, dAddress, MemWrite, dWrit
 		// synthesis translate_on
     end
 
-
-
 	// Instruction Memory Read (synchronous)
 	logic valid_upper_text_address;
     assign valid_upper_text_address =
@@ -124,11 +123,15 @@ module riscv_mem (clk, rst, PC, iMemRead, instruction, dAddress, MemWrite, dWrit
         if(MemWrite == 1 && data_space_mem) begin
             data_memory[dAddress[DATA_ADDR_BITS-1:2]] <= dWriteData;
 			// synthesis translate_off
-			$display("%0t:Writing 0x%h to address 0x%h",$time, dWriteData, dAddress);
+			if (PRINT_DATA_MEMORY_TRANSACTIONS)
+				$display("%0t:Writing 0x%h to address 0x%h",$time, dWriteData, dAddress);
 			// synthesis translate_on	
 		end
+		// synthesis translate_off
+		if (PRINT_DATA_MEMORY_TRANSACTIONS && MemRead)
+			$display("%0t:Reading 0x%h from address 0x%h",$time, dWriteData, dAddress);
+		// synthesis translate_on			
         dReadData <= data_memory[dAddress[DATA_ADDR_BITS-1:2]];   
     end
-
 
 endmodule

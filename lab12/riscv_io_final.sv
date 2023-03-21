@@ -76,7 +76,7 @@ module riscv_io_final (clk, btnc, btnd, btnl, btnr, btnu, sw, led,
         .TEXT_MEMORY_FILENAME(TEXT_MEMORY_FILENAME),.DATA_MEMORY_FILENAME(DATA_MEMORY_FILENAME),
         .TEXT_START_ADDRESS(TEXT_START_ADDRESS),.DATA_START_ADDRESS(DATA_START_ADDRESS))
         mem (.clk(clk_proc), .rst(rst), .PC(PC), .iMemRead(iMemRead), .instruction(instruction),
-        .dAddress(dAddress), .MemWrite(dMemWrite), .dWriteData(dWriteData), .dReadData(dReadData) );
+        .dAddress(dAddress), .MemRead(dMemRead), .MemWrite(dMemWrite), .dWriteData(dWriteData), .dReadData(dReadData) );
 
     // I/O Sub-system
     iosystem #(.INPUT_CLOCK_RATE(PROC_CLOCK_RATE),.VGA_START_ADDRESS(VGA_START_ADDRESS),
