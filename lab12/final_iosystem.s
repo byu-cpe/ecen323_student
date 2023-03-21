@@ -208,9 +208,9 @@ MCG_GAME_ENDED:
     lw t1, SEVENSEG_OFFSET(tp)          # Load current score
     slt t2, t1, t0                      # Is new score less than fastest score?
     beq t2, x0, MCG_GAME_ENDED_NO_NEW_FASTEST_SCORE
-    # Update fastest score
-    lw t3, %lo(FASTEST_SCORE)(gp)
-    sw t1, 0(t3)
+    # Fall through when we have a new fastest score
+    addi t0, gp, %lo(FASTEST_SCORE)         # Compute address of fastest score memory location
+    sw t1, 0(t0)                            # Update fastest score with new value
     # Turn on all LEDs 
     li t0, 0xffff
     sw t0, LED_OFFSET(tp)
@@ -412,6 +412,7 @@ MOVE_CHARACTER:
     # See if the old displaced character should be restored
     andi t0, a1, MC_RESTORE_OLD_CHARACTER
     beq t0, x0, MC_SAVE_DISPLACED_CHAR      # Skip over restore character
+
     # Load the value of the character that was previously displaced
     lw t2, %lo(DISPLACED_CHARACTER)(gp)
     # Load the address of the old character that was previously replaced

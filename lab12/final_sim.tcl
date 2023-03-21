@@ -28,7 +28,7 @@ add_force sw 0
 add_force RsTx 1
 
 # Simulate the starting setup instructions
-run 3 us
+run 10 us
 
 # Simulate the btnr being pressed
 add_force btnr 1

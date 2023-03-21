@@ -3,7 +3,6 @@
 // Filename: riscv_mem.sv
 //
 // Author: Mike Wirthlin
-// Date: 2/4/2022
 //
 // Instruction and data memory for the RISC-V procssor.
 //
@@ -122,8 +121,12 @@ module riscv_mem (clk, rst, PC, iMemRead, instruction, dAddress, MemWrite, dWrit
 	// Data Memory Read (synchronous)
     always_ff @(posedge clk)
     begin
-        if(MemWrite == 1 && data_space_mem)
+        if(MemWrite == 1 && data_space_mem) begin
             data_memory[dAddress[DATA_ADDR_BITS-1:2]] <= dWriteData;
+			// synthesis translate_off
+			$display("%0t:Writing 0x%h to address 0x%h",$time, dWriteData, dAddress);
+			// synthesis translate_on	
+		end
         dReadData <= data_memory[dAddress[DATA_ADDR_BITS-1:2]];   
     end
 
