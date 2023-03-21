@@ -224,11 +224,15 @@ MCG_GAME_ENDED_NO_NEW_FASTEST_SCORE:
 
 MCG_END_GAME_EARLY:
     # When btnc is pressed, write a 0xffff to Seven segment display (indicating bogus play)
-    # and prepare for new game
+    # erase the current character, and prepare for new game
     li t1, INIT_FASTEST_SCORE
     sw t1, SEVENSEG_OFFSET(tp)
     # Initialize the LEDs with 0 (not a high score)
     sw x0, LED_OFFSET(tp)
+    # Erase the current character
+    lw a0,%lo(DISPLACED_CHARACTER_LOC)(gp)
+    li a1, 1
+    jal MOVE_CHARACTER
     # Restart game
     j MCG_RESTART
 
@@ -283,7 +287,7 @@ UCA_CHECK_BTNR:
     bne t0, a0, UCA_CHECK_BTNL
     # Code for BTNR - Move pointer right (if not in last column)
     li t0, LAST_COLUMN
-    beq t0, t3, UCA_DONE            # Last column, do nothing
+    beq t0, t2, UCA_DONE            # Last column, do nothing
     addi t2, t2, 4                  # Increment pointer
     j UCA_DONE
 
@@ -291,7 +295,7 @@ UCA_CHECK_BTNL:
     li t0, BUTTON_L_MASK
     bne t0, a0, UCA_CHECK_BTND
     # Code for BTNL - Move Pointer left (if not in first column)
-    beq x0, t3, UCA_DONE            # Too far left, skip
+    beq x0, t2, UCA_DONE            # Too far left, skip
     addi t2, t2, -4                 # Decrement pointer
     j UCA_DONE
 
@@ -300,7 +304,7 @@ UCA_CHECK_BTND:
     bne t0, a0, UCA_CHECK_BTNU
     # Code for BTND - Move pointer down
     li t0, LAST_ROW
-    bge t0, t3, UCA_DONE            # Too far down, skip
+    bge t0, t2, UCA_DONE            # Too far down, skip
     addi t2, t2, ADDRESSES_PER_ROW  # Increment pointer
     j UCA_DONE
 
@@ -308,7 +312,7 @@ UCA_CHECK_BTNU:
     li t0, BUTTON_U_MASK
     bne t0, a0, UCA_DONE            # Exit - no buttons matched
     # Code for BTNU - Move pointer up
-    beq x0, t3, UCA_DONE                             # Too far up, skip
+    beq x0, tt, UCA_DONE                             # Too far up, skip
     addi t2, t2, NEG_ADDRESSES_PER_ROW               # Increment pointer
 
 UCA_DONE:
