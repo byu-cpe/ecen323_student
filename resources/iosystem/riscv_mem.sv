@@ -130,7 +130,7 @@ module riscv_mem (clk, rst, PC, iMemRead, instruction, dAddress, MemRead, MemWri
 		end
 		// synthesis translate_off
 		if (PRINT_DATA_MEMORY_TRANSACTIONS && MemRead && data_space_mem)
-			$display("%0t:Reading 0x%h from address 0x%h",$time, dWriteData, dAddress);
+			$display("%0t:Reading 0x%h from address 0x%h",$time, data_memory[dAddress[DATA_ADDR_BITS-1:2]], dAddress);
 		// synthesis translate_on			
         dReadData <= data_memory[dAddress[DATA_ADDR_BITS-1:2]];   
     end
