@@ -14,6 +14,7 @@ module riscv_mem (clk, rst, PC, iMemRead, instruction, dAddress, MemRead, MemWri
     input logic [31:0] PC;
     input logic iMemRead;
     input logic [31:0] dAddress;
+    input logic MemRead;
     input logic MemWrite;
     input logic [31:0] dWriteData;
     output logic [31:0] instruction;
