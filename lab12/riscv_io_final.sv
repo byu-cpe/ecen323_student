@@ -2,9 +2,6 @@
 // 
 // Filename: riscv_io_final.sv
 //
-// Author: Mike Wirthlin
-// Date: 2/16/2022
-//
 // Top-level I/O system for forwarding RISC-V processor. 
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -49,7 +46,7 @@ module riscv_io_final (clk, btnc, btnd, btnl, btnr, btnu, sw, led,
 	localparam IO_START_ADDRESS = 32'h00007f00;
 	localparam VGA_START_ADDRESS = 32'h00008000;
     localparam PROC_CLOCK_RATE = INPUT_CLOCK_RATE / PROC_CLK_DIVIDE;
-    localparam DEBOUNCE_DELAY_US = 20;
+    localparam DEBOUNCE_DELAY_US = 2;
     
     // Module Signals
     logic clk_proc, clk_vga, rst;
