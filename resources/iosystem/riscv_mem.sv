@@ -27,7 +27,7 @@ module riscv_mem (clk, rst, PC, iMemRead, instruction, dAddress, MemRead, MemWri
     parameter DATA_MEMORY_FILENAME = "";
     parameter TEXT_START_ADDRESS = 32'h00400000;
     parameter DATA_START_ADDRESS = 32'h00800000;
-	parameter PRINT_DATA_MEMORY_TRANSACTIONS = 1; // Flag to determine whether to print memory reads and writes during simulation
+	parameter PRINT_DATA_MEMORY_TRANSACTIONS = 0; // Flag to determine whether to print memory reads and writes during simulation
     
     // Local constants
 	localparam INSTRUCTION_WORDS = INSTRUCTION_BRAMS*1024;
@@ -129,7 +129,7 @@ module riscv_mem (clk, rst, PC, iMemRead, instruction, dAddress, MemRead, MemWri
 			// synthesis translate_on	
 		end
 		// synthesis translate_off
-		if (PRINT_DATA_MEMORY_TRANSACTIONS && MemRead)
+		if (PRINT_DATA_MEMORY_TRANSACTIONS && MemRead && data_space_mem)
 			$display("%0t:Reading 0x%h from address 0x%h",$time, dWriteData, dAddress);
 		// synthesis translate_on			
         dReadData <= data_memory[dAddress[DATA_ADDR_BITS-1:2]];   
