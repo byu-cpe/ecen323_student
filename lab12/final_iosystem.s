@@ -71,17 +71,12 @@
                                         # 1,2 or 0x8000+1*4+2*512=0x8204
     .eqv ENDING_LOC 0xb700              # The VGA memory address where the 'ending character' is located
                                         # 64, 27 or 0x8000+64*4+27*512=0xb700
-
     .eqv SEGMENT_TIMER_INTERVAL 100     # This constant represents the number of timer ticks (each 1 ms)
                                         # that are needed before incrementing the timer value on the seven
                                         # segment display. With a value of 100, the timer will increment
                                         # every 100 ms (or 10 times a second).
 
     .eqv INIT_FASTEST_SCORE 0xffff      # Fastest score initialized to 0xffff (should get lower with better play)
-
-    # Parameters for the MOVE_CHARACTER subroutine
-    .eqv MC_RESTORE_OLD_CHARACTER 0x1               # Restore the old character when moving character
-    .eqv MC_NO_RESTORE_OLD_CHARACTER 0x0            # Restore the old character when moving character
 
 main:
 
@@ -127,6 +122,8 @@ MOVE_CHAR_GAME:
     sw ra, 0(sp)		# Put return address on stack
 
     # Initialize the default color (based on the value at the starting location)
+    #  The default color is needed for VGA memories that are not initialized
+    #  with a default background.
     li t0, STARTING_LOC                                # Address of starting location
     lw t1, 0(t0)                                       # Read value at this address
     # Shift right logical 8 bits (to bring the foreground and background for use by color offset)
@@ -150,7 +147,6 @@ MCG_RESTART:
 
     # Write moving character at starting location (without restore)
     li a0, STARTING_LOC
-    li a1, MC_NO_RESTORE_OLD_CHARACTER
     jal MOVE_CHARACTER
 
 MCG_NO_BUTTON_START:
@@ -165,7 +161,7 @@ MCG_BUTTON_START:
     lw t0, BUTTON_OFFSET(tp)
     beq t0, x0, MCG_BUTTON_START 
 
-    # A button has been pressed to start the game
+    # A button has been pressed to start the game (t0)
     # Copy button press value
     mv a0, t0
     # Clear timer and seven segment display and LEDs
@@ -175,13 +171,15 @@ MCG_BUTTON_START:
     
 MCG_PROC_BUTTONS:
     # At this point a button has been pressed and its value is in a0
+
+    # See if btnc is pressed (to end game)
+    li t0, BUTTON_C_MASK
+    beq t0, a0, MCG_END_GAME_EARLY
+
+    # btnc not pressed, process other button
     jal UPDATE_CHAR_ADDR            # returns new address in a0
 
-    # If a0==0 then BTNC was pressed and need to start over.
-    beq x0, a0, MCG_END_GAME_EARLY
-
     # Move the character (a0 has new address)
-    li a1, MC_RESTORE_OLD_CHARACTER
     jal MOVE_CHARACTER
     
     # See if the new location is the end location
@@ -229,10 +227,12 @@ MCG_END_GAME_EARLY:
     sw t1, SEVENSEG_OFFSET(tp)
     # Initialize the LEDs with 0 (not a high score)
     sw x0, LED_OFFSET(tp)
-    # Erase the current character
-    lw a0,%lo(DISPLACED_CHARACTER_LOC)(gp)
-    li a1, 1
+    # Move the current character to the start location
+    #li a0, STARTING_LOC
     jal MOVE_CHARACTER
+    #li a0, STARTING_LOC
+    #li a1, 1
+    #jal MOVE_CHARACTER
     # Restart game
     j MCG_RESTART
 
@@ -259,20 +259,13 @@ MCG_EXIT:   # exit game procedure
 #  t4: current row
 #
 #  returns in a0: New address of character location. If BTNC is pressed,
-#                 return 0 indicating start over.
+#                 return 0 indicating an early end to the game.
 #
 ################################################################################
 UPDATE_CHAR_ADDR:
 
     # load current character address in t2
     lw t2, %lo(DISPLACED_CHARACTER_LOC)(gp)   # Load address of current character
-
-UCA_CHECK_BTNC:
-    li t0, BUTTON_C_MASK
-    bne t0, a0, UCA_CHECK_BTNR
-    # Need to exit: put 0 in t2
-    add t2, x0, x0
-    j UCA_DONE
 
     # Compute the current column (t3) and row (t4) from the current character address
     li t0, COLUMN_MASK
@@ -285,34 +278,34 @@ UCA_CHECK_BTNC:
 UCA_CHECK_BTNR:
     li t0, BUTTON_R_MASK
     bne t0, a0, UCA_CHECK_BTNL
-    # Code for BTNR - Move pointer right (if not in last column)
-    li t0, LAST_COLUMN
-    beq t0, t2, UCA_DONE            # Last column, do nothing
+    # Move pointer right (if not in last column)
+    li t1, LAST_COLUMN
+    beq t3, t1, UCA_DONE            # Last column, do nothing
     addi t2, t2, 4                  # Increment pointer
     j UCA_DONE
 
 UCA_CHECK_BTNL:
     li t0, BUTTON_L_MASK
     bne t0, a0, UCA_CHECK_BTND
-    # Code for BTNL - Move Pointer left (if not in first column)
-    beq x0, t2, UCA_DONE            # Too far left, skip
+    # Move Pointer left (if not in first column)
+    beq x0, t3, UCA_DONE            # Too far left, skip
     addi t2, t2, -4                 # Decrement pointer
     j UCA_DONE
 
 UCA_CHECK_BTND:
     li t0, BUTTON_D_MASK
     bne t0, a0, UCA_CHECK_BTNU
-    # Code for BTND - Move pointer down
-    li t0, LAST_ROW
-    bge t0, t2, UCA_DONE            # Too far down, skip
+    # Move pointer down
+    li t1, LAST_ROW
+    bge t4, t1, UCA_DONE            # Too far down, skip
     addi t2, t2, ADDRESSES_PER_ROW  # Increment pointer
     j UCA_DONE
 
 UCA_CHECK_BTNU:
     li t0, BUTTON_U_MASK
     bne t0, a0, UCA_DONE            # Exit - no buttons matched
-    # Code for BTNU - Move pointer up
-    beq x0, tt, UCA_DONE                             # Too far up, skip
+    # Move pointer up
+    beq x0, t4, UCA_DONE                             # Too far up, skip
     addi t2, t2, NEG_ADDRESSES_PER_ROW               # Increment pointer
 
 UCA_DONE:
@@ -360,7 +353,6 @@ UT_DONE:
 # previous location. This function doesn't check for valid addresses.
 #
 # a0: memory address of new location of moving character
-# a1: if 1, restore the old character. If not, do not restore old character.
 #
 # a0 is not changed (returns the memory address provided as parameter)
 #
@@ -371,14 +363,14 @@ MOVE_CHARACTER:
     addi sp, sp, -4	    # Make room to save return address on stack
     sw ra, 0(sp)		# Put return address on stack
 
-    # See if the old displaced character should be restored
-    andi t0, a1, MC_RESTORE_OLD_CHARACTER
-    beq t0, x0, MC_SAVE_DISPLACED_CHAR      # Skip over restore character
+
+    # Load the address of the old character that was previously replaced
+    lw t3,%lo(DISPLACED_CHARACTER_LOC)(gp)
+    # If this address is zero, no need to restore character
+    beq t3, x0, MC_SAVE_DISPLACED_CHAR
 
     # Load the value of the character that was previously displaced
     lw t2, %lo(DISPLACED_CHARACTER)(gp)
-    # Load the address of the old character that was previously replaced
-    lw t3,%lo(DISPLACED_CHARACTER_LOC)(gp)
     # restore the character that was displaced
     sw t2,0(t3)
 
@@ -430,15 +422,16 @@ MOVING_CHARACTER:
 # This stores the value of the character that has been overwritten by the moved character.
 # It will be restored when the moving character moves off of its spot.
 DISPLACED_CHARACTER:
-    .word
+    .word 0
 
 # This stores the ASCII value of the character that represents the destination location
 ENDING_CHARACTER:
     .word CHAR_C_YELLOW
 
-# This stores the memory address of the moving character
+# This stores the memory address of the moving character.
+# It is initialized to zero so that the first call will not restore a character
 DISPLACED_CHARACTER_LOC:
-    .word STARTING_LOC
+    .word 0
 
 # This stores the memory address of the ending character location
 ENDING_CHARACTER_LOC:
