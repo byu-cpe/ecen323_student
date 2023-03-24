@@ -36,7 +36,7 @@ module forwarding_iosystem (clk, btnc, btnd, btnl, btnr, btnu, sw, led,
     parameter DATA_MEMORY_FILENAME = "";        // Data segment binary file
     parameter USE_DEBOUNCER = 1;
     parameter TIMER_CLOCK_REDUCTION = 1;
-    parameter DEBOUNCE_DELAY_US = 1;
+    parameter DEBOUNCE_DELAY_US = 10;
 
     // Local constants
 	localparam INPUT_CLOCK_RATE = 100_000_000;
