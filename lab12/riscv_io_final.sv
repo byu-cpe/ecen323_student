@@ -2,9 +2,6 @@
 // 
 // Filename: riscv_io_final.sv
 //
-// Author: Mike Wirthlin
-// Date: 2/16/2022
-//
 // Top-level I/O system for forwarding RISC-V processor. 
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -37,7 +34,8 @@ module riscv_io_final (clk, btnc, btnd, btnl, btnr, btnu, sw, led,
     parameter DATA_MEMORY_FILENAME = "final_iosystem_data.mem";        // Data segment binary file
     parameter USE_DEBOUNCER = 1;
     parameter TIMER_CLOCK_REDUCTION = 1;
-
+	parameter PRINT_DATA_MEMORY_TRANSACTIONS = 1;
+ 
     // Local constants
 	localparam INPUT_CLOCK_RATE = 100_000_000;
     localparam PROC_CLK_DIVIDE = 3;
@@ -49,7 +47,7 @@ module riscv_io_final (clk, btnc, btnd, btnl, btnr, btnu, sw, led,
 	localparam IO_START_ADDRESS = 32'h00007f00;
 	localparam VGA_START_ADDRESS = 32'h00008000;
     localparam PROC_CLOCK_RATE = INPUT_CLOCK_RATE / PROC_CLK_DIVIDE;
-    localparam DEBOUNCE_DELAY_US = 20;
+    localparam DEBOUNCE_DELAY_US = 2;
     
     // Module Signals
     logic clk_proc, clk_vga, rst;
@@ -77,9 +75,11 @@ module riscv_io_final (clk, btnc, btnd, btnl, btnr, btnu, sw, led,
     // Memories (instruction and data)
     riscv_mem #(.INSTRUCTION_BRAMS(INSTRUCTION_BRAMS),.DATA_BRAMS(DATA_BRAMS),
         .TEXT_MEMORY_FILENAME(TEXT_MEMORY_FILENAME),.DATA_MEMORY_FILENAME(DATA_MEMORY_FILENAME),
-        .TEXT_START_ADDRESS(TEXT_START_ADDRESS),.DATA_START_ADDRESS(DATA_START_ADDRESS))
+        .TEXT_START_ADDRESS(TEXT_START_ADDRESS),.DATA_START_ADDRESS(DATA_START_ADDRESS),
+        .PRINT_DATA_MEMORY_TRANSACTIONS(PRINT_DATA_MEMORY_TRANSACTIONS)
+        )
         mem (.clk(clk_proc), .rst(rst), .PC(PC), .iMemRead(iMemRead), .instruction(instruction),
-        .dAddress(dAddress), .MemWrite(dMemWrite), .dWriteData(dWriteData), .dReadData(dReadData) );
+        .dAddress(dAddress), .MemRead(dMemRead), .MemWrite(dMemWrite), .dWriteData(dWriteData), .dReadData(dReadData) );
 
     // I/O Sub-system
     iosystem #(.INPUT_CLOCK_RATE(PROC_CLOCK_RATE),.VGA_START_ADDRESS(VGA_START_ADDRESS),

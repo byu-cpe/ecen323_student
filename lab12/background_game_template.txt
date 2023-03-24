@@ -1,0 +1,50 @@
+#################################################
+#
+# background_template.txt
+#
+# This file provides a template text file for more easily creating backgrounds
+# for your project.
+#
+# Lines starting with a '#' are ignored and used for comments
+#
+#################################################
+
+.background_start
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXZXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+X                                   Z                                       X
+X                                   Z                                       X
+X                ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ                      X
+X                Z                                   Z                      X
+X                Z                                   Z                      X
+X                Z                                   Z                      X
+X                Z                                   Z                      X
+X                Z                                   Z                      X
+X                Z                  Z                Z                      X
+X                Z                  Z                Z                      X
+X                Z                  Z                Z                      X
+X                Z                  Z                Z                      X
+X                Z                  Z                Z                      X
+X                Z                  Z                Z                      X
+X                Z                  Z                Z                      X
+X                Z                  Z                                       X
+X                Z                  Z                                       X
+X                Z                  Z                                       X
+X                                   Z                                       X
+X                                   Z                                       X
+X                                   ZZZZZZZZZZZZZZZZZZ                      X
+X                                   Z                                       X
+X                                   Z                                       X
+X                                   Z                                       X
+X                                   Z                                       X
+X                                   Z                                       X
+X                                   Z                                       X
+X                                   Z                                       X
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXZXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+.background_end
+
+.default_color 0x000fff
+
+.char_color_map
+'Z'=0xF000F0
+' '=0xFF0000
+'X'=0x0FFF00

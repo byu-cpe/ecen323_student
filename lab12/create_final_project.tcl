@@ -7,7 +7,7 @@ add_files riscv_io_final.sv
 add_files -fileset constrs_1 ../resources/iosystem/iosystem.xdc
 # Add files from your previous labs and set the include directories
 add_files ../lab11/riscv_final.sv
-add_files ../lab03/regfile.sv ../lab02/alu.sv ../lab02/riscv_alu_constants.sv
+add_files ../lab03/regfile.sv ../lab02/alu.sv
 set_property include_dirs {../include} [current_fileset]
 # Add the files associated with the top-level I/O system
 add_files ../resources/iosystem/iosystem.sv
@@ -23,3 +23,5 @@ add_files ../resources/iosystem/cores/vga/vga_timing.sv
 add_files ../resources/iosystem/cores/vga/font_rom.sv
 add_files ../resources/iosystem/cores/vga/charColorMem3BRAM.sv
 add_files ../resources/iosystem/cores/vga/bramMacro.v
+# Add the files memory files. The files need to be assembled before running this command
+add_files ./final_iosystem_data.mem  ./final_iosystem_text.mem
