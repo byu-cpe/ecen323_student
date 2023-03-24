@@ -1,10 +1,8 @@
 ##########################################################################
 #
 # Filname: final_sim.tcl
-# Author: Mike Wirthlin
 #
 # This .tcl script will apply stimulus to the top-level pins of the FPGA
-# 
 #
 ##########################################################################
 
@@ -30,14 +28,18 @@ add_force sw 0
 add_force RsTx 1
 
 # Simulate the starting setup instructions
-run 3 us
+run 10 us
 
 # Simulate the btnr being pressed
 add_force btnr 1
 run 10 us
 add_force btnr 0
+run 10 us
 
-# Let btnr = 0 filter through the debouncer
+# Simulate the btnr being pressed
+add_force btnr 1
+run 10 us
+add_force btnr 0
 run 10 us
 
 # Simulate the btnd being pressed
@@ -46,5 +48,22 @@ run 10 us
 add_force btnd 0
 run 10 us
 
+# Simulate the btnl being pressed
+add_force btnl 1
+run 10 us
+add_force btnl 0
+run 10 us
 
+# Simulate the btnu being pressed
+add_force btnu 1
+run 10 us
+add_force btnu 0
+run 10 us
 
+# Simulate the btnc being pressed
+add_force btnc 1
+run 10 us
+add_force btnc 0
+run 10 us
+
+run 100 us
