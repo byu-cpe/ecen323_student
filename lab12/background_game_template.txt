@@ -10,35 +10,36 @@
 #################################################
 
 .background_start
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-X                                   Z                                     X
-X                                   Z                                     X
-X                ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ                    X
-X                Z                                   Z                    X
-X                Z                                   Z                    X
-X                Z                                   Z                    X
-X                Z                                   Z                    X
-X                Z                                   Z                    X
-X                Z                  Z                Z                    X
-X                Z                  Z                Z                    X
-X                Z                  Z                Z                    X
-X                Z                  Z                Z                    X
-X                Z                  Z                Z                    X
-X                Z                  Z                Z                    X
-X                Z                  Z                Z                    X
-X                Z                  Z                                     X
-X                Z                  Z                                     X
-X                Z                  Z                                     X
-X                                   Z                                     X
-X                                   Z                                     X
-X                                   ZZZZZZZZZZZZZZZZZZ                    X
-X                                   Z                                     X
-X                                   Z                                     X
-X                                   Z                                     X
-X                                   Z                                     X
-X                                   Z                                     X
-X                                   Z                                     X
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXZXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+X                                   Z                                       X
+X                                   Z                                       X
+X                ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ                      X
+X                Z                                   Z                      X
+X                Z                                   Z                      X
+X                Z                                   Z                      X
+X                Z                                   Z                      X
+X                Z                                   Z                      X
+X                Z                  Z                Z                      X
+X                Z                  Z                Z                      X
+X                Z                  Z                Z                      X
+X                Z                  Z                Z                      X
+X                Z                  Z                Z                      X
+X                Z                  Z                Z                      X
+X                Z                  Z                Z                      X
+X                Z                  Z                                       X
+X                Z                  Z                                       X
+X                Z                  Z                                       X
+X                                   Z                                       X
+X                                   Z                                       X
+X                                   ZZZZZZZZZZZZZZZZZZ                      X
+X                                   Z                                       X
+X                                   Z                                       X
+X                                   Z                                       X
+X                                   Z                                       X
+X                                   Z                                       X
+X                                   Z                                       X
+X                                   Z                                       X
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXZXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 .background_end
 
 .default_color 0x000fff
@@ -46,4 +47,4 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 .char_color_map
 'Z'=0xF000F0
 ' '=0xFF0000
-'X'=0x0FF0F0
+'X'=0x0FFF00
