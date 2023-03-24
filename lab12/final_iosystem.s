@@ -71,6 +71,8 @@
                                         # 1,2 or 0x8000+1*4+2*512=0x8204
     .eqv ENDING_LOC 0xb700              # The VGA memory address where the 'ending character' is located
                                         # 64, 27 or 0x8000+64*4+27*512=0xb700
+    .eqv BLOCK_LOC 0x987C               # The VGA memory address where the 'block character' is located
+                                        # 31, 12 or 0x8000+31*4+12*512=0x987C
     .eqv SEGMENT_TIMER_INTERVAL 100     # This constant represents the number of timer ticks (each 1 ms)
                                         # that are needed before incrementing the timer value on the seven
                                         # segment display. With a value of 100, the timer will increment
@@ -129,6 +131,11 @@ MOVE_CHAR_GAME:
     # Shift right logical 8 bits (to bring the foreground and background for use by color offset)
     srli t1, t1, 8
     sw t1, CHAR_COLOR_OFFSET(tp)    # Write the new color values
+
+    # Display a single blocking character
+    li t0, BLOCK_LOC
+    li t1, CHAR_Z_MAGENTA
+    sw t1, 0(t0)
 
     # Initialize the seven segment display with the default fastest time (0xffff)
     li t1, INIT_FASTEST_SCORE
@@ -309,6 +316,17 @@ UCA_CHECK_BTNU:
     addi t2, t2, NEG_ADDRESSES_PER_ROW               # Increment pointer
 
 UCA_DONE:
+    # Load the character at the new location. 
+    lw t0, 0(t2)
+    # Mask the bottom 7 bits (only the ASCII value, not its color)
+    andi t0, t0 0x7f
+    # Load the blocking character
+    lw t1, %lo(BLOCK_CHARACTER_VALUE)(gp)
+    # See if character at new position is same as blocking character. If so, don't move
+    bne t0, t1, UCA_RET
+    # New address is block wall. Go back and get original address (to prevent moving on block)
+    lw t2, %lo(DISPLACED_CHARACTER_LOC)(gp) 
+UCA_RET:
     mv a0, t2                       # Return updated character address
     ret
 
@@ -444,3 +462,8 @@ FASTEST_SCORE:
 # Storage for the last recorded score. Starts out with highest value
 LAST_SCORE:
     .word INIT_FASTEST_SCORE
+
+# This stores the value of the character that acts as a "wall"
+BLOCK_CHARACTER_VALUE:
+    .word CHAR_Z
+
