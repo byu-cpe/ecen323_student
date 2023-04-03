@@ -9,22 +9,8 @@ within the RISC-V project.
 import pathlib
 # Command line argunent parser
 import argparse
-# manage zipfiles
-import zipfile
-# Shell utilities for copying, 
-import shutil
-import subprocess
-import sys
 import re
-# For os.remove
 import os
-# for File IO status flags
-import stat
-# for serialization
-import pickle
-# for time delay
-import time
-import random
 
 # Script defaults
 script_path = pathlib.Path(__file__).absolute().parent.resolve()
@@ -94,12 +80,15 @@ def generate_mem_file(input_filename,output_filename,char_array,char_color_dict,
     return newLines
 
 def create_2d_char_array(lines):
+    ''' Parses an array of ascii lines and generates an array of lines where each line is an array of ASCII values. '''
     char_array = []
     for line in lines:
         #print(line)
-        line = line.strip()
         line_array = []
         for c in line:
+            if c=='\n':
+                # Skip end of line characters
+                continue
             line_array.append(ord(c))
         #print(line_array)
         char_array.append(line_array)
@@ -107,6 +96,7 @@ def create_2d_char_array(lines):
     return char_array
 
 def create_char_color_dict(lines):
+    ''' Creates and returns a dictionary between an ASCII value and a color string. '''
     char_color_dict = {}
     CHAR_COLOR_REGEX = "\'(.)\'*=*(\w+)"
     for line in lines:
