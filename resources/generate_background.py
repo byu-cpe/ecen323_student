@@ -11,6 +11,7 @@ import pathlib
 import argparse
 import re
 import os
+import sys
 
 # Script defaults
 script_path = pathlib.Path(__file__).absolute().parent.resolve()
@@ -56,6 +57,10 @@ def generate_mem_file(input_filename,output_filename,char_array,char_color_dict,
                     # Character defined in input file
                     char_val = row[jdx]
                     # Determine color of character
+                    if not char_val in char_color_dict:
+                        print(f"The color for the ASCII character '{chr(char_val)}' ({char_val}) is not defined in the template file. ")
+                        print(f"Add a color definition for this character into the template file.")
+                        sys.exit(1)
                     char_color = char_color_dict[char_val]
                     if char_color is None:
                         char_color = default_color
