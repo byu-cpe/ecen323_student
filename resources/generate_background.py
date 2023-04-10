@@ -42,6 +42,8 @@ def generate_mem_file(input_filename,output_filename,char_array,char_color_dict,
     newLines.append("")
     newLines.append("")
 
+    default_color_chars = []
+
     # Iterate over all rows
     for idx in range(totalRows):
         if idx < populatedRows:
@@ -58,10 +60,12 @@ def generate_mem_file(input_filename,output_filename,char_array,char_color_dict,
                     char_val = row[jdx]
                     # Determine color of character
                     if not char_val in char_color_dict:
-                        print(f"The color for the ASCII character '{chr(char_val)}' ({char_val}) is not defined in the template file. ")
-                        print(f"Add a color definition for this character into the template file.")
-                        sys.exit(1)
-                    char_color = char_color_dict[char_val]
+                        char_color = default_color
+                        if char_val not in default_color_chars:
+                            default_color_chars.append(char_val)
+                            print(f"The color for the ASCII character '{chr(char_val)}' ({char_val}) will be set to the default color 0x{default_color:06X}")
+                    else:
+                        char_color = char_color_dict[char_val]
                     if char_color is None:
                         char_color = default_color
                     # Create memory value
