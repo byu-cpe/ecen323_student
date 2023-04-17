@@ -18,10 +18,12 @@ module vga_timing (clk, rst, HS, VS, pixel_x, pixel_y, last_column, last_row, bl
     output logic last_row;
     output logic blank;
 
-    localparam X_MAX = 799;
-    localparam Y_MAX = 520;
-    localparam LAST_COLUMN_NUM = 639;
-    localparam LAST_ROW_NUM = 479;
+    localparam LAST_COLUMN = 799;
+    localparam LAST_ROW = 520;
+
+    localparam LAST_VISIBLE_COLUMN = 639;
+    localparam LAST_VISIBLE_ROW = 479;
+
     localparam HS_LOW_COL_MIN = 656;
     localparam HS_LOW_COL_MAX = 751;
     localparam VS_LOW_COL_MIN = 490;
@@ -32,6 +34,7 @@ module vga_timing (clk, rst, HS, VS, pixel_x, pixel_y, last_column, last_row, bl
     logic [9:0] x_reg, x_next, y_reg, y_next;
     logic pixel_en = 0;
 
+    // Timing registers
     always_ff@(posedge clk)
         if (rst) begin
             pixel_en <= 0;
@@ -46,22 +49,23 @@ module vga_timing (clk, rst, HS, VS, pixel_x, pixel_y, last_column, last_row, bl
             end
         end
 
-    //assign x_next = (x_reg == X_MAX) ? 0 : x_reg + 1;
-    assign x_next = (x_reg == 799) ? 0 : x_reg + 1;
-    //assign y_next = (x_reg == X_MAX && y_reg == Y_MAX) ? 0 :
-    //                (x_reg == X_MAX) ? y_reg + 1 :
-    //                y_reg;
-    assign y_next = (x_reg == 799 && y_reg == 520) ? 0 :
-                    (x_reg == 799) ? y_reg + 1 :
+    // Next column
+    assign x_next = (x_reg == LAST_COLUMN) ? 0 : x_reg + 1;
+
+    // Next row
+    assign y_next = (x_reg == LAST_COLUMN && y_reg == LAST_ROW) ? 0 :
+                    (x_reg == LAST_COLUMN) ? y_reg + 1 :
                     y_reg;
+
 
     assign pixel_x = x_reg;
     assign pixel_y = y_reg;
-    assign last_column = (x_reg == 639);
+    assign last_column = (x_reg == LAST_VISIBLE_COLUMN);
+    assign last_row = (y_reg == LAST_VISIBLE_ROW);
+    assign blank = ~(x_reg <= LAST_VISIBLE_COLUMN && y_reg <= LAST_VISIBLE_ROW );
+
     assign HS = ~(x_reg > 655 && x_reg < 752 );
     assign VS = ~(y_reg > 489 && y_reg < 492 );
-    assign last_row = (y_reg == 479);
-    assign blank = ~(x_reg < 640 && y_reg < 480 );
 
 endmodule
 

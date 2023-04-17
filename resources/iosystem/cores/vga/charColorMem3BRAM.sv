@@ -17,16 +17,13 @@
  The address space is 0x0000 to 0x3fff (byte addressable). This module
  is word addressable and as such, only 12 bits addresses are used.
  
-
  Each block ram is organized as 4096x8 bits and the four block rams each
  provide one byte of the 32-bit character address (BRAM 0 provides byte
  0, BRAM 1 provies byte1, and so on).
 
-
  The memory is dual ported providing two ports for reading the characters 
- (one to be read by the VGA controller
- and another for reading by a processor). This allows you to operate
- the VGA at the same time you read the character data.
+ (one to be read by the VGA controller and another for reading by a processor).
+ This allows you to operate the VGA at the same time you read the character data.
  
   the 'char_read_addr' is used for reading the 'char_read_value'
   the 'char_read_addr2' is used for writing and for reading 'char_read_value2'

@@ -1,4 +1,5 @@
-/*----------------------------------------------------------------------------------
+/*
+----------------------------------------------------------------------------------
 --
 -- vga_ctl3
 --
@@ -10,7 +11,8 @@
 --  [7:4] - Green
 --  [3:0] - Blue
 --
-----------------------------------------------------------------------------------*/
+----------------------------------------------------------------------------------
+*/
 
 module vga_ctl3 (clk_vga, clk_data, rst, char_we, char_value, char_addr,
         custom_foreground, // This is not used but needed for compatibility with VHDL
@@ -43,7 +45,8 @@ module vga_ctl3 (clk_vga, clk_data, rst, char_we, char_value, char_addr,
 	logic blank_d, blank_d2;
 
 
-	/* Mux to select which char data is written: the default data with a fixed foreground and background or
+	/* 
+    -- Mux to select which char data is written: the default data with a fixed foreground and background or
 	-- custom, character specific color data.
 	--char_data_to_write <= char_value when custom_foreground = '1' else background_rgb & foreground_rgb & char_value(7 downto 0);
 	-- char_data_to_write <= 
@@ -82,23 +85,16 @@ module vga_ctl3 (clk_vga, clk_data, rst, char_we, char_value, char_addr,
 		.blank(blank)
     );
 
-    // Two cycle delay on VGA signals
+    // One cycle delay on VGA signals
     always_ff@(posedge clk_vga)
-        if(rst)  begin
-            vs_d <= 0;
-            hs_d <= 0;
-            vs_d2 <= 0;
-            hs_d2 <= 0;
-            blank_d <= 0;
-            blank_d2 <= 0;
-        end else begin
-            vs_d <= vs;
-            hs_d <= hs;
-            vs_d2 <= vs_d;
-            hs_d2 <= hs_d;
-            blank_d <= blank;
-            blank_d2 <= blank_d;
-        end
+    begin
+        vs_d <= vs;
+        hs_d <= hs;
+        vs_d2 <= vs_d;
+        hs_d2 <= hs_d;
+        blank_d <= blank;
+        blank_d2 <= blank_d;
+    end
 
     // VGA outputs        
     assign VGA_HS = hs_d2;
