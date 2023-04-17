@@ -105,7 +105,7 @@ project_program_bit = tester_module.update_bitstream_mem("project_text.mem","pro
 font_bit = tester_module.update_font_mem( "project_program.dcp", "project_font.txt", 
 	"project_font.bit", "project_font.dcp")
 # Update background for final project
-project_bit = tester_module.update_background_mem( "project_program.dcp", "project_background.txt", 
+project_bit = tester_module.update_background_mem( "project_font.dcp", "project_background.txt", 
 	"project.bit", "project.dcp")
 
 def main():
