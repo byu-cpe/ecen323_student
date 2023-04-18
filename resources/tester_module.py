@@ -588,7 +588,7 @@ class update_bitstream_mem(tester_module):
 		load_mem_path = lab_test.submission_top_path / "resources/load_mem.tcl"
 
 		updatemem_cmd = ["vivado", "-mode", "batch", "-source", str(load_mem_path), 
-			 "-tclargs", "updateMem",
+			 "-tclargs", "updateMem2",
 			self.input_dcp_filename, self.text_mem_filename, self.data_mem_filename, 
 			self.bitstream_filename]
 		if self.output_dcp != "":
