@@ -5,8 +5,6 @@
 #  Scripts for updating the internal BRAM memory with different types
 #  of data.
 #
-# Version 1.7
-#
 #####################################################################
 
 # write_bitstream -force ../../multicycle_io/template/multicycle_io/multicycle_io.runs/impl_1/riscv_io_system2.bit
@@ -99,7 +97,7 @@ proc load_bram_32hextext {bram_cell_name filename} {
 }
 
 # Loads the specified BRAM with the contents specified by the given
-# filename. Multiple BRAMs are used and each 
+#
 # 1 BRAM: no interleaving: each 32-bit data is entry in the one BRAM
 # 2 BRAMs: 16-bit words interleaved in each BRAM
 #
@@ -124,8 +122,6 @@ proc load_brams_interleaved_32hextext {bram_cells filename} {
 		# Determine size of BRAM
 		set num_init_strings [BRAM_property_size $bram]
 		set bram_data  [extract_interleave_data $word_array $interleave_word_size $pos ]
-		
-		#set bram_data [extract_interleave_data $word_array $interleave_word_size $pos]
 		
 		# Create the property strings
 		set data_strings [generate_ascii_string_256 $bram_data $num_init_strings]
@@ -632,23 +628,28 @@ proc bin2hex bin {
 	return $t($bin)
 }
 
+## This procedure will update the BRAMs properly even if some of the data
+## bits are in the parity memory.
 proc load_brams_dict_32hextext { bramList netBaseName filename} {
 
 	set bramDict [findDataPorts $bramList $netBaseName]
-
+	
 	# ASSUME we are broken up into two BRAMS
 	global debug
-	if {$debug > 0} { puts "load_brams_dict_32hextext $dict $filename" }
-	# Get all the words in the file
+	#if {$debug > 0} { puts "load_brams_dict_32hextext $dict $filename" }
+
+
+	# Get all the words in the input hex text file
 	set word_array [parse_32bit_hex $filename]
 	set len [llength $word_array]
 	puts "File $filename is $len in size"
 
-	# Create two lists for each bram. One is 16 bits for data and the other is 2 bits for parity
+	# Create two lists for each bram. One is a list of 16 bit data and the other is 2 bits for parity
 	set list16_0 [list]
 	set list16_1 [list]
 	set list2p_0 [list]
 	set list2p_1 [list]
+
 	# Initialize lists to zero and make the correct size
 	foreach word $word_array {
 		lappend list16_0 0
@@ -656,7 +657,8 @@ proc load_brams_dict_32hextext { bramList netBaseName filename} {
 		lappend list2p_0 0
 		lappend list2p_1 0
 	}
-	# Iterate over every bit
+
+	# Iterate over every data bit
 	for {set i 0} {$i < 32} {incr i} {
 		if {$debug > 2} { puts "bit= $i" }
 		set bitLoc [dict get $bramDict $i]
@@ -687,6 +689,7 @@ proc load_brams_dict_32hextext { bramList netBaseName filename} {
 			puts "WARNING: NO match for $mem_pin"
 		}
 
+		# Iterate over all of the words in the input data array
 		for {set j 0} {$j < [llength $word_array] } {incr j} {
 			set word [lindex $word_array $j]
 			set fword [format %08X $word]
@@ -796,8 +799,11 @@ proc load_brams_dict_32hextext { bramList netBaseName filename} {
 }
 
 # findDataPorts [list data_memory_reg_0 data_memory_reg_1 ] data_memory_read_wb
+# 
 proc findDataPorts { bramList netBaseName } {
-	set debug 1
+	global debug
+	puts "findDataPorts debug=$debug"
+	#set debug 0
 	# iterate over the brams
 	#   vga/charGen/charmem/data_write_value[28]
 	foreach bram $bramList {
@@ -811,6 +817,7 @@ proc findDataPorts { bramList netBaseName } {
 			#vga/charGen/charmem/char_ram_reg_1/DIADI[3]
 			#get_nets  -of  [get_pins vga/charGen/charmem/char_ram_reg_1/DIADI[3] ]
 			if {$net != ""} {
+				if { $debug > 1} { puts "$pin $net" }
 				#if { $debug} { puts "PIN $pin $net" }
 				# Strip off any indexing part of the string
 				set match [regexp -all -line  {^(.*\S)\[(\d+)\]$} $net fullmatch base index]
@@ -827,6 +834,8 @@ proc findDataPorts { bramList netBaseName } {
 						dict set bramDict $index $item
 					}
 				}
+			} else {
+				if { $debug > 1} { puts "$pin $net" }
 			}
 		}
 	}
@@ -960,7 +969,9 @@ if { [llength $argv] > 0 } {
 			} else {
 				# Load the .data file
 				set dataFileName [lindex $argv 2]
-				load_brams_dict_32hextext [list data_memory_reg_0 data_memory_reg_1 ] data_memory_read_wb $dataFileName
+				# arguments: list of data memory brams, signal name of data memory, data memory input filename
+				#load_brams_dict_32hextext [list data_memory_reg_0 data_memory_reg_1 ] data_memory_read_wb $dataFileName
+				load_brams_dict_32hextext [list $data_0 $data_1 ] mem/dReadData $dataFileName
 				# Write the bitfile
 				set bitstreamName [lindex $argv 3]
 				write_bitstream -force $bitstreamName
