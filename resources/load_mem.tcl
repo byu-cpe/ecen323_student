@@ -901,6 +901,32 @@ proc updateRiscvMemories { textFileName dataFileName bitstreamName { checkpointf
 	}
 }
 
+proc updateRiscvMemories2 { textFileName dataFileName bitstreamName { checkpointfilename ""}} {
+	# Determine the names of the instruction memory
+	set inst_0 [findMemoryWithBase "instruction_reg_0"]
+	set inst_1 [findMemoryWithBase "instruction_reg_1"]
+	set data_0 [findMemoryWithBase "data_memory_reg_0"]
+	set data_1 [findMemoryWithBase "data_memory_reg_1"]
+	puts "Instruction memories: $inst_0 $inst_1"
+	puts "Data memories: $data_0 $data_1"
+	if {[string equal "None" $inst_0] || [string equal "None" $inst_1] ||
+		[string equal "None" $data_0] || [string equal "None" $data_1]} {
+		puts "Cannot find instruction memory"
+		return
+	}
+	# Load the instruction memories
+	load_brams_interleaved_32hextext [list $inst_0 $inst_1] $textFileName
+	# Load the .data file
+	set data_memory_signal "mem/dReadData"
+	load_brams_dict_32hextext [list $data_0 $data_1 ] $data_memory_signal $dataFileName
+	# Write the bitfile
+	write_bitstream -force $bitstreamName
+	# See if there is a checkpoint write command
+	if {![string equal $checkpointfilename ""]} {
+		puts "Generating new checkpoint file"
+		write_checkpoint $checkpointfilename -force
+	}
+}
 
 # Memory names
 #iosystem/vga/charGen/charmem/BRAM_inst_0/bram
@@ -961,6 +987,23 @@ if { [llength $argv] > 0 } {
 					set checkpointname ""
 				}
 				updateRiscvMemories $textFileName $dataFileName $bitstreamName $checkpointname
+			}
+		} elseif {[string equal $command "updateMem2"]} {
+			#  updateMem <cheeckpoint> <.text file> <.data file> <bitstream file>
+			puts "Executing 'updateMem' command"
+			if {[llength $argv] < 5} {
+				puts "Missing arguments: updateMem <checkpoint file> <.text file> <.data file> <bitstream file> \[optional .dcp file\]"
+			} else {
+				# Extract parameters
+				set textFileName [lindex $argv 2]
+				set dataFileName [lindex $argv 3]
+				set bitstreamName [lindex $argv 4]
+				if {[llength $argv] >= 6} {
+					set checkpointname [lindex $argv 5]
+				} else {
+					set checkpointname ""
+				}
+				updateRiscvMemories2 $textFileName $dataFileName $bitstreamName $checkpointname
 			}
 		} elseif {[string equal $command "updateData"]} {
 			puts "Executing 'updateData' command"
