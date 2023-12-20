@@ -44,8 +44,8 @@ test_files = {
 }
 
 # TCL simulations
-regfile_tcl = tester_module.tcl_simulation2( "regfile_tcl", "regfile", [ "regfile",])
-top_tcl = tester_module.tcl_simulation2( "top_tcl", "regfile_top", [ "alu_consts", "oneshot", "alu", "regfile", "top" ], include_dirs=[ "../include" ])
+regfile_tcl = tester_module.tcl_simulation( "regfile_tcl", "regfile", [ "regfile",])
+top_tcl = tester_module.tcl_simulation( "top_tcl", "regfile_top", [ "alu_consts", "oneshot", "alu", "regfile", "top" ], include_dirs=[ "../include" ])
 
 # Testbench simulations
 regfile_tb = tester_module.testbench_simulation( "Regfile Testbench", "tb_regfile", [ "tb_regfile", "regfile",], [])

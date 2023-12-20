@@ -6,8 +6,7 @@ A set of classes for performing specific tests on ECEN 323 student submissions.
 Classes:
   tester_module: base class for all test modules
   simulation_module: base class for performing Vivado simulations
-  tcl_simulation: class for performing simulations with a tcl script
-  tcl_simulation2: improved class (what is the difference?)
+  tcl_simulation: module for performing simulations with a tcl script
   testbench_simulation: class for performing testbench simulations
   build_bitstream: performs full implementation to generate a bitstream
   rars_raw: run the rars simulator
@@ -165,55 +164,6 @@ class simulation_module(tester_module):
 		return True
 
 class tcl_simulation(simulation_module):
-	''' An object that represents a tcl_simulation test. Extends simulation_module
-	'''
-	def __init__(self,tcl_filename_key, tcl_sim_top_module, hdl_sim_keylist):
-		super().__init__(tcl_sim_top_module,hdl_sim_keylist)
-
-		self.tcl_filename_key = tcl_filename_key
-
-	def module_name(self):
-		''' returns a string indicating the name of the module. Used for logging. '''
-		return str.format("TCL Simulation ({})",self.tcl_filename_key)
-
-	def perform_test(self, lab_test):
-		''' 
-		Perform a simulation of a module with a Tcl script.
-			sim_path: the path where the simulation should take place
-			tcl_list: the list of items associated with a tcl simulation
-		'''
-		
-		if not self.analyze_sv_files(lab_test,self.sim_top_module):
-			return False
-		if len(self.vhdl_files) > 0:
-			if not self.analyze_vhdl_files(lab_test,self.sim_top_module):
-				return False
-
-		# Analyze
-		if not self.elaborate(lab_test):
-			return False
-
-		lab_path = lab_test.submission_lab_path
-		design_name = self.sim_top_module
-		tcl_filename = lab_test.get_filename_from_key(self.tcl_filename_key)
-
-		# Modify TCL simulation script (add 'quit' command to end)
-		temp_tcl_filename = str(design_name + "_tempsim.tcl")
-		src_tcl = lab_test.execution_path / tcl_filename
-		tmp_tcl = lab_test.execution_path / temp_tcl_filename
-		print(lab_test.execution_path,tmp_tcl,src_tcl)
-		shutil.copyfile(src_tcl, tmp_tcl)
-
-		log = open(tmp_tcl, 'a')
-		log.write('\n# Add Exit quit command\n')
-		log.write('quit\n')
-		log.close()
-
-		# Simulate
-		tcl_sim_opts = [ "-tclbatch", temp_tcl_filename ]
-		return self.simulate(lab_test,xsim_opts = tcl_sim_opts)
-
-class tcl_simulation2(simulation_module):
 	''' A modified version of the TCL simulation that sources the student file from
 	a script rather than running the script directly. Will exit whether or not the
 	student script finishes.

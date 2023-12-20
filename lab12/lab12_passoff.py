@@ -71,7 +71,7 @@ final_iosystem_mem = tester_module.rars_mem_file("final_iosystem_asm", generate_
 project_mem = tester_module.rars_mem_file("project_asm", generate_data_mem=True)
 
 # TCL simulations
-#forwarding_tcl = tester_module.tcl_simulation2( "vga_tcl", "forwarding_iosystem", \
+#forwarding_tcl = tester_module.tcl_simulation( "vga_tcl", "forwarding_iosystem", \
 #	sv_files, include_dirs = ["../lab02", "../lab05", "../include"], \
 #	vhdl_files=vhdl_files,use_glbl=True, \
 #	generics = ["TEXT_MEMORY_FILENAME=forwarding_iosystem_text.mem", \

@@ -42,8 +42,8 @@ test_files = {
 }
 
 # TCL simulations
-alu_tcl = tester_module.tcl_simulation2( "alu_tcl", "alu", [ "alu", "alu_consts" ], include_dirs=[ "../include" ])
-calc_tcl = tester_module.tcl_simulation2( "calc_tcl", "calc", [ "calc", "alu",  "alu_consts", "oneshot" ],  include_dirs=[ "../include" ])
+alu_tcl = tester_module.tcl_simulation( "alu_tcl", "alu", [ "alu", "alu_consts" ], include_dirs=[ "../include" ])
+calc_tcl = tester_module.tcl_simulation( "calc_tcl", "calc", [ "calc", "alu",  "alu_consts", "oneshot" ],  include_dirs=[ "../include" ])
 
 # Testbench simulations
 alu_tb = tester_module.testbench_simulation( "ALU Testbench", "tb_alu", [ "tb_alu", "alu", "alu_consts" ], [], include_dirs=[ "../include" ])

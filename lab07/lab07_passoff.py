@@ -72,11 +72,11 @@ iosystem_mem = tester_module.rars_mem_file("iosystem_asm")
 buttoncount_mem = tester_module.rars_mem_file("buttoncount_asm")
 
 # TCL simulations (These are only necessary to demonstrate that the simulation builds - no checks are made)
-iosystem_tcl = tester_module.tcl_simulation2( "multicycle_io_tcl", "multicycle_iosystem", \
+iosystem_tcl = tester_module.tcl_simulation( "multicycle_io_tcl", "multicycle_iosystem", \
 	sv_files, include_dirs = ["../include" ],vhdl_files=vhdl_files,use_glbl=True, \
 	generics = ["TEXT_MEMORY_FILENAME=multicycle_iosystem_text.mem"])
 
-buttoncount_tcl = tester_module.tcl_simulation2( "buttoncount_tcl", "multicycle_iosystem", \
+buttoncount_tcl = tester_module.tcl_simulation( "buttoncount_tcl", "multicycle_iosystem", \
 	sv_files, include_dirs = ["../include"],vhdl_files=vhdl_files,use_glbl=True, \
 	generics = ["TEXT_MEMORY_FILENAME=buttoncount_text.mem"])
 
