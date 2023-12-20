@@ -3,7 +3,6 @@
 # ButtonCount_sim.tcl
 # Author: Mike Wirthlin
 # Class: ECEN 323
-# Date: 12/10/2020
 #
 # This .tcl script will apply the input stimulus to the circuit
 # as shown in the waveform in the lab wiki.
