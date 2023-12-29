@@ -348,7 +348,10 @@ class lab_test:
         print("Repository Lab",self.submission_lab_path)
 
         # check to make sure the extracted repo is a valid 323 repo
+
+        # Determine incoming URL of repository
         actual_origin_url = self.get_repo_origin_url(self.submission_top_path)
+
         # git@github.com:byu-ecen323-classroom/323-labs-wirthlin.git
         #URL_MATCH_STRING = "git@github.com:byu-ecen323-classroom/323-labs-(\w+).git"
         # For some reason, the github URL does not always have the ".git" at the end when running in the digital lab
@@ -357,14 +360,17 @@ class lab_test:
         # below works for https and the script proceeds.
         #URL_MATCH_STRING = "(.*)byu-ecen323-classroom/323-labs-(\w+)"
         # For winter 2023
-        URL_MATCH_STRING = "(.*)byu-ecen323-winter2023/323-labs-(\w+)"
-        match = re.match(URL_MATCH_STRING,actual_origin_url)
+        #URL_MATCH_STRING = "(.*)byu-ecen323-winter2023/323-labs-(\w+)"
+        # For Winter 2024
+        CLASS_REPO = "byu-ecen323-classroom"
+        URL_MATCH_STRING = f"(.*){CLASS_REPO}/323-labs-(\w+)"
+        match = re.match(URL_MATCH_STRING, actual_origin_url)
         if not match:
-            self.print_error("Cloned repository is not part of the byu-ecen323-winter2023:",actual_origin_url)
+            self.print_error(f"Cloned repository is not part of the {CLASS_REPO} repository:",actual_origin_url)
             self.proceed_with_tests = False
             return False
         else:
-            print("Valid byu-ecen323-winter2023 repository")
+            print(f"Valid {CLASS_REPO} repository")
 
         # Determine execution directory where test should be completed
         #   execution_path:
