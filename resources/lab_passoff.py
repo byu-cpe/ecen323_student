@@ -646,6 +646,7 @@ class lab_passoff_argparse(argparse.ArgumentParser):
         self.add_argument("--notest", action="store_true", help="Do not run the tests")
 
         # Local option
-        #  allows students to perform a 'local' passoff that just uses the files in the local repository rather than checking out their repository. This is helpful if the students want to debug their files before going through the entire process of pushing and tagging.
+        #  allows students to perform a 'local' passoff that just uses the files in the local repository rather than checking out their repository.
+        #  This is helpful if the students want to debug their files before going through the entire process of pushing and tagging.
         self.add_argument("--local", action="store_true", help="Perform passoff script on local repository rather than cloning the remote repository")
 
