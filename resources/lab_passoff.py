@@ -362,7 +362,7 @@ class lab_test:
         # For winter 2023
         #URL_MATCH_STRING = "(.*)byu-ecen323-winter2023/323-labs-(\w+)"
         # For Winter 2024
-        CLASS_REPO = "byu-ecen323-classroom"
+        CLASS_REPO = "byu-ecen323-winter2024"
         URL_MATCH_STRING = f"(.*){CLASS_REPO}/323-labs-(\w+)"
         match = re.match(URL_MATCH_STRING, actual_origin_url)
         if not match:
