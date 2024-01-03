@@ -129,7 +129,13 @@ class lab_test:
         self.print_message_with_header(msg_str)
         print()
 
-        # Print step 1 message header
+        # Tag the repository if necessary
+        self.tagged_repository = False  # flag to indicate whether a new tag was given
+        if not self.args.no_tag:
+            self.tag_repository(self.args.new_tag)
+        else:
+            print("Repository is not being tagged for submission")
+
         self.print_step_message("Checking repository and submission files")
         if not self.prepare_remote_repo():
             return False
@@ -144,7 +150,6 @@ class lab_test:
         ''' Run all the registered tests '''
         if not self.args.notest:
             for test in self.tests_to_perform:
-                #print_step_message(self,msg_str):
                 self.print_step_message(test.module_name())
                 self.execute_test_module(test)
         # Wrap up
@@ -178,12 +183,25 @@ class lab_test:
         else:
             self.print_color(TermColor.GREEN, "Completed - No Warnings or Errors")
 
-        # Commit String
+        # Check commit string
+        if self.tagged_repository:
+            # The current temporary tagged repository has been updated on the remote using
+            # the github action. We need to update the local repository with the new tag
+            # (updated by the actions) and checkout the modified tag.
+            #   Update the local tags and "force" to update the local lab submission tag
+            cmd = ["git", "fetch", "--tags", "--force"]
+            p = subprocess.run(cmd, cwd=self.submission_top_path, 
+                stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+            #   Checkout the new tag (which should have the commit string)
+            cmd = ["git", "checkout", f"tags/{self.LAB_TAG_STRING}"]
+            p = subprocess.run(cmd, cwd=self.submission_top_path, 
+                stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+        # Check the presence of the commit tag file and find the date
         commit_string = self.get_tag_commit_date()
         if commit_string is None:
             self.print_warning("No commit string to evaluate submission time")
         else:
-            self.print_color(TermColor.GREEN, f" Submission date of of lab:{commit_string}")
+            self.print_color(TermColor.GREEN, f" Successful submission date of of lab:{commit_string}")
 
         # Print any final passoff-specific messages
         for msg in self.final_messages:
@@ -259,7 +277,7 @@ class lab_test:
         Reads the ".commit" file to find commit date and returns as a string.
         Returns None if the .commit file does not exist.
         '''
-        # determin path of commit string
+        # determine path of commit string
         COMMIT_STRING_FILEPATH = self.submission_top_path / self.COMMIT_STRING_FILENAME
         try:
             fp = open(COMMIT_STRING_FILEPATH, "r")
@@ -270,16 +288,54 @@ class lab_test:
             return None
 
     def print_tag_commit_date(self):
-        '''
-        Prints the tag commit date
-        '''
+        ''' Prints the tag commit date '''
         commit_string = self.get_tag_commit_date()
         if not (commit_string is None):
             print(str.format("Tag '{}' committed on {}",self.LAB_TAG_STRING,commit_string))
 
+    def tag_repository(self, force=False):
+        ''' Tags the repository with the correct tag. This command should be executed
+        in the directory where the script is run in the local repository (not the
+        checked out repository). '''
+
+        # see if tag exists
+        cmd = ["git", "tag", "-l", self.LAB_TAG_STRING]
+        p = subprocess.run(cmd,stdout=subprocess.PIPE,universal_newlines=True)
+        # p = subprocess.run(cmd, cwd=cwd, stdout=subprocess.PIPE,universal_newlines=True)
+        tag_exists = False
+        if not p.returncode and p.stdout.strip() == self.LAB_TAG_STRING:
+            tag_exists = True
+        
+        if tag_exists and not force:
+            print(f"Tag '{self.LAB_TAG_STRING}' already exists.")
+            print("Overwriting the tag will change the submissiom time.")
+            print("(You can avoid this check by using the '--new_tag' command line option)")
+            print()
+            result = input("Do you want to overwrite the tag and submission time? (y/n):")
+            if result.lower() != 'y':
+                # Don't tag the repository
+                return 
+
+        # Tag the repository
+        cmd = ["git", "tag", "--force", self.LAB_TAG_STRING]
+        p = subprocess.run(cmd)
+        if p.returncode:
+            print(f"Tag {self.LAB_TAG_STRING} failed")
+        else:
+            print(f"Tag {self.LAB_TAG_STRING} created for repository")
+        # Push tag to origin
+        cmd = ["git", "push", "--force", "origin", self.LAB_TAG_STRING]
+        p = subprocess.run(cmd)
+        if p.returncode:
+            print(f"Tag {self.LAB_TAG_STRING} failed to push")
+        else:
+            print(f"Tag {self.LAB_TAG_STRING} pushed to remote")
+        # The repository was tagged
+        self.tagged_repository = True
+
     def prepare_remote_repo(self):
         ''' Prepares the repository for the pass-off. When this function has completed,
-            the repository has been copied (if necessary), verified, and the  directories 
+            the repository has been copied (if necessary), verified, and the directory
             class variable has been set to the appropriate location.
         '''
 
@@ -328,9 +384,15 @@ class lab_test:
                 elif self.args.nodelete:
                     print( "Target directory",self.submission_top_path,"exists. Will proceed WITHOUT deleting")
                 else:
-                    self.print_error("Target directory",self.submission_top_path,"exists. Use --force option to overwrite")
-                    self.proceed_with_tests = False
-                    return False
+                    print("Target passoff test directory",self.submission_top_path,"exists. ")
+                    print(" (Use --force option to avoid this check and overwrite existing directories)")
+                    print()
+                    result = input("Do you want to delete the existing directory to complete the passoff script? (y/n):")
+                    if result.lower() != 'y':
+                        self.proceed_with_tests = False
+                        return False
+                    shutil.rmtree(self.submission_top_path, ignore_errors=True)
+                    print( "Target directory",self.submission_top_path," deleted")
             # Save directory for deleting (if chosen)
             self.directories_to_delete.append(self.submission_top_path)
 
@@ -341,7 +403,9 @@ class lab_test:
                 return False
 
             # Print the repository submission time
-            self.print_tag_commit_date()
+            # This is commented out since the tag is added at the start of the 
+            # script. The tag won't be ready yet so make this check at the end.
+            #self.print_tag_commit_date()
 
         # At this point we have a valid repo at self.submission_top_path
         print("Repository Top",self.submission_top_path)
@@ -625,6 +689,14 @@ class lab_passoff_argparse(argparse.ArgumentParser):
         # GitHub URL for the student repository.
         self.add_argument("--git_repo", type=str, 
             help="GitHub Remote Repository. If no repository is specified, the URL of the current repo will be used.")
+
+        # Disable tagging
+        self.add_argument("--no_tag", action="store_true", 
+            help="Do not update the tag on the repository.")
+
+        # Overwrite existing tag
+        self.add_argument("--new_tag", action="store_true", 
+            help="Force overwrite the existing tag with a new tag")
 
         # Force use of directories if they already exists
         self.add_argument("-f", "--force", action="store_true", help="Force use of directories if they already exists: delete existing")
