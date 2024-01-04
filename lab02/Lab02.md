@@ -1,4 +1,3 @@
 # Lab 2 
 
-The lab write-up for Lab 2 is located at the following [URL](https://ecen323wiki.groups.et.byu.net/labs/lab-02/).
-
+Instructions for Lab 2 are located at the following [URL](https://byu-cpe.github.io/ecen323/labs/lab-02/).
