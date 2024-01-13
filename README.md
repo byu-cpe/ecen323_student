@@ -1,7 +1,7 @@
 # ECEN 323 Student Template Repository
 
 This repository provides a template for student lab assignments. 
-Students should clone this repository as decribed at the following [link](http://ecen323wiki.groups.et.byu.net/tutorials/git_setup/).
+Students should clone this repository as decribed at the following [link](https://byu-cpe.github.io/ecen323/tutorials/git_setup/).
 
 
 ## Labs

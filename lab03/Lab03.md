@@ -1,4 +1,3 @@
 # Lab 3
 
-The lab write-up for Lab 3 is located at the following [URL](https://ecen323wiki.groups.et.byu.net/labs/lab-03/).
-
+Instructions for Lab 3 are located at the following [URL](https://byu-cpe.github.io/ecen323/labs/lab-03/).
