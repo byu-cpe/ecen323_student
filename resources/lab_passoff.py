@@ -136,10 +136,12 @@ class lab_test:
         else:
             print("Repository is not being tagged for submission")
 
+        # Set the files of the lab
+        self.set_lab_fileset(submission_dict, testfiles_dict)
+        # Check the repository
         self.print_step_message("Checking repository and submission files")
         if not self.prepare_remote_repo():
             return False
-        self.set_lab_fileset(submission_dict, testfiles_dict)
         return self.check_lab_fileset()
 
     def add_test_module(self, test_module):
@@ -349,11 +351,13 @@ class lab_test:
         #		submission_top_dir
         if self.args.local:
             # The pass off script is to be run on the local files in the current directory
-            #self.submission_lab_path = self.script_path
             self.submission_lab_path = pathlib.Path.cwd()
             self.submission_top_path = self.submission_lab_path.parent
             print("Performing Local Passoff check - will not check remote repository")
             print("Running local passoff from files at",self.submission_lab_path)
+            # Perform a local repo check if necessary
+            if self.args.check_repo:
+                self.check_repo_file_status()
         else:
             # A remote passoff
             self.submission_top_path = self.script_path / self.args.extract_dir
@@ -540,8 +544,6 @@ class lab_test:
             return False
         return True
 
-    # TODO: This function was copied from 'pygrader/pygrader/student_repos.py'
-    #       Need to import this code rather than copying it in the future.
     def print_date(self, student_repo_path):
         print("Last commit: ")
         cmd = ["git", "log", "-1", r"--format=%cd"]
@@ -615,6 +617,90 @@ class lab_test:
                 self.proceed_with_tests = False
         return not error
     
+    def check_for_required_files(self):
+        ''' Checks to make sure all required files exist in the file system. '''
+        status = True
+        # Make sure the files are in the repository
+        files_to_check = []
+        for filename in self.submission_dict.values():
+            cmd = ["git", "ls-files", filename]
+            proc = subprocess.run(cmd, cwd=str(self.submission_lab_path),
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE,
+                                text=True,
+                                check=True)
+            git_file = proc.stdout.rstrip()
+            if git_file != filename:
+                print(f"Required file {filename} not in repository ({git_file})")
+                status = False
+            else:
+                files_to_check.append(filename)
+        return status
+
+    def check_for_git_file_status(self):
+        status = True
+        # Make sure the files are up to date and committed
+        cmd = ["git", "status", "--porcelain"]
+        for filename in self.submission_dict.values():
+            cmd.append(filename)
+        proc = subprocess.run(cmd, cwd=str(self.submission_lab_path),
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE,
+                            text=True,
+                            check=True)
+        if proc.stdout != "":
+            modified_files=[]
+            status = False
+            for line in proc.stdout.splitlines():
+                status, file_repo_name = line[:2], line[3:]
+                filename = pathlib.PurePath(file_repo_name).name
+                modified_files.append(filename)
+            print("Warning: The following files have been modified and need to be committed:")
+            for mfile in modified_files:
+                print(f" {mfile}")
+        return status
+
+    def check_for_git_pending_push(self):
+        status = True
+        # Make sure all the commits have been pushed
+        cmd = ["git", "diff", "--stat", "--cached", "origin/main" ]
+        proc = subprocess.run(cmd, cwd=str(self.submission_lab_path),
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE,
+                            text=True,
+                            check=True)
+        if proc.stdout != "":
+            status = False
+            print("Warning: Pending commits have not been pushed")
+        return status
+
+    def check_for_git_untracked_files(self):
+        status = True
+        # See if there are any ignored directories
+        cmd = ["git", "ls-files", "--others", "--exclude-standard" ]
+        proc = subprocess.run(cmd, cwd=str(self.submission_lab_path),
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE,
+                            text=True,
+                            check=True)
+        if proc.stdout != "":
+            status = False
+            print("Warning: Untracked files in repository")
+            for line in proc.stdout.splitlines():
+                print(" "+line)
+        return status
+
+    def check_repo_file_status(self):
+        ''' Checks the respository to make sure that all expected files are committed and that
+        there are no changes in these files. Returns True if the files are properly committed
+        and false otherwise. '''
+
+        required_files = self.check_for_required_files()
+        file_commit_status = self.check_for_git_file_status()
+        pending_push = self.check_for_git_pending_push()
+        untracked_files = self.check_for_git_untracked_files()
+        return required_files and file_commit_status and pending_push and untracked_files
+
     def create_log_file(self):
         ''' Creates a log file to record test summaries'''
         log_file_path = self.execution_path / self.TEST_RESULT_FILENAME
@@ -722,3 +808,5 @@ class lab_passoff_argparse(argparse.ArgumentParser):
         #  This is helpful if the students want to debug their files before going through the entire process of pushing and tagging.
         self.add_argument("--local", action="store_true", help="Perform passoff script on local repository rather than cloning the remote repository")
 
+        # Check repository
+        self.add_argument("--check_repo", action="store_true", help="Checks the repository for correctness (for local option only)")
