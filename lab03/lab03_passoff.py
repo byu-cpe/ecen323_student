@@ -55,24 +55,24 @@ top_tb = tester_module.testbench_simulation( "Regfile Top Testbench", "tb_regfil
 bit_build = tester_module.build_bitstream("regfile_top",["xdc"], [ "alu_consts", "alu", "oneshot", "regfile", "top" ], True, False, include_dirs=[ "../include" ])
 
 def main():
-	''' Main executable for script
-	'''
+    ''' Main executable for script
+    '''
 
-	# Create lab tester object
-	lab_test = lab_passoff.lab_test(SCRIPT_PATH, LAB_NUMBER)
-	# Parse arguments
-	lab_test.parse_args()
-	# Prepare test
-	lab_test.prepare_test(submission_files,test_files)
-	# Add tests
-	lab_test.add_test_module(regfile_tcl)
-	lab_test.add_test_module(top_tcl)
-	lab_test.add_test_module(regfile_tb)
-	lab_test.add_test_module(top_tb)
-	lab_test.add_test_module(bit_build)
-	# Run tests
-	lab_test.run_tests()
+    # Create lab tester object
+    lab_test = lab_passoff.lab_test(SCRIPT_PATH, LAB_NUMBER)
+    # Parse arguments
+    lab_test.parse_args()
+    # Prepare test
+    lab_test.prepare_test(submission_files,test_files)
+    # Add tests
+    lab_test.add_test_module(regfile_tcl)
+    lab_test.add_test_module(top_tcl)
+    lab_test.add_test_module(regfile_tb)
+    lab_test.add_test_module(top_tb)
+    lab_test.add_test_module(bit_build)
+    # Run tests
+    lab_test.run_tests()
 
 
 if __name__ == "__main__":
-	main()
+    main()
