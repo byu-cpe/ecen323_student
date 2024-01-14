@@ -46,21 +46,21 @@ iterative_asm = tester_module.rars_sim_print("iterative")
 recursive_asm = tester_module.rars_sim_print("recursive")
 
 def main():
-	''' Main executable for script
-	'''
+    ''' Main executable for script
+    '''
 
-	# Create lab tester object
-	lab_test = lab_passoff.lab_test(SCRIPT_PATH, LAB_NUMBER)
-	# Parse arguments
-	lab_test.parse_args()
-	# Prepare test
-	lab_test.prepare_test(submission_files,test_files)
-	# Add tests
-	lab_test.add_test_module(iterative_asm)
-	lab_test.add_test_module(recursive_asm)
-	# Run tests
-	lab_test.run_tests()
+    # Create lab tester object
+    lab_test = lab_passoff.lab_test(SCRIPT_PATH, LAB_NUMBER)
+    # Parse arguments
+    lab_test.parse_args()
+    # Prepare test
+    lab_test.prepare_test(submission_files,test_files)
+    # Add tests
+    lab_test.add_test_module(iterative_asm)
+    lab_test.add_test_module(recursive_asm)
+    # Run tests
+    lab_test.run_tests()
 
 
 if __name__ == "__main__":
-	main()
+    main()
