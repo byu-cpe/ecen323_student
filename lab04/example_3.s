@@ -3,7 +3,6 @@
 # Filename: example_3.s
 # 
 # Author: Mike Wirthlin
-# Date: 1/22/2020
 #
 # Description: Program to calculate the factorial for given 
 # non-zero, non-negative integer input (output = input!) with system calls 
