@@ -33,6 +33,8 @@ set_msg_config -new_severity "INFO" -id "DRC RTSTAT-10"
 set_msg_config -new_severity "INFO" -id "Synth 8-3331"
 # Downgrade: WARNING: [Synth 8-7080] Parallel synthesis criteria is not met
 set_msg_config -new_severity "INFO" -id "Synth 8-7080"
+# Downgrade: WARNING: [Synth 8-7129] Port instruction[14] in module riscv_simple_datapath is either unconnected or has no load
+set_msg_config -new_severity "INFO" -id "Synth 8-7129"
 
 # Other possible downgrade options: (lab 9 warnings in synthesis)
 # WARNING: [Synth 8-6014] Unused sequential element mem_ALUSrc_reg was removed.  [/tmp/ecen323_wirthlin/lab09/riscv_forwarding_pipeline.sv:320]
