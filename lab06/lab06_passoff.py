@@ -47,17 +47,17 @@ test_files = {
 # Testbench simulations
 multicycle_nomem_tb = tester_module.testbench_simulation( "Multicycle Testbench", \
 	"tb_multicycle_control", \
-	[ "tb_multicycle_control", "multicycle", "datapath", "alu",  "regfile", "datapathconstants", "alu_constants",   ], [], \
+	[ "tb_multicycle_control", "datapathconstants", "multicycle", "datapath", "alu",  "regfile",  "alu_constants",   ], [], \
 		 include_dirs = ["../include"] )
 
 multicycle_mem_tb = tester_module.testbench_simulation( "Multicycle Testbench", \
 	"tb_multicycle_control", \
-	[ "tb_multicycle_control", "multicycle", "datapath", "alu",  "regfile", "datapathconstants", "alu_constants",   ], [], \
+	[ "tb_multicycle_control", "datapathconstants", "multicycle", "datapath", "alu",  "regfile",  "alu_constants",   ], [], \
 		 include_dirs = ["../include"], generics = ["USE_MEMORY=1"])
 
 # Synthesis batches
 multicycle_build = tester_module.build_bitstream( "riscv_multicycle", [], 
-	[ "multicycle", "datapath", "alu",  "regfile", "datapathconstants", "alu_constants" ], \
+	[ "datapathconstants", "multicycle", "datapath", "alu",  "regfile", "alu_constants" ], \
 		False, False, include_dirs=["../include"])
 
 # Bitstream build
