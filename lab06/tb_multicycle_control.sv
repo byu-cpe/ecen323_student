@@ -88,7 +88,9 @@ module tb_multicycle_control
     // Assumes we are in negative edge of IF stage
 	task execute_instruction;
 		input [31:0] instruction;
+		input string inst_str;
 		begin
+			$display("[%0t] [PC=%08h] %s", $time, int_PC, inst_str);
             tb_instruction = instruction;
             sim_clocks(5);
 		end
@@ -100,13 +102,16 @@ module tb_multicycle_control
 		input [6:0] func7;
 		input [3:0] ALUCtrl;
 		input string opcode_str;
+		string inst_string;
 		begin
 			logic [31:0] instruction;
+
 			localparam RTYPE_ALU_OPCODE = 7'b0110011;
 			instruction = {func7, rs2, rs1, func3, rd, RTYPE_ALU_OPCODE};
 			// Print the instruction
-			$display("[%0t] %s x%0d,x%0d,x%0d", $time, opcode_str, rd, rs1, rs2);
-			execute_instruction(.instruction(instruction));
+            inst_string = $sformatf("%s x%0d,x%0d,x%0d", opcode_str, rd, rs1, rs2);
+			//$display("[%0t] %s x%0d,x%0d,x%0d", $time, opcode_str, rd, rs1, rs2);
+			execute_instruction(.instruction(instruction),.inst_str(inst_string));
 		end
 	endtask
 
@@ -126,11 +131,13 @@ module tb_multicycle_control
 		input [11:0] immediate;
 		input [3:0] ALUCtrl;
 		input string opcode_str;
+		string inst_string;
 		begin
 			logic [31:0] instruction;
 			instruction = {immediate, rs1, func3, rd, IMMEDIATE_ALU_OPCODE};
-			$display("[%0t] %s x%0d,x%0d,%0d", $time, opcode_str, rd, rs1, $signed({ {20{immediate[11]}}, immediate}) );
-			execute_instruction(.instruction(instruction));
+            inst_string = $sformatf("%s x%0d,x%0d,%0d", opcode_str, rd, rs1, $signed({ {20{immediate[11]}}, immediate}));
+			//$display("[%0t] %s x%0d,x%0d,%0d", $time, opcode_str, rd, rs1, $signed({ {20{immediate[11]}}, immediate}) );
+			execute_instruction(.instruction(instruction),.inst_str(inst_string));
 		end
 	endtask
 
@@ -235,23 +242,28 @@ module tb_multicycle_control
 		input [4:0] rd, rs1;
 		input [11:0] immediate;
 		logic [31:0] instruction;
+		string inst_string;
 		// all load instructions use the 0000011 opcode. The 011 funct3 is for the ld. I should use
 		// the 010 for lw instead of ld. 
 		instruction = {immediate, rs1, 3'b010, rd, 7'b0000011};
-		$display("[%0t] lw x%0d,%0d(x%0d)", $time, rd,  $signed({ {20{immediate[11]}}, immediate}), rs1 );
-		execute_instruction(.instruction(instruction));
+		inst_string = $sformatf("lw x%0d,%0d(x%0d)", rd,  $signed({ {20{immediate[11]}}, immediate}), rs1);
+		//$display("[%0t] lw x%0d,%0d(x%0d)", $time, rd,  $signed({ {20{immediate[11]}}, immediate}), rs1 );
+		execute_instruction(.instruction(instruction),.inst_str(inst_string));
 	endtask
 
 	task execute_sw_instruction;
 		input [4:0] rs2, rs1;
 		input [11:0] immediate;
 		logic [31:0] instruction;
+		string inst_string;
 		// all load instructions use the 0000011 opcode. The 011 funct3 is for the ld. I should use
 		// the 010 for lw instead of ld. 
 		instruction = {immediate[11:5], rs2, rs1, 3'b011, immediate[4:0], 7'b0100011};
-		$display("[%0t] sw x%0d,%0d(x%0d)", $time, rs2,  $signed({ {20{immediate[11]}}, immediate}), 
+		inst_string = $sformatf("sw x%0d,%0d(x%0d)", rs2,  $signed({ {20{immediate[11]}}, immediate}), 
 			rs1 );
-		execute_instruction(.instruction(instruction));
+		//$display("[%0t] sw x%0d,%0d(x%0d)", $time, rs2,  $signed({ {20{immediate[11]}}, immediate}), 
+		//	rs1 );
+		execute_instruction(.instruction(instruction),.inst_str(inst_string));
 	endtask
 
 	task execute_beq_instruction;
@@ -259,15 +271,17 @@ module tb_multicycle_control
 		input [11:0] immediate;
 		logic [31:0] instruction;
 		logic [12:0] imm;
-		assign imm = {immediate, 1'b0};
+		string inst_string;
+		imm = {immediate, 1'b0};
 		instruction = {imm[12],imm[10:5], rs2, rs1, 3'b000, imm[4:1],  imm[11], 7'b1100011};
-		$display("[%0t] beq x%0d,x%0d,%0d", $time, rs1, rs2,  $signed({ {19{imm[12]}}, imm}));
-		execute_instruction(.instruction(instruction));
+		inst_string = $sformatf("beq x%0d,x%0d,%0d", rs1, rs2,  $signed({ {19{imm[12]}}, imm}));
+		//$display("[%0t] beq x%0d,x%0d,%0d", $time, rs1, rs2,  $signed({ {19{imm[12]}}, imm}));
+		execute_instruction(.instruction(instruction),.inst_str(inst_string));
 	endtask
 
 	task execute_random_instruction;
 		automatic int r1,r2,imm;
-		automatic int num_instructions = 19;
+		automatic int num_instructions = 20;
 
 		// Generate random instruction fields
 		automatic int rd = $urandom_range(0,31);
@@ -293,6 +307,7 @@ module tb_multicycle_control
 			16: execute_slli_instruction(rd, rs1, imm[4:0]);
 			17: execute_srli_instruction(rd, rs1, imm[4:0]);
 			18: execute_srai_instruction(rd, rs1, imm[4:0]);
+			19: execute_beq_instruction(rs2, rs1, imm);
 		endcase
 	endtask
 
@@ -358,7 +373,7 @@ module tb_multicycle_control
 	task non_memory_simulation;
 		int i;
 
-		int RANDOM_INSTRUCTIONS = 100;
+		automatic int RANDOM_INSTRUCTIONS = 100;
 
         //shall print %t with scaled in ns (-9), with 2 precision digits, and would print the " ns" string
 		$timeformat(-9, 0, " ns", 20);
@@ -381,7 +396,7 @@ module tb_multicycle_control
 
 		// DO NOT CHANGE THE INSTRUCTION ORDER - LEARNING SUITE EXAM RELIES ON THIS SEQUENCE
 
-		$display("[%0t]Testing immediate instructions", $time);
+		$display("[%0t] Testing immediate instructions", $time);
 		execute_addi_instruction(.rd(1), .rs1(0), .immediate(1) );
 		execute_addi_instruction(.rd(2), .rs1(1), .immediate(-3) );
 		execute_andi_instruction(.rd(3), .rs1(2), .immediate(8'hff) );
@@ -389,10 +404,10 @@ module tb_multicycle_control
 		execute_ori_instruction(.rd(5), .rs1(0), .immediate(12'hca5) );
 		execute_xori_instruction(.rd(6), .rs1(2), .immediate(12'h7ff) );
 
-		$display("[%0t]Testing x0 Register", $time);
+		$display("[%0t] Testing x0 Register", $time);
 		execute_addi_instruction(.rd(0), .rs1(0), .immediate(1) );
 
-		$display("[%0t]Testing ALU register instructions", $time);
+		$display("[%0t] Testing ALU register instructions", $time);
 		execute_add_instruction(.rd(7), .rs1(1), .rs2(2) );
 		execute_add_instruction(.rd(8), .rs1(3), .rs2(1) );
 		execute_add_instruction(.rd(9), .rs1(0), .rs2(1) );
@@ -440,7 +455,7 @@ module tb_multicycle_control
 		execute_add_instruction(.rd(22), .rs1(22), .rs2(22) ); // 0x08008000
 		execute_add_instruction(.rd(22), .rs1(22), .rs2(22) ); // 0x10001000
 
-		$display("[%0t]Testing Load Memory instructions", $time);
+		$display("[%0t] Testing Load Memory instructions", $time);
 		execute_lw_instruction(.rd(23), .rs1(22), .immediate(0) );
 		execute_lw_instruction(.rd(24), .rs1(22), .immediate(4) );
 		execute_lw_instruction(.rd(25), .rs1(22), .immediate(8) );
@@ -451,7 +466,7 @@ module tb_multicycle_control
 		execute_lw_instruction(.rd(30), .rs1(27), .immediate(-12) );
 		execute_lw_instruction(.rd(31), .rs1(27), .immediate(-16) );
 
-		$display("[%0t]Testing Store Memory instructions", $time);
+		$display("[%0t] Testing Store Memory instructions", $time);
 		execute_sw_instruction(.rs2(1), .rs1(22), .immediate(0) );
 		execute_sw_instruction(.rs2(2), .rs1(22), .immediate(4) );
 		execute_sw_instruction(.rs2(3), .rs1(22), .immediate(8) );
@@ -473,7 +488,7 @@ module tb_multicycle_control
 		execute_lw_instruction(.rd(30), .rs1(27), .immediate(-12) );
 		execute_lw_instruction(.rd(31), .rs1(27), .immediate(-16) );
 
-		$display("[%0t]Testing Branch instructions", $time);
+		$display("[%0t] Testing Branch instructions", $time);
 		// BEQ not taken
 		execute_beq_instruction(.rs1(0), .rs2(1), .immediate(8) );
 		// BEQ taken forrward
@@ -483,13 +498,13 @@ module tb_multicycle_control
 		// BEQ taken backward
 		execute_beq_instruction(.rs1(1), .rs2(1), .immediate(-64) );
 
-		$display("[%0t]Testing Shift instructions", $time);
+		$display("[%0t] Testing Shift instructions", $time);
 		execute_addi_instruction(.rd(1), .rs1(0), .immediate(12'h0123) );  // Positive constant to be shifted
-		execute_addi_instruction(.rd(2), .rs1(0), .immediate(-4) );     // Negative constant to be shifted  
-		execute_addi_instruction(.rd(3), .rs1(0), .immediate(5) );      // Amount to shift  
-		execute_sll_instruction(.rd(4), .rs1(1), .rs2(3) );
+		execute_addi_instruction(.rd(2), .rs1(0), .immediate(-4) );        // Negative constant to be shifted x2=-4
+		execute_addi_instruction(.rd(3), .rs1(0), .immediate(5) );         // Positive amount to shift  x3=5
+		execute_sll_instruction(.rd(4), .rs1(1), .rs2(3) );  // should be 0123 << 5 bits = 01230 << 1 = 02460
 		execute_sll_instruction(.rd(5), .rs1(2), .rs2(3) );
-		execute_srl_instruction(.rd(6), .rs1(1), .rs2(3) );
+		execute_srl_instruction(.rd(6), .rs1(1), .rs2(3) );  // should be 0123 >> 5 = 12 >> 1 = 0009 
 		execute_srl_instruction(.rd(7), .rs1(2), .rs2(3) );
 		execute_sra_instruction(.rd(8), .rs1(1), .rs2(3) );
 		execute_sra_instruction(.rd(9), .rs1(2), .rs2(3) );
@@ -503,7 +518,7 @@ module tb_multicycle_control
 
 		//////////////////////////////////
 		//	Random testing
-		$display("[%0t]Testing Random instructions", $time);
+		$display("[%0t] Testing Random instructions", $time);
 		for(i=0;i<RANDOM_INSTRUCTIONS;i=i+1)
 			execute_random_instruction();
 
