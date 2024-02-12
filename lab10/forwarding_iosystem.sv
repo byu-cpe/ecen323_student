@@ -11,25 +11,25 @@
 module forwarding_iosystem (clk, btnc, btnd, btnl, btnr, btnu, sw, led,
     an, seg, dp, RsRx, RsTx, vgaBlue, vgaGreen, vgaRed, Hsync, Vsync);
 
-	// Top-level ports
-	input logic clk;
-	input logic btnc;
-	input logic btnd;
-	input logic btnl;
-	input logic btnr;
-	input logic btnu;
-	input [15:0]sw;
-	output [15:0]led;
-	output [3:0]an;
-	output [6:0]seg;
+    // Top-level ports
+    input logic clk;
+    input logic btnc;
+    input logic btnd;
+    input logic btnl;
+    input logic btnr;
+    input logic btnu;
+    input [15:0]sw;
+    output [15:0]led;
+    output [3:0]an;
+    output [6:0]seg;
     output logic dp;
-	output logic RsRx;
-	input logic RsTx;
-	output [3:0]vgaRed;
-	output [3:0]vgaBlue;
-	output [3:0]vgaGreen;
-	output logic Hsync;
-	output logic Vsync;
+    output logic RsRx;
+    input logic RsTx;
+    output [3:0]vgaRed;
+    output [3:0]vgaBlue;
+    output [3:0]vgaGreen;
+    output logic Hsync;
+    output logic Vsync;
 
     // Top-level Parameters
     parameter TEXT_MEMORY_FILENAME = "";        // Instruction binary file
@@ -39,15 +39,15 @@ module forwarding_iosystem (clk, btnc, btnd, btnl, btnr, btnu, sw, led,
     parameter DEBOUNCE_DELAY_US = 10;
 
     // Local constants
-	localparam INPUT_CLOCK_RATE = 100_000_000;
+    localparam INPUT_CLOCK_RATE = 100_000_000;
     localparam PROC_CLK_DIVIDE = 3;
     localparam VGA_CLK_DIVIDE = 2;
     localparam INSTRUCTION_BRAMS = 2;
     localparam DATA_BRAMS = 2;
-	localparam TEXT_START_ADDRESS = 32'h00000000;
-	localparam DATA_START_ADDRESS = 32'h00002000;
-	localparam IO_START_ADDRESS = 32'h00007f00;
-	localparam VGA_START_ADDRESS = 32'h00008000;
+    localparam TEXT_START_ADDRESS = 32'h00000000;
+    localparam DATA_START_ADDRESS = 32'h00002000;
+    localparam IO_START_ADDRESS = 32'h00007f00;
+    localparam VGA_START_ADDRESS = 32'h00008000;
     localparam PROC_CLOCK_RATE = INPUT_CLOCK_RATE / PROC_CLK_DIVIDE;
     
     // Module Signals
@@ -70,7 +70,7 @@ module forwarding_iosystem (clk, btnc, btnd, btnl, btnr, btnu, sw, led,
         riscv (.clk(clk_proc), .rst(rst), .PC(PC), .iMemRead(iMemRead),.instruction(instruction), 
         .dAddress(dAddress), .dReadData(mem_io_read_data), .dWriteData(dWriteData), 
         .MemRead(dMemRead), .MemWrite(dMemWrite), .WriteBackData(WriteBackData)
-	);
+    );
 
     // Memories (instruction and data)
     riscv_mem #(.INSTRUCTION_BRAMS(INSTRUCTION_BRAMS),.DATA_BRAMS(DATA_BRAMS),

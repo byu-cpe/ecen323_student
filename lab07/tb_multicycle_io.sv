@@ -36,7 +36,7 @@ module tb_multicycle_io
 	endtask
 
 	task test_switches;
-        // Set the switches with no buttons pressed and see if LEDs follow
+    // Set the switches with no buttons pressed and see if LEDs follow
 		input [15:0] sw_val;
 		begin
 		  buttons_off();
@@ -54,7 +54,7 @@ module tb_multicycle_io
 
 
 	task test_btnd;
-        // # Check button D: turn LEDs off
+    // # Check button D: turn LEDs off
 		input [15:0] sw_val;
 		begin
 		  buttons_off();
@@ -73,7 +73,7 @@ module tb_multicycle_io
 	endtask
 
 	task test_btnu;
-        // 	# Button U pressed - write ffff to LEDs (turn them on)
+    // 	# Button U pressed - write ffff to LEDs (turn them on)
 		input [15:0] sw_val;
 		begin
 		  buttons_off();
@@ -92,7 +92,7 @@ module tb_multicycle_io
 	endtask
 
 	task test_btnr;
-        // 	# Check button R: Invert switches when displaying on LEDs
+    // 	# Check button R: Invert switches when displaying on LEDs
 		input [15:0] sw_val;
 		begin
 		  buttons_off();
@@ -112,7 +112,7 @@ module tb_multicycle_io
  
 
 	task test_btnl;
-        // 	# Check button R: Invert switches when displaying on LEDs
+    // 	# Check button R: Invert switches when displaying on LEDs
 		input [15:0] sw_val;
 		begin
 		  buttons_off();
@@ -130,112 +130,60 @@ module tb_multicycle_io
 		end
 	endtask
 
-     /*	
-	# Button C pressed - fall through to clear timer and seven segmeent dislplay
-    */
 
-    // Clock
-    initial begin
-        #200
-        forever begin
-            #5 tb_clk = 1; 
-            #5 tb_clk = 0;
-        end
-    end
+  // Clock
+  initial begin
+      #200
+      forever begin
+          #5 tb_clk = 1; 
+          #5 tb_clk = 0;
+      end
+  end
     
-    // I/O
-    initial begin
+  // I/O
+  initial begin
 
-        // Startup delay
-        #100
+      // Startup delay
+      #100
 
-        // Initialize inputs
-        buttons_off();
-        tb_sw = 0;
-        #10us
+      // Initialize inputs
+      buttons_off();
+      tb_sw = 0;
+      #10us
 
-        // Change the switchces and observe LEDs
-        $display("Test #1: change switches");
-        test_switches(16'ha5a5);
-        $display("Test #2: BTNL");
-        test_btnl(16'h00ff);
-        $display("Test #3: BTNR");
-        test_btnr(16'hff00);
-        $display("Test #4: BTNU");
-        test_btnu(16'h0ff0);
-        $display("Test #5: BTND");
-        test_btnd(16'hf00f);
-        
-        // Wrap up
-        buttons_off();
-        tb_sw = 16'h0;
-        #1us
-        tb_btnr = 1'b0;
-        
-/*  
-        tb_btnr = 1'b0;
-        #1us
+      // Change the switchces and observe LEDs
+      $display("Test #1: change switches");
+      test_switches(16'ha5a5);
+      $display("Test #2: BTNL");
+      test_btnl(16'h00ff);
+      $display("Test #3: BTNR");
+      test_btnr(16'hff00);
+      $display("Test #4: BTNU");
+      test_btnu(16'h0ff0);
+      $display("Test #5: BTND");
+      test_btnd(16'hf00f);
+      
+      // Wrap up
+      buttons_off();
+      tb_sw = 16'h0;
+      #1us
+      tb_btnr = 1'b0;
+      
+      #1us
 
+      $display("Successful Simulation");
+      $finish;
+  end
 
-# Press BTNR and observe LEDs
-add_force btnr 1
-run 10 us
-# Release BTNR and observe LEDs
-add_force btnr 0
-run 1 us
-
-# Press BTNL and observe LEDs
-add_force btnl 1
-run 10 us
-# Release BTNL and observe LEDs
-add_force btnl 0
-run 1 us
-
-# Press BTNL and observe LEDs
-add_force btnu 1
-run 10 us
-# Release BTNL and observe LEDs
-add_force btnu 0
-run 1 us
-
-# Press BTNL and observe LEDs
-add_force btnd 1
-run 10 us
-# Release BTNL and observe LEDs
-add_force btnd 0
-run 1 us
-
-# Run 1 ms for timer
-run 1 ms
-
-# Press BTNL and observe LEDs
-add_force btnc 1
-run 10 us
-# Release BTNL and observe LEDs
-add_force btnc 0
-run 1 us
-
-Checks:
-- Make sure LEDs follow buttons after switches are changed
-
-
-*/
-
-        $display("Successful Simulation");
-        $finish;
-    end
-
-
-    // Instance system
-    multicycle_iosystem #(.TEXT_MEMORY_FILENAME(instruction_memory_filename),
-        .DATA_MEMORY_FILENAME(data_memory_filename),.USE_DEBOUNCER(0))
-    riscv(.clk(tb_clk), 
-        .btnc(tb_btnc), .btnd(tb_btnd), .btnl(tb_btnl), .btnr(tb_btnr), .btnu(tb_btnu), 
-        .sw(tb_sw), .led(tb_led),
-        .an(tb_an), .seg(tb_seg), .dp(tb_dp), 
-        .RsRx(), .RsTx(tb_RsTx), 
-        .vgaBlue(), .vgaGreen(), .vgaRed(), .Hsync(), .Vsync()
-    );
-
+  // Instance system
+  multicycle_iosystem #(.TEXT_MEMORY_FILENAME(instruction_memory_filename),
+      .DATA_MEMORY_FILENAME(data_memory_filename),.USE_DEBOUNCER(0))
+  riscv(.clk(tb_clk), 
+      .btnc(tb_btnc), .btnd(tb_btnd), .btnl(tb_btnl), .btnr(tb_btnr), .btnu(tb_btnu), 
+      .sw(tb_sw), .led(tb_led),
+      .an(tb_an), .seg(tb_seg), .dp(tb_dp), 
+      .RsRx(), .RsTx(tb_RsTx), 
+      .vgaBlue(), .vgaGreen(), .vgaRed(), .Hsync(), .Vsync()
+  );
 
 endmodule
