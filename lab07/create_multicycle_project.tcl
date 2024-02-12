@@ -1,5 +1,5 @@
 # Create project, specify part, and update project settings
-create_project -force multicycle_io_v ./projv
+create_project -force multicycle_io_v ./proj
 set_property "part" "xc7a35tcpg236-1" [get_projects [current_project]]
 source ../resources/new_project_settings.tcl
 # Add the top-level I/O system and constraints file (provided in the lab)
