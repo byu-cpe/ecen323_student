@@ -36,6 +36,7 @@ test_files = {
 	"pipeline_nop"			: "pipeline_nop.s",
     "alu"           		: "../lab02/alu.sv",
     "alu_constants"     	: "../include/riscv_alu_constants.sv",
+    "tb_constants"     		: "../include/tb_pipeline_inc.sv",
     "regfile"       		: "../lab03/regfile.sv",
 }
 
@@ -47,7 +48,7 @@ pipeline_nop_mem = tester_module.rars_mem_file("pipeline_nop", generate_data_mem
 # Testbench simulations
 pipeline_tb = tester_module.testbench_simulation( "Pipeline Testbench", \
 	"riscv_pipeline_tb", \
-	[ "riscv_pipeline_tb", "alu_constants", "alu",  "regfile", "pipeline",   ], [], \
+	[ "tb_constants", "riscv_pipeline_tb", "alu_constants", "alu",  "regfile", "pipeline",   ], [], \
 		 include_dirs = [ "../include"], )
 
 # Synthesis batches
