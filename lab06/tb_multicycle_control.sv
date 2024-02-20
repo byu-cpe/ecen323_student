@@ -301,7 +301,7 @@ module tb_multicycle_control
             16: execute_slli_instruction(rd, rs1, imm[4:0]);
             17: execute_srli_instruction(rd, rs1, imm[4:0]);
             18: execute_srai_instruction(rd, rs1, imm[4:0]);
-            19: execute_beq_instruction(rs2, rs1, imm);
+            19: execute_beq_instruction(rs2, rs1, imm << 1);
         endcase
     endtask
 
