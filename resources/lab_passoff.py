@@ -203,7 +203,7 @@ class lab_test:
         if commit_string is None:
             self.print_warning("No commit string to evaluate submission time")
         else:
-            self.print_color(TermColor.GREEN, f" Successful submission date of of lab:{commit_string}")
+            self.print_color(TermColor.GREEN, f" Successful submission date of lab:{commit_string}")
 
         # Print any final passoff-specific messages
         for msg in self.final_messages:
