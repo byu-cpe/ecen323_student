@@ -11,8 +11,7 @@
 ######################################################################
 
 .eqv MAJOR_VERSION 1
-.eqv MINOR_VERSION 6
-
+.eqv MINOR_VERSION 7
 
 .text
 
@@ -48,6 +47,14 @@
     slt x10, x8, x8
     # Make sure register file can read and write to same register
     add x1, x1, x1
+    # Make sure the forwarding priority is correct (rs1)
+    addi x2, x0, 1
+    addi x2, x0, 2
+    add x3, x2, x0  # should load 2 from second of the addi instructions
+    # Make sure the forwarding priority is correct (rs2)
+    addi x2, x0, 1
+    addi x2, x0, 2
+    add x3, x2, x0  # should load 2 from second of the addi instructions
     # NOPs to flush out pipline before next test
     nop
     nop
@@ -110,6 +117,13 @@
 	sw x1, 64(x31)
 	# read value just written
 	lw x15, 64(x31)
+    # Test to see if forwarding is working properly with rs2 and stores
+    addi x16, x0, 0xff
+    slli x16, x16, 4
+    sw x16, 68(x31)         # Note that the rs2 (x16) needs to be forwarded from MEM (with priority)
+    addi x17, x0, 0xee
+    nop
+    sw x17, 68(x31)         # Note that the rs2 (x16) needs to be forwarded from WB
 
     ##############################################################
     # Load Use hazards
@@ -166,7 +180,6 @@
     # Branch Hazards
     ##############################################################
 
- 
     # seed x1
     addi x1, x0, 1
     # 1. Branch not taken without forwarding
