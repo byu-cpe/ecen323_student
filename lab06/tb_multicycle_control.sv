@@ -262,14 +262,22 @@ module tb_multicycle_control
     endtask
 
     task execute_beq_instruction;
+        // The immediate field parameter is the proposed 12-bit immediate value used within the instruction.
+        // The immediate value will be converted into a 13-bit branch offset.
+        // It is possible that the proposed immediate field will branch to a non-word alligned address
+        // (i.e., if the least significant bit is a 1).
+        // The actual immediate field will be to a word alligned address.
         input [4:0] rs2, rs1;
         input [11:0] immediate;
+
         logic [31:0] instruction;
-        logic [12:0] imm;
+        logic [12:0] branch_offset;
         string inst_string;
-        imm = {immediate, 1'b0};
-        instruction = {imm[12],imm[10:5], rs2, rs1, 3'b000, imm[4:1],  imm[11], 7'b1100011};
-        inst_string = $sformatf("beq x%0d,x%0d,%0d", rs1, rs2,  $signed({ {19{imm[12]}}, imm}));
+        // The branch offset will be the top 11 bits of the immediate field followed by two '0' bits to
+        // insure the branch offset goes to a word alligned address.
+        branch_offset = {immediate[11:1], 2'b0};
+        instruction = {branch_offset[12], branch_offset[10:5], rs2, rs1, 3'b000, branch_offset[4:1], branch_offset[11], 7'b1100011};
+        inst_string = $sformatf("beq x%0d,x%0d,%0d", rs1, rs2,  $signed({ {19{branch_offset[12]}}, branch_offset}));
         execute_instruction(.instruction(instruction),.inst_str(inst_string));
     endtask
 
@@ -301,7 +309,7 @@ module tb_multicycle_control
             16: execute_slli_instruction(rd, rs1, imm[4:0]);
             17: execute_srli_instruction(rd, rs1, imm[4:0]);
             18: execute_srai_instruction(rd, rs1, imm[4:0]);
-            19: execute_beq_instruction(rs2, rs1, imm << 1);
+            19: execute_beq_instruction(rs2, rs1, imm);
         endcase
     endtask
 
@@ -497,6 +505,8 @@ module tb_multicycle_control
         execute_beq_instruction(.rs1(0), .rs2(1), .immediate(-64) );
         // BEQ taken backward
         execute_beq_instruction(.rs1(1), .rs2(1), .immediate(-64) );
+        // BEQ taken to a far positive value where the 12th bit of the 13 composite immediate is a 1
+        //execute_beq_instruction(.rs1(1), .rs2(1), .immediate(3676) );
 
         $display("[%0t] Testing Shift instructions", $time);
         execute_addi_instruction(.rd(1), .rs1(0), .immediate(12'h0123) );  // Positive constant to be shifted
