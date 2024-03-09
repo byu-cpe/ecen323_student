@@ -8,7 +8,7 @@ add_files -fileset constrs_1 ../resources/iosystem/iosystem.xdc
 # Add files from your previous labs and set the include directories
 add_files ../lab09/riscv_forwarding_pipeline.sv
 add_files ../lab03/regfile.sv ../lab02/alu.sv ../include/riscv_alu_constants.sv
-set_property include_dirs {../lab02 ../include} [current_fileset]
+set_property include_dirs {../include} [current_fileset]
 # Add the files associated with the top-level I/O system
 add_files ../resources/iosystem/iosystem.sv
 add_files ../resources/iosystem/io_clocks.sv

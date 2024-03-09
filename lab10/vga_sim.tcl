@@ -20,6 +20,10 @@ add_force clk {0} {1 5} -repeat_every 10
 # Run the circuit for a bit
 run 40 ns
 
+# Note: there is no top-level reset input to this system. The reset is generated
+# within the FPGA by the power-on reset circuitry. No reset is needed for this
+# TCL simulation.
+
 # set the top-level inputs
 add_force btnc 0
 add_force btnl 0

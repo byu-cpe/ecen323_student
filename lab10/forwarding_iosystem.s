@@ -44,7 +44,7 @@
     .eqv BUTTON_R_MASK 0x08
     .eqv BUTTON_U_MASK 0x10
 
-# ASCI SPACE
+# ASCII SPACE
     .eqv SPACE_CHAR 0x20
     .eqv HASH_CHAR 0x23
     .eqv LAST_COLUMN 77                 # 79 - last two columns don't show on screen
@@ -52,17 +52,27 @@
     .eqv ADDRESSES_PER_ROW 512
     .eqv NEG_ADDRESSES_PER_ROW -512
 
+# Program constants
+    .eqv IO_BASE_PRESHIFT 0x7f
+    .eqv IO_BASE_SHFTLEFT 8
+    .eqv VGA_BASE_PRESHIFT 0x40
+    .eqv VGA_BASE_SHFTLEFT 9
+    .eqv SWITCH_MASK_7 0x7f
+    .eqv SWITCH_MASK_12_PRESHIFT 0x7ff
+    .eqv LOOP_CONSTANT_PRESHIFT 0x400
+
 main:
-    # Prepare I/O base address
-    addi gp, x0, 0x7f
+    # Prepare I/O base address (0x7f00). 
+    # We don't have the LUI instruction to do this more naturally
+    addi gp, x0, IO_BASE_PRESHIFT
     # Shift left 8 (0x7f00)
-    slli gp, gp, 8
+    slli gp, gp, IO_BASE_SHFTLEFT
     # 0x7f00 should be in gp
 
-    # Prepare VGA base address
-    addi tp, x0, 0x40
+    # Prepare VGA base address (0x8000)
+    addi tp, x0, VGA_BASE_PRESHIFT # 0x40
     # Shift left 9 (0x8000)
-    slli tp, tp, 9
+    slli tp, tp, VGA_BASE_SHFTLEFT # 0x40 << 9 = 0x8000
     # 0x8000 should be in tp
 
 CLEAR_VGA:
@@ -70,7 +80,7 @@ CLEAR_VGA:
     # Set the foreground based on switches (t2)
     lw t2, SWITCH_OFFSET(gp)
     # Create mask for masking the bottom 12 bits from the switches (0xfff)
-    addi t0, x0, 0x7ff
+    addi t0, x0, SWITCH_MASK_12_PRESHIFT # 0x7ff
     add t0, t0, t0     # ffe
     addi t0, t0, 1     # fff
     # Mask value loaded from switches with 0xfff
@@ -89,7 +99,7 @@ CLEAR_VGA:
     addi t0, x0, SPACE_CHAR       # ASCII character for space
     add t1, x0, tp                # Pointer to VGA space that will change
     # Create constant 0x1000
-    addi t2, x0, 0x400            # 0x400
+    addi t2, x0, LOOP_CONSTANT_PRESHIFT  # 0x400
     # should get 0x1000
     slli t2, t2, 2
 
@@ -179,7 +189,7 @@ PROCESS_BTND:
 DISPLAY_LOCATION:
     # Display the character at the current location
     lw t1, SWITCH_OFFSET(gp)                    # Read the switches
-    addi t2, x0, 0x7f                           # Create mask for switches (only look at bottom 7)
+    addi t2, x0, SWITCH_MASK_7                    # Create mask for switches (only look at bottom 7)
     and t1, t1, t2                              # Keep only lower 7 bits of switches
     sw t1, 0(s0)                                # Write the character to the VGA
 
