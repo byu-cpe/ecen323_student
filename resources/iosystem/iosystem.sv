@@ -118,6 +118,7 @@ module iosystem (clk, clkvga, rst, address, MemWrite, MemRead,
     logic valid_upper_vga_address_mem;
     logic [31:0] char_value_read;
 
+
     // Decode address for I/O (_mem indicates address in mem stage)
     assign io_space_mem = (address[31:IO_ADDR_BITS] == IO_START_ADDRESS[31:IO_ADDR_BITS]);
     logic[3:0] io_addr;
@@ -411,7 +412,7 @@ module iosystem (clk, clkvga, rst, address, MemWrite, MemRead,
     end	
 
     // Instance top-level VGA
-       vga_ctl3 vga ( 
+    vga_ctl3 vga ( 
         .clk_vga(clkvga), 
         .clk_data(clk), 
         .rst(rst),
@@ -427,11 +428,12 @@ module iosystem (clk, clkvga, rst, address, MemWrite, MemRead,
         .VGA_R(vgaRed),
         .VGA_G(vgaGreen),
         .VGA_B(vgaBlue)
-        );
+    );
 
 
     // BEGIN_SIM_MODEL
     // synthesis translate_off
+    //$timeformat(-9, 0, "ns", 20);
 
     ////////////////////////////////////////////////////////////////////
     // Simulation
@@ -525,14 +527,14 @@ module iosystem (clk, clkvga, rst, address, MemWrite, MemRead,
                     default : $display("%0t:Reading from *UNKNOWN* I/O Address 0x%h",$time, address_wb);
                 endcase
             end
-            else if (!(address[31:GP_MEM_ADDR_BITS] == GP_MEM_START_ADDRESS[31:VGA_ADDR_BITS])) begin
+            else if (address_wb[31:VGA_ADDR_BITS] == VGA_START_ADDRESS[31:VGA_ADDR_BITS]) begin
+                // VGA Reads
+                $display("%0t:Reading 0x%h from VGA at address 0x%h",$time, io_memory_read, address_wb);
+            end
+            else if (!(address_wb[31:GP_MEM_ADDR_BITS] == GP_MEM_START_ADDRESS[31:VGA_ADDR_BITS])) begin
                 // Invalid Address
                 $display("%0t:Reading from INVALID address 0x%h",$time, address);
             end
-        end
-        else if (address_wb[31:VGA_ADDR_BITS] == VGA_START_ADDRESS[31:VGA_ADDR_BITS]) begin
-            // VGA Reads
-            $display("%0t:Reading 0x%h from VGA at address 0x%h",$time, io_memory_read, address_wb);
         end
 
     end
