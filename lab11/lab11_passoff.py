@@ -25,15 +25,15 @@ SCRIPT_PATH = pathlib.Path(__file__).absolute().parent.resolve()
 # (relative to the lab directory) of the file to include in the submission.
 submission_files = {
     "final"		: "riscv_final.sv",
-	"fib"		: "fib.s",
+    "fib"		: "fib.s",
 }
 test_files = {
-	"riscv_final_tb"		: "riscv_final_tb.sv",
-	"final_asm"				: "final.s",
+    "riscv_final_tb"		: "riscv_final_tb.sv",
+    "final_asm"				: "final.s",
     "alu"           		: "../lab02/alu.sv",
     "alu_constants"     	: "../include/riscv_alu_constants.sv",
     "regfile"       		: "../lab03/regfile.sv",
-    "riscv_tb"       		: "../lab08/tb_riscv.sv",
+    "riscv_tb"       		: "../include/tb_riscv.sv",
 }
 
 # Assembly
@@ -42,35 +42,40 @@ fib_mem = tester_module.rars_mem_file("fib", generate_data_mem=True)
 
 # Testbench simulations
 final_tb = tester_module.testbench_simulation( "Final Testbench", \
-	"riscv_final_tb", \
-	[ "riscv_final_tb", "alu_constants", "alu",  "regfile", "riscv_tb", "final",   ], [], \
-		 include_dirs = ["../include","../lab08"], )
+    "riscv_final_tb", \
+    [ "riscv_final_tb", "alu_constants", "alu",  "regfile", "riscv_tb", "final",   ], [], \
+         include_dirs = ["../include",   ], )
 
 fib_tb = tester_module.testbench_simulation( "Final Testbench", \
-	"riscv_final_tb", \
-	[ "riscv_final_tb", "alu_constants", "alu",  "regfile", "riscv_tb", "final",   ], [], \
-		 include_dirs = ["../include","../lab08"],
-		 generics = ["TEXT_MEMORY_FILENAME=fib_text.mem", \
-		"DATA_MEMORY_FILENAME=fib_data.mem"])
+    "riscv_final_tb", \
+    [ "riscv_final_tb", "alu_constants", "alu",  "regfile", "riscv_tb", "final",   ], [], \
+         include_dirs = ["../include", ],
+         generics = ["TEXT_MEMORY_FILENAME=fib_text.mem", \
+        "DATA_MEMORY_FILENAME=fib_data.mem"])
+
+final_build = tester_module.build_bitstream( "riscv_forwarding_pipeline", [], 
+    [ "alu_constants", "alu",  "regfile", "final", ], False, False, \
+        include_dirs=["../include"])
 
 def main():
-	''' Main executable for script
-	'''
+    ''' Main executable for script
+    '''
 
-	# Create lab tester object
-	lab_test = lab_passoff.lab_test(SCRIPT_PATH, LAB_NUMBER)
-	# Parse arguments
-	lab_test.parse_args()
-	# Prepare test
-	lab_test.prepare_test(submission_files,test_files)
-	# Add tests
-	lab_test.add_test_module(final_mem)
-	lab_test.add_test_module(fib_mem)
-	lab_test.add_test_module(final_tb)
-	lab_test.add_test_module(fib_tb)
-	# Run tests
-	lab_test.run_tests()
+    # Create lab tester object
+    lab_test = lab_passoff.lab_test(SCRIPT_PATH, LAB_NUMBER)
+    # Parse arguments
+    lab_test.parse_args()
+    # Prepare test
+    lab_test.prepare_test(submission_files,test_files)
+    # Add tests
+    lab_test.add_test_module(final_mem)
+    lab_test.add_test_module(fib_mem)
+    lab_test.add_test_module(final_tb)
+    lab_test.add_test_module(fib_tb)
+    lab_test.add_test_module(final_build)
+    # Run tests
+    lab_test.run_tests()
 
 
 if __name__ == "__main__":
-	main()
+    main()

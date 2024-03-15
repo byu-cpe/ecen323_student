@@ -291,7 +291,10 @@ module riscv_final_tb ();
             
             // Operand 1 (forwarding logic)
             forwardA = 0;
-            if (mem_RegWrite && instruction_mem.itype.rd != 0 && 
+            // LUI needs highest priority
+            if (instruction_ex.itype.opcode == LUI_OPCODE) begin
+                ex_operand1 = 0;
+            end else if (mem_RegWrite && instruction_mem.itype.rd != 0 && 
                 instruction_mem.itype.rd == instruction_ex.rtype.rs1) begin
                 ex_operand1 = mem_alu_result;
                 forwardA = 1;
@@ -299,10 +302,9 @@ module riscv_final_tb ();
                 instruction_wb.itype.rd == instruction_ex.rtype.rs1) begin
                 ex_operand1 = wb_writedata;
                 forwardA = 2;
-            end else if (instruction_ex.itype.opcode == LUI_OPCODE)
-                ex_operand1 = 0;
-            else
+            end else begin
                 ex_operand1 = ex_read1;
+            end
                 
             // Operand 2 (forwarding logic)
             forwardB = 0;

@@ -21,6 +21,8 @@
 #######################
 .globl  main
 
+.eqv ITERATIONS 15
+
 .text
 main:
 
@@ -29,13 +31,13 @@ main:
     #########################
 
     # Setup the stack: sp = 0x3ffc
-    lui sp, 4				# 4 << 12 = 0x4000
-    addi sp, sp, -4			# 0x4000 - 4 = 0x3ffc
+    lui sp, 4				    # 4 << 12 = 0x4000
+    addi sp, sp, -4			    # 0x4000 - 4 = 0x3ffc
     # setup the global pointer to the data segment (2<<12 = 0x2000)
     lui gp, 2
     
     # Prepare the loop to iterate over each Fibonacci call
-    addi s0, x0, 0			# Loop index (initialize to zero)
+    addi s0, x0, 0			    # Loop index (initialize to zero)
 
     # Load the loop terminal count value (in the .data segment)
 
@@ -49,6 +51,10 @@ main:
     # 'fib_count' from the data segment.
     lw s1,%lo(fib_count)(gp)	 # Load terminal count into s1
 
+    # This loop will call both the iterative and the recursive version of the
+    # Fibinocci sequence for each value of the loop index. The total number
+    # of loops is deteremined by the 'fib_count' memory location in the data
+    # segment.
 FIB_LOOP:
     # Set up argument for call to iterative fibinnoci
     mv a0, s0
@@ -58,7 +64,7 @@ FIB_LOOP:
     # Set up argument for call to recursive fibinnoci
     mv a0, s0	
     jal recursive_fibinnoci
-    # Save the result into t3
+    # Save the result into s3
     mv s3, a0
     
     # Determine index in circular buffer on where to store result
@@ -80,17 +86,17 @@ FIB_LOOP:
     sw s3,(s5)
     
     # Increment pointer and see if we are done
+    addi s0, s0, 1              # This could be a nice breakpoint when debugging
     beq s0, s1, done
-    addi s0, s0, 1
     # Not done, jump back to do another iteration
     j FIB_LOOP
 
 done:
     
     # Now add the results and place in a0
-    addi t0, x0, 0     	# Counter (initialize to zero)
-    addi t1, x0, 16		# Terminal count for loop
-    addi a0, x0, 0		# Intialize a0 t0 zero
+    addi t0, x0, 0     	        # Counter (initialize to zero)
+    addi t1, x0, ITERATIONS		# Terminal count for loop
+    addi a0, x0, 0		        # Intialize a0 t0 zero
     # create a pointer to the iterative data
     addi t2, gp, %lo(iterative_data)
     # create a pointer to the recursive data
@@ -102,8 +108,8 @@ final_add:
     add a0, a0, t4
     lw t4, (t3)
     add a0, a0, t4
-    addi t2, t2, 4		# increment pointer
-    addi t3, t3, 4		# increment pointer
+    addi t2, t2, 4		        # increment pointer
+    addi t3, t3, 4		        # increment pointer
     addi t0, t0, 1
     blt t0, t1, final_add
     
@@ -113,6 +119,7 @@ END:
     ebreak
     # Should never get here
     jal x0, END
+    # Extra NOPs at the end to make sure there is something in the pipeline
     nop
     nop
     nop
@@ -144,7 +151,7 @@ recursive_fibinnoci:
 
 # Indicates how many Fibonacci sequences to compute
 fib_count:
-    .word 15   # Perform Fibonacci sequence from 0 to 15
+    .word ITERATIONS   # Number of Fibonacci sequences to compute
 
 # Reserve 16 words for results of iterative sequences
 # (16 words of 4 bytes each for a total of 64 bytes)

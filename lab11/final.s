@@ -17,12 +17,20 @@
     # LUI tests
 
     # Set base address for the data pointer 
-    lui x1, 0x2        # 0x2 << 12 = 0x2000     	
+    lui x1, 0x2             # 0x2 << 12 = 0x2000
     # Create larger negative number with LUI and addi
     #  (this will test forwarding with lui)
     # Same as: li x2, -10000
     lui x2, 0xfffff
     addi x2, x0, 0xfffff8f0
+    # Make sure forwarding does not work with LUI
+    addi x2, x0, 2
+    addi x3, x0, 3
+    # Choose constant for LUI that maps to x2 and x3 in the Rs1 and Rs2 fields
+    #  LUI: U format. Constant in bits 31:12
+    #  rs1: 19:15, rs2: 24:20   Rs1 = 2 (00010), Rs2 = 3 (00011)
+    #   constant = 0110100 00011 00010  000 = 0110 1000 0011 0001 0000 or 68310
+    lui x2, 0x68310
 
     # Branch tests (BEQ, BNE, BLT, BGE) 
     addi x6, x0, -1         # x6 = -1
@@ -52,16 +60,47 @@ BLT_TEST3:
     blt x8, x9, BGE_TEST1   # BLT taken (1 < 81)
     beq x0, x0, ERROR
 BGE_TEST1:
-    bge x6, x9, ERROR		# BGE_TEST1: BGE not taken (-1 !> 81)
-    bge x9, x10 BGE_TEST2	# BGE taken (81 == 81)
+    bge x6, x9, ERROR       # BGE_TEST1: BGE not taken (-1 !> 81)
+    bge x9, x10 BGE_TEST2   # BGE taken (81 == 81)
     beq x0, x0, ERROR       # Shouldn't execute
 BGE_TEST2:
-    bge x7, x6, ERROR		# BGE_TEST2: BGE not taken (-8 !> -1)
-    bge x6, x7, JUMP_TESTS  # BGE taken (-1 > -8)
+    bge x7, x6, ERROR       # BGE_TEST2: BGE not taken (-8 !> -1)
+    bge x6, x7, LOAD_USE_BRANCH_TESTS  # BGE taken (-1 > -8)
     beq x0, x0, ERROR       # Shouldn't execute
-    nop
-    nop
-    nop
+
+LOAD_USE_BRANCH_TESTS:          # Test special case load-use no stalls when branch is taken
+
+    beq x0, x1, ERROR           # Branch should NOT be taken
+    lw x8, %lo(CONST_3)(x1)     # Load-use
+    addi x8, x8, 0              # (stall SHOULD be inserted)
+    beq x8, x8, LUB_1           # Branch should be taken
+    lw x8, %lo(CONST_3)(x1)     # Load-use
+    addi x8, x8,  0             # (stall should not be inserted)
+    beq x0, x0, ERROR           # Shouldn't get here
+LUB_1:
+    bne x0, x0, ERROR           # BNE not taken
+    lw x8, %lo(CONST_3)(x1)     # Load-use
+    addi x8, x8,  0             # (stall SHOULD be inserted)
+    bne x0, x1, LUB_2           # BNE taken
+    lw x8, %lo(CONST_3)(x1)     # Load-use
+    addi x8, x8,  0             # (stall should not be inserted)
+    beq x0, x0, ERROR           # Shouldn't get here
+LUB_2:
+    blt x0, x6, ERROR           # BLT nott taken
+    lw x8, %lo(CONST_3)(x1)     # Load-use
+    addi x8, x8,  0             # (stall SHOULD be inserted)
+    blt x6, x0, LUB_3           # BLT taken (-1 < 0)
+    lw x8, %lo(CONST_3)(x1)     # Load-use
+    addi x8, x8,  0             # (stall should not be inserted)
+    beq x0, x0, ERROR           # Shouldn't get here
+LUB_3:
+    bge x6, x0, ERROR           # BGE taken: 0 > -1
+    lw x8, %lo(CONST_3)(x1)     # Load-use
+    addi x8, x8,  0             # (stall SHOULD be inserted)
+    bge x0, x6, JUMP_TESTS      # BGE taken: 0 > -1
+    lw x8, %lo(CONST_3)(x1)     # Load-use
+    addi x8, x8,  0             # (stall should not be inserted)
+    beq x0, x0, ERROR           # Shouldn't get here
 
     # Jump Tests
 
@@ -70,14 +109,14 @@ JUMP_TESTS:
     jal x0, JUMP_TEST1
     # perform a raw jump *with* a link to x1 (return is jalr with no offset)
 JUMP_TEST2:
-    jal x31, JUMP_TEST3	    # JUMP_TEST2
+    jal x31, JUMP_TEST3     # JUMP_TEST2
     # Perform a jump followed by a load-use to make sure the load-use stall is ignored.
     jal x0, JUMP_TEST4
     lw x2, 0(x1)
     addi x3, x2, 1
 JUMP_TEST5:
     # Perform a jalr that requires forwarding to test forwarding out
-    jal x31, JUMP_TEST6	    # JUMP_TEST5
+    jal x31, JUMP_TEST6     # JUMP_TEST5
     # This instruction should be skipped because we added 4 to x1
     xor x3, x3, x0
     # This is the instruction we should return to
@@ -154,12 +193,12 @@ JUMP_TEST5:
 
 SAME_VALUE:
     # try a branch NOT taken (subtract result is fffff000)
-    #															fffff000
+    #                                                           fffff000
     beq x0, x1, END
     # Add up all of the registers
-    #															00000000
+    #                                                           00000000
     addi x18, x0, 0  # clear register x18
-    #															00001000
+    #                                                           00001000
     add x18, x18, x1
     add x18, x18, x2
     add x18, x18, x3
@@ -178,13 +217,11 @@ SAME_VALUE:
     add x18, x18, x16
     add x18, x18, x17			
     
-    # At this point, the sum of the registers in x18 should be: 
-    
     # Now add up the first 10 data memory locations. Use Jumps instead.
-    addi x23, x0, 0         # x23 will be the memory contents sum
-    addi x19, x0, 0         # loop index
-    addi x20, x0, 9         # terminal count
-    add x21, x0, x1         # pointer that changes in loop
+    addi x23, x0, 0             # x23 will be the memory contents sum (initialize to zero)
+    addi x19, x0, 0             # loop index (initialize to zero)
+    addi x20, x0, 9             # terminal count (Count to 9)
+    add x21, x0, x1             # pointer that changes in loop
 
 SIMPLE_LOOP:
     jal x31, ADD_PROC           # jump to the ADD_PROC to do the adds
@@ -195,9 +232,9 @@ SIMPLE_LOOP:
     jal x0, SIMPLE_LOOP
     
 ADD_PROC:
-    lw x22, 0(x21)           # Load value from memory
-    add x23, x23, x22		 # add it to our running total
-    jalr x0, x31, 0			 # Return to where we started (don't save return address)
+    lw x22, 0(x21)              # Load value from memory
+    add x23, x23, x22           # add it to our running total
+    jalr x0, x31, 0             # Return to where we started (don't save return address)
     
 FINAL_SUM:
     # add up the sum of the memory (x23) with the sum of the registers (x18)
@@ -205,7 +242,7 @@ FINAL_SUM:
 
     # Drop through to an infinite loop
 END:	# Jump to myself test
-    addi a7, x0, 10   # Exit system call
+    addi a7, x0, 10             # Exit system call
     ebreak
     jal x0, END
     # Should never get here
@@ -214,23 +251,26 @@ ERROR:
     beq x0, x0, ERROR
     # Target of first jump test
 JUMP_TEST1:
-    jal x0, JUMP_TEST2		# JUMP_TEST1 (negative PC offset)
+    jal x0, JUMP_TEST2          # JUMP_TEST1 (negative PC offset)
 JUMP_TEST3:
     # JALR test - link result register
     #  This should be a forwarding condition
-    jalr x30, x31, 0			# JUMP_TEST3
-JUMP_TEST4:					# JUMPT_TEST4
+    jalr x30, x31, 0		    # JUMP_TEST3
+    # Add a load-use after the jalr to make sure that the stall is NOT inserted
+    lw x8, %lo(CONST_3)(x1)     # Load-use
+    addi x8, x8,  0             # (stall should not be inserted)
+JUMP_TEST4:                     # JUMP_TEST4
     jal x0, JUMP_TEST5
 JUMP_TEST6:
     # Test forwarding with jalr. Add 4 to register
-    addi x31, x31, 4			# JUMP_TEST6
+    addi x31, x31, 4            # JUMP_TEST6
     # Dummy instruction (space)
     addi x0, x0, 0
     jalr x0, x31, 0
     # Include a bogus load-use here (this should be skipped)
     lw x3, 0(x1)
     addi x2, x3, 4
-    nop
+    nop                         # Make sure there are some extra NOPs to make sure the pipeline has something
     nop
     nop
     
@@ -240,6 +280,7 @@ JUMP_TEST6:
 .word 0x01234567   # 0
 .word 0xfedcba98   # 4
 .word 0x89abcdef   # 8
+CONST_3:
 .word 0x00000003   # 12
 .word 0x00000004   # 16
 .word 0x00000005   # 20
