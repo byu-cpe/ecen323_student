@@ -53,7 +53,7 @@ fib_tb = tester_module.testbench_simulation( "Final Testbench", \
          generics = ["TEXT_MEMORY_FILENAME=fib_text.mem", \
         "DATA_MEMORY_FILENAME=fib_data.mem"])
 
-final_build = tester_module.build_bitstream( "riscv_forwarding_pipeline", [], 
+final_build = tester_module.build_bitstream( "riscv_final", [], 
     [ "alu_constants", "alu",  "regfile", "final", ], False, False, \
         include_dirs=["../include"])
 
