@@ -23,8 +23,8 @@
 FILL_VGA_CHARACTER:
 
     # setup stack frame and save return address
-    addi sp, sp, -4	            # Make room to save values on the stack
-    sw ra, 0(sp)		        # Save return address
+    addi sp, sp, -4             # Make room to save values on the stack
+    sw ra, 0(sp)                # Save return address
 
     # Copy passed in character to t0
     mv t0, a0
@@ -39,6 +39,6 @@ FVC_1:
     j FVC_1
 FVC_2:
     # Restore stack
-    lw ra, 0(sp)		        # Restore return address
-    addi sp, sp, 4		        # Update stack pointer
+    lw ra, 0(sp)                # Restore return address
+    addi sp, sp, 4              # Update stack pointer
     ret                         # jalr x0, ra, 0
