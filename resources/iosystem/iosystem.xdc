@@ -269,9 +269,11 @@ set_property PACKAGE_PIN R19 [get_ports Vsync]
 
 ##USB-RS232 Interface
 #set_property PACKAGE_PIN B18 [get_ports RsRx]
+# A18 is an output from the FPGA (input to FDTI chip)
 set_property PACKAGE_PIN A18 [get_ports RsRx]
 	set_property IOSTANDARD LVCMOS33 [get_ports RsRx]
 #set_property PACKAGE_PIN A18 [get_ports RsTx]
+# B18 is an inpupt to the FPGA (output from the FDTI chip)
 set_property PACKAGE_PIN B18 [get_ports RsTx]
 	set_property IOSTANDARD LVCMOS33 [get_ports RsTx]
 
