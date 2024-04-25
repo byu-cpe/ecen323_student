@@ -992,7 +992,7 @@ if { [llength $argv] > 0 } {
 			#  updateMem <cheeckpoint> <.text file> <.data file> <bitstream file>
 			puts "Executing 'updateMem' command"
 			if {[llength $argv] < 5} {
-				puts "Missing arguments: updateMem <checkpoint file> <.text file> <.data file> <bitstream file> \[optional .dcp file\]"
+				puts "Missing arguments: updateMem2 <checkpoint file> <.text file> <.data file> <bitstream file> \[optional .dcp file\]"
 			} else {
 				# Extract parameters
 				set textFileName [lindex $argv 2]
